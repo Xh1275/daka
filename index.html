@@ -41,7 +41,8 @@ html[data-theme="dark"] .tag-danger { background: #4a1c1c !important; color: #ff
 html[data-theme="dark"] .tag-warning { background: #4d3814 !important; color: #f5a623 !important; }
 html[data-theme="dark"] input[type="text"], 
 html[data-theme="dark"] input[type="number"], 
-html[data-theme="dark"] input[type="date"] { background: #2a2a2a; color: #e0e0e0; }
+html[data-theme="dark"] input[type="date"],
+html[data-theme="dark"] select { background: #2a2a2a; color: #e0e0e0; }
 html[data-theme="dark"] .nav-bar, 
 html[data-theme="dark"] .tab-bar, 
 html[data-theme="dark"] .stat-box,
@@ -67,7 +68,6 @@ body {
 .time-text{font-size:12px;color:var(--text-sub);font-family:monospace;}
 .top-tool{display:flex;gap:10px;align-items:center;}
 .tool-btn{font-size:15px;color:var(--primary);cursor:pointer;font-weight:500;}
-/* 常驻公告栏样式 */
 .announcement-bar { background: var(--card-bg); color: var(--text-main); padding: 10px 16px; display: flex; align-items: center; font-size: 13px; border-bottom: 1px solid var(--border-color); gap: 8px; transition: background-color 0.3s ease; }
 .announcement-prefix { white-space: nowrap; color: var(--text-main); }
 .announcement-text { flex: 1; line-height: 1.4; outline: none; padding: 2px 4px; word-break: break-all; color: var(--text-main); min-height: 20px;}
@@ -88,7 +88,6 @@ body {
 .btn{padding:6px 14px;border-radius:20px;border:none;font-size:13px;cursor:pointer;}
 .btn-primary{background:var(--primary);color:#fff;}
 .btn-warning{background:var(--warning);color:#fff;}
-/* 分类大类折叠卡片样式 */
 .category-group-card { background: var(--card-bg); margin: 12px 16px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); overflow: hidden; border: 1px solid var(--border-color); }
 .category-group-header { padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; background: var(--card-bg); font-weight: bold; color: var(--text-main); font-size: 15px; }
 .category-group-header:hover { background: var(--bg-color); }
@@ -140,130 +139,26 @@ body {
 .filter-tab span{padding:4px 12px;border-radius:16px;font-size:12px;white-space:nowrap;background:var(--border-color);color:var(--text-sub);cursor:pointer;}
 .filter-tab span.active{background:var(--primary);color:#fff;}
 
-/* 排序下拉菜单样式 */
-.sort-wrap {
-    position: relative;
-    margin: 0 16px 10px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.sort-label {
-    font-size: 13px;
-    color: var(--text-sub);
-    white-space: nowrap;
-}
-.sort-btn {
-    padding: 4px 12px;
-    border-radius: 16px;
-    font-size: 12px;
-    background: var(--border-color);
-    color: var(--text-sub);
-    cursor: pointer;
-    border: none;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-.sort-btn.active {
-    background: var(--primary);
-    color: #fff;
-}
-.sort-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    margin-top: 4px;
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    z-index: 10;
-    min-width: 140px;
-    display: none;
-    overflow: hidden;
-}
-.sort-dropdown.show {
-    display: block;
-}
-.sort-option {
-    padding: 10px 14px;
-    font-size: 13px;
-    color: var(--text-main);
-    cursor: pointer;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.sort-option:hover {
-    background: var(--bg-color);
-}
-.sort-option.active {
-    color: var(--primary);
-    font-weight: bold;
-}
-.sort-order-icon {
-    font-size: 11px;
-}
+.sort-wrap { position: relative; margin: 0 16px 10px; display: flex; align-items: center; gap: 8px; }
+.sort-label { font-size: 13px; color: var(--text-sub); white-space: nowrap; }
+.sort-btn { padding: 4px 12px; border-radius: 16px; font-size: 12px; background: var(--border-color); color: var(--text-sub); cursor: pointer; border: none; display: flex; align-items: center; gap: 4px; }
+.sort-btn.active { background: var(--primary); color: #fff; }
+.sort-dropdown { position: absolute; top: 100%; left: 0; margin-top: 4px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 10; min-width: 140px; display: none; overflow: hidden; }
+.sort-dropdown.show { display: block; }
+.sort-option { padding: 10px 14px; font-size: 13px; color: var(--text-main); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.sort-option:hover { background: var(--bg-color); }
+.sort-option.active { color: var(--primary); font-weight: bold; }
+.sort-order-icon { font-size: 11px; }
 
-/* 批量操作样式 */
-.batch-bar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background: var(--card-bg);
-    border-top: 1px solid var(--border-color);
-    padding: 10px 16px;
-    padding-bottom: calc(10px + env(safe-area-inset-bottom));
-    display: none;
-    z-index: 100;
-    gap: 8px;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-}
-.batch-bar.show {
-    display: flex;
-}
-.batch-info {
-    font-size: 13px;
-    color: var(--text-main);
-    font-weight: 500;
-}
-.batch-actions {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-}
-.batch-btn {
-    padding: 6px 12px;
-    border-radius: 16px;
-    font-size: 12px;
-    border: 1px solid var(--border-color);
-    background: transparent;
-    color: var(--text-sub);
-    cursor: pointer;
-}
-.batch-btn.primary {
-    background: var(--primary);
-    color: #fff;
-    border-color: var(--primary);
-}
-.batch-btn.danger {
-    color: var(--danger);
-    border-color: var(--danger);
-}
-.batch-checkbox {
-    width: 18px;
-    height: 18px;
-    accent-color: var(--primary);
-    cursor: pointer;
-    flex-shrink: 0;
-}
-.task-card.batch-mode .task-head {
-    gap: 10px;
-}
+.batch-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); border-top: 1px solid var(--border-color); padding: 10px 16px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); display: none; z-index: 100; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.batch-bar.show { display: flex; }
+.batch-info { font-size: 13px; color: var(--text-main); font-weight: 500; }
+.batch-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.batch-btn { padding: 6px 12px; border-radius: 16px; font-size: 12px; border: 1px solid var(--border-color); background: transparent; color: var(--text-sub); cursor: pointer; }
+.batch-btn.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+.batch-btn.danger { color: var(--danger); border-color: var(--danger); }
+.batch-checkbox { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
+.task-card.batch-mode .task-head { gap: 10px; }
 
 .add-btn-box{padding:10px 16px;}
 .big-btn{width:100%;padding:12px;border-radius:10px;background:var(--primary);color:#fff;border:none;font-size:15px;font-weight:bold;cursor:pointer; margin-bottom: 10px;}
@@ -274,8 +169,8 @@ body {
 .pop-title{font-size:17px;font-weight:bold;margin-bottom:16px;text-align:center;color:var(--text-main);}
 .form-item{margin-bottom:14px;}
 .form-item label{display:block;font-size:13px;color:var(--text-main);margin-bottom:6px;}
-.form-item input[type="text"], .form-item input[type="number"], .form-item input[type="date"]{width:100%;padding:10px;border:1px solid var(--border-color);border-radius:8px;font-size:14px;outline:none;}
-.form-item input:focus{border-color:var(--primary);}
+.form-item input[type="text"], .form-item input[type="number"], .form-item input[type="date"], .form-item select{width:100%;padding:10px;border:1px solid var(--border-color);border-radius:8px;font-size:14px;outline:none;background:var(--card-bg);color:var(--text-main);}
+.form-item input:focus, .form-item select:focus{border-color:var(--primary);}
 .radio-group {display: flex; gap: 16px; align-items: center; margin-top: 4px;}
 .radio-group label {display: flex; align-items: center; gap: 4px; font-weight: normal; margin-bottom: 0; font-size: 14px; cursor: pointer;}
 .radio-group input[type="radio"], .form-item input[type="checkbox"] {width: auto; margin: 0; accent-color: var(--primary);}
@@ -286,6 +181,7 @@ body {
 .oper-btn-group button{padding:4px 12px;font-size:12px;border-radius:16px;border:1px solid var(--border-color);background:transparent;color:var(--text-sub);cursor:pointer;}
 .oper-btn-group .del{border-color:var(--danger);color:var(--danger);}
 .oper-btn-group .pin.active-pin{border-color:var(--primary);color:var(--primary);font-weight:bold;}
+.oper-btn-group .open-app{border-color:var(--primary);color:var(--primary);font-weight:bold;}
 .hand-btn {display: inline-flex; align-items: center; justify-content: center;gap: 6px; padding: 6px 14px; border-radius: 20px;font-size: 13px; font-weight: bold; cursor: pointer;transition: all 0.2s; border: 1px solid transparent;}
 .hand-btn.todo {background: var(--primary); color: #fff;box-shadow: 0 2px 6px rgba(25, 137, 250, 0.3);}
 .hand-btn.done {background: #edfbf0; color: var(--success);border: 1px solid var(--success);}
@@ -296,9 +192,7 @@ body {
 .confirm-desc{font-size:14px;color:var(--text-sub);text-align:center;margin-bottom:20px;line-height:1.5;}
 .confirm-btns{display:flex;gap:10px;}
 .confirm-btns button{flex:1;padding:11px;border-radius:8px;border:none;font-size:14px;cursor:pointer;}
-html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: invert(1);
-}
+html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
 </style>
 </head>
 <body>
@@ -313,7 +207,6 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
             <span class="time-text" id="timeBox"></span>
         </div>
     </div>
-    <!-- 常驻可编辑公告栏 -->
     <div class="announcement-bar">
         <span class="announcement-prefix">📢 <b>公告：</b></span>
         <div id="announcementContent" class="announcement-text" contenteditable="false"></div>
@@ -338,7 +231,6 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
         <div class="search-wrap" style="margin-bottom: 10px;">
             <input class="search-input" id="searchAllInput" placeholder="搜索全部任务名称、备注或大类...">
         </div>
-        <!-- 统计面板小工具 -->
         <div class="stat-box">
             <div class="widget-toggle-header" id="toggleStatBtn">
                 📊 数据统计看板 <span id="statToggleText">点击展开 ∧</span>
@@ -351,7 +243,6 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
                 <div class="stat-row"><span>累计现金收益</span><span class="stat-num" id="statMoney">0.00</span></div>
             </div>
         </div>
-        <!-- 日历面板小工具 -->
         <div class="calendar-card">
             <div class="widget-toggle-header" id="toggleCalBtn">
                 📅 日历签到追踪 <span id="calToggleText">点击展开 ∧</span>
@@ -377,7 +268,6 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
             <span data-filter="finish" class="filter-item">已归档/完成</span>
             <span data-filter="all" class="filter-item">全部</span>
         </div>
-        <!-- 排序与批量管理栏 -->
         <div class="sort-wrap">
             <span class="sort-label">排序：</span>
             <button class="sort-btn" id="sortToggleBtn">创建时间 <span class="sort-order-icon">↓</span></button>
@@ -398,12 +288,10 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
         <div class="empty-box" id="allEmpty" style="display:none">暂无任务</div>
         <div id="allListWrap"></div>
     </div>
-    <!-- 底部2栏导航 -->
     <div class="tab-bar">
         <div class="tab-item active" data-page="today">今日打卡 <span id="tabBadge"></span></div>
         <div class="tab-item" data-page="all">全部任务 <span id="allTabBadge"></span></div>
     </div>
-    <!-- 批量操作底部栏 -->
     <div class="batch-bar" id="batchBar">
         <div class="batch-info">
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
@@ -428,6 +316,28 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
                 <input id="inpName" type="text" placeholder="例：抖音极速版签到" autocomplete="off">
             </div>
             <div class="form-item">
+                <label>跳转 APP (手动选择优先)</label>
+                <select id="inpAppScheme">
+                    <option value="auto">🤖 自动匹配 (根据任务名称)</option>
+                    <option value="">🚫 不跳转</option>
+                    <option value="snssdk2329://">抖音极速版</option>
+                    <option value="snssdk1128://">抖音</option>
+                    <option value="kslite://">快手极速版</option>
+                    <option value="kwai://">快手</option>
+                    <option value="taobao://">淘宝</option>
+                    <option value="pinduoduo://">拼多多</option>
+                    <option value="jdmobile://">京东</option>
+                    <option value="meituan://">美团</option>
+                    <option value="alipay://">支付宝</option>
+                    <option value="weixin://">微信</option>
+                    <option value="custom">✏️ 自定义协议</option>
+                </select>
+            </div>
+            <div class="form-item" id="customSchemeWrap" style="display:none">
+                <label>自定义 Scheme 链接</label>
+                <input id="inpCustomScheme" type="text" placeholder="例：alipays:// 或 myapp://path" autocomplete="off">
+            </div>
+            <div class="form-item">
                 <label>任务大类 / 分组</label>
                 <input id="inpCategory" type="text" placeholder="例：日常签到、游戏挂机、生活羊毛" autocomplete="off" value="默认分组">
             </div>
@@ -450,7 +360,6 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
                 <label>每天打卡次数 (次/天)</label>
                 <input id="inpTimesPerDay" type="number" value="1" min="1">
             </div>
-            
             <div class="form-item">
                 <label>预期收益类型</label>
                 <div class="radio-group" id="rewardTypeGroup">
@@ -458,12 +367,10 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
                     <label><input type="radio" name="rewardType" value="custom"> 其它奖品</label>
                 </div>
             </div>
-            
             <div class="form-item" id="moneyInputWrap">
                 <label>总收益(元)</label>
                 <input id="inpMoney" type="number" value="0" step="0.01" min="0">
             </div>
-            
             <div class="form-item" id="customInputWrap" style="display:none">
                 <label>奖品内容</label>
                 <input id="inpCustom" type="text" placeholder="例：保温杯、500京豆" autocomplete="off">
@@ -478,7 +385,7 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
             </div>
         </div>
     </div>
-    <!-- 通用提示确认弹窗 -->
+    <!-- 通用确认弹窗 -->
     <div class="confirm-pop" id="confirmPopWrap">
         <div class="confirm-inner">
             <div class="confirm-title" id="confirmTitle">提示</div>
@@ -489,7 +396,7 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
             </div>
         </div>
     </div>
-    <!-- 导入选择弹窗 -->
+    <!-- 导入弹窗 -->
     <div class="confirm-pop" id="importPopWrap">
         <div class="confirm-inner">
             <div class="confirm-title">导入备份</div>
@@ -505,6 +412,27 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator {
     <input type="file" id="fileInput" style="display:none" accept=".json">
 </div>
 <script>
+const appSchemeRules = [
+  {k:"抖音极速版",s:"snssdk2329://"},
+  {k:"抖音",s:"snssdk1128://"},
+  {k:"快手极速版",s:"kslite://"},
+  {k:"快手",s:"kwai://"},
+  {k:"淘宝",s:"taobao://"},
+  {k:"拼多多",s:"pinduoduo://"},
+  {k:"京东",s:"jdmobile://"},
+  {k:"美团",s:"meituan://"},
+  {k:"支付宝",s:"alipay://"},
+  {k:"微信",s:"weixin://"}
+];
+
+function getTaskAppScheme(item) {
+    if (item.appScheme !== undefined && item.appScheme !== null && item.appScheme !== 'auto') {
+        return item.appScheme;
+    }
+    const match = appSchemeRules.find(r => item.name && item.name.includes(r.k));
+    return match ? match.s : '';
+}
+
 const KEY = "daka_offline_data";
 const SYNC_PASSWORD_KEY = 'sync_password';
 let taskList = [];
@@ -520,15 +448,11 @@ let currentCalYear = new Date().getFullYear();
 let currentCalMonth = new Date().getMonth();
 let syncPassword = localStorage.getItem(SYNC_PASSWORD_KEY) || '';
 
-// 排序状态
 let currentSortField = 'id';
 let currentSortOrder = 'desc';
 
-// 批量模式状态
 let batchMode = false;
 let selectedTaskIds = new Set();
-
-// 今日分组展开状态（仅内存，刷新重置）
 let todayGroupOpenState = {};
 
 const el = {
@@ -555,6 +479,9 @@ const el = {
     maskWrap: document.getElementById("maskWrap"),
     popTitle: document.getElementById("popTitle"),
     inpName: document.getElementById("inpName"),
+    inpAppScheme: document.getElementById("inpAppScheme"),
+    customSchemeWrap: document.getElementById("customSchemeWrap"),
+    inpCustomScheme: document.getElementById("inpCustomScheme"),
     inpCategory: document.getElementById("inpCategory"),
     inpRemark: document.getElementById("inpRemark"),
     inpDay: document.getElementById("inpDay"),
@@ -612,7 +539,6 @@ const el = {
     batchCancelBtn: document.getElementById('batchCancelBtn')
 };
 
-// ========== 同步相关函数 ==========
 async function fetchRemoteData() {
     const res = await fetch('/api/get-data', {
         headers: { 'X-Sync-Password': syncPassword }
@@ -652,7 +578,6 @@ function setSyncPassword() {
     }
 }
 
-// ========== 工具函数 ==========
 function debounce(func, wait) {
     let timeout;
     return function(...args) {
@@ -676,7 +601,6 @@ function getAllUniqueDates(item) {
     return Array.from(dates).sort();
 }
 
-// ========== 基础功能函数 ==========
 function initThemeUI() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     el.themeBtn.innerText = isDark ? '☀️' : '🌙';
@@ -731,7 +655,7 @@ function toggleAnnouncementEdit() {
         }
         
         localStorage.setItem('persistent_announcement_v3', contentDiv.innerHTML);
-        saveStorage(); // 保存到云端
+        saveStorage();
         showToast('公告修改成功！');
     }
 }
@@ -794,7 +718,6 @@ function closeConfirm() {
     confirmCallback = null;
 }
 
-// ========== 数据存储 ==========
 function loadLocalStorage() {
     try {
         let raw = localStorage.getItem(KEY);
@@ -813,12 +736,10 @@ function saveLocalStorage() {
 }
 
 async function loadStorage() {
-    // 先加载本地缓存
     loadLocalStorage();
     const localAnnounce = localStorage.getItem('persistent_announcement_v3');
     initAnnouncement(localAnnounce);
     
-    // 有密码则尝试同步云端
     if (syncPassword) {
         try {
             const remoteData = await fetchRemoteData();
@@ -840,23 +761,19 @@ async function loadStorage() {
 
 function saveStorage() {
     saveLocalStorage();
-    // 异步同步云端，不阻塞界面
     if (syncPassword) {
         saveRemoteData().catch(e => {
             console.error('云端保存失败', e);
-            showToast(`⚠️ 云端保存失败：${e.message}`);
         });
     }
 }
 
-// ========== 归档与业务计算 ==========
 function archiveOldHistory(isManual = false) {
     const currentYM = getTodayStr().substring(0, 7);
     let archivedTotalCount = 0;
     taskList.forEach(item => {
         if (!item.history || item.history.length === 0) return;
         if (!item.archives) item.archives = [];
-        const tPerDay = Number(item.timesPerDay) || 1;
         const oldEntries = [];
         const keepEntries = [];
         item.history.forEach(h => {
@@ -994,8 +911,7 @@ function renderStat() {
     el.statMoney.innerText = formatMoney(totalMoney);
 }
 
-// ========== 渲染函数 ==========
-function renderTaskCard(item) {
+function renderTaskCard(item, isTodayPage = false) {
     const status = getTaskStatus(item);
     const pct = getPercent(item);
     const isChecked = isCheckedToday(item);
@@ -1004,6 +920,7 @@ function renderTaskCard(item) {
     const todayCount = getTodayCheckCount(item);
     const isPinned = !!item.isPinned;
     const showBatch = batchMode && currentPage === 'all';
+    const appScheme = getTaskAppScheme(item);
     
     let tagText, tagClass, barColor;
     if (status === "finish") {
@@ -1069,6 +986,12 @@ function renderTaskCard(item) {
     }
     const pinBtnText = isPinned ? "取消置顶" : "置顶";
     const pinBtnClass = isPinned ? "pin active-pin" : "pin";
+
+    const editDelBtnsHtml = isTodayPage ? "" : `
+        <button data-edit="${item.id}">编辑</button>
+        <button class="del" data-del="${item.id}">删除</button>
+    `;
+
     return `
     <div class="task-card ${cardExtraClass}" data-id="${item.id}">
         <div class="task-head">
@@ -1092,9 +1015,9 @@ function renderTaskCard(item) {
         <div class="action-row">
             <span class="date-small">起: ${item.startDate} ${tPerDay > 1 ? `| 每天需打卡${tPerDay}次` : ''} ${item.isContinuous ? '| 连续' : ''}</span>
             <div class="oper-btn-group">
+                ${appScheme ? `<button class="open-app" data-open-app="${appScheme}">🚀 打开APP</button>` : ''}
                 <button class="${pinBtnClass}" data-pin="${item.id}">${pinBtnText}</button>
-                <button data-edit="${item.id}">编辑</button>
-                <button class="del" data-del="${item.id}">删除</button>
+                ${editDelBtnsHtml}
                 ${checkBtnHtml}
             </div>
         </div>
@@ -1108,6 +1031,7 @@ function renderCalendar() {
     const firstDayIndex = new Date(currentCalYear, currentCalMonth, 1).getDay();
     const totalDaysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
     const todayStr = getTodayStr();
+    
     const checkDateMap = {};
     taskList.forEach(task => {
         if (task.history) {
@@ -1117,7 +1041,18 @@ function renderCalendar() {
                 checkDateMap[dStr].add(task.name);
             });
         }
+        if (task.archives) {
+            task.archives.forEach(arc => {
+                if (arc.dates && Array.isArray(arc.dates)) {
+                    arc.dates.forEach(dStr => {
+                        if (!checkDateMap[dStr]) checkDateMap[dStr] = new Set();
+                        checkDateMap[dStr].add(task.name);
+                    });
+                }
+            });
+        }
     });
+
     for (let i = 0; i < firstDayIndex; i++) {
         const cell = document.createElement("div");
         cell.className = "calendar-cell empty";
@@ -1145,7 +1080,6 @@ function renderCalendar() {
     }
 }
 
-// ========== 排序功能 ==========
 function toggleSortDropdown() {
     el.sortDropdown.classList.toggle('show');
 }
@@ -1178,7 +1112,6 @@ function updateSortUI() {
     el.sortDropdown.classList.remove('show');
 }
 
-// ========== 批量操作 ==========
 function getFilteredAllTasks() {
     const queryAll = (el.searchAllInput.value || "").toLowerCase().trim();
     let filterAllTaskList = taskList.filter(i => {
@@ -1321,7 +1254,6 @@ function batchDeleteTasks() {
     }, true);
 }
 
-// ========== 主渲染函数 ==========
 function renderPage() {
     el.pageToday.style.display = currentPage === "today" ? "block" : "none";
     el.pageAll.style.display = currentPage === "all" ? "block" : "none";
@@ -1330,7 +1262,6 @@ function renderPage() {
         tab.classList.toggle("active", tab.dataset.page === currentPage);
     });
 
-    // 渲染今日打卡视图
     const queryToday = (el.searchTodayInput.value || "").toLowerCase().trim();
     let filterTodayAll = taskList.filter(i => {
         const matchName = i.name.toLowerCase().includes(queryToday);
@@ -1367,7 +1298,7 @@ function renderPage() {
         let totalC = catTasks.length;
         let badgeClass = uncheckedCount > 0 ? "category-badge has-unchecked" : "category-badge";
         let badgeText = uncheckedCount > 0 ? `${uncheckedCount} 个未打卡 / 共 ${totalC} 项` : `全部已完成 (${totalC}项)`;
-        let tasksHtml = catTasks.map(item => renderTaskCard(item)).join("");
+        let tasksHtml = catTasks.map(item => renderTaskCard(item, true)).join("");
         const isOpen = todayGroupOpenState[cat] === true;
         todayCategoryHtml += `
         <details class="category-group-card" data-category="${escapeHTML(cat)}" ${isOpen ? 'open' : ''}>
@@ -1386,7 +1317,6 @@ function renderPage() {
     el.todayEmpty.style.display = (todayList.length === 0) ? "block" : "none";
     el.todayListWrap.innerHTML = todayCategoryHtml;
 
-    // 绑定今日分组折叠事件
     el.todayListWrap.querySelectorAll('.category-group-card').forEach(detail => {
         detail.addEventListener('toggle', () => {
             const cat = detail.dataset.category;
@@ -1397,7 +1327,6 @@ function renderPage() {
     const totalCount = taskList.length;
     if (el.allTabBadge) el.allTabBadge.innerText = `(${totalCount})`;
 
-    // 渲染全部任务视图
     const queryAll = (el.searchAllInput.value || "").toLowerCase().trim();
     let filterAllTaskList = taskList.filter(i => {
         const matchName = i.name.toLowerCase().includes(queryAll);
@@ -1410,7 +1339,6 @@ function renderPage() {
         filterArr = filterAllTaskList.filter(i => getTaskStatus(i) === filterType);
     }
 
-    // 应用排序（置顶优先）
     filterArr.sort((a, b) => {
         const aPin = a.isPinned ? 1 : 0;
         const bPin = b.isPinned ? 1 : 0;
@@ -1454,7 +1382,7 @@ function renderPage() {
         let totalC = catTasks.length;
         let badgeClass = uncheckedCount > 0 ? "category-badge has-unchecked" : "category-badge";
         let badgeText = uncheckedCount > 0 ? `${uncheckedCount} 个未打卡 / 共 ${totalC} 项` : `全部已完成 (${totalC}项)`;
-        let tasksHtml = catTasks.map(item => renderTaskCard(item)).join("");
+        let tasksHtml = catTasks.map(item => renderTaskCard(item, false)).join("");
         categoryHtml += `
         <details class="category-group-card" open>
             <summary class="category-group-header">
@@ -1471,13 +1399,22 @@ function renderPage() {
     renderStat();
 }
 
-// ========== 事件处理 ==========
 function handleCardAction(e) {
+    const openAppBtn = e.target.closest('[data-open-app]');
+    if (openAppBtn) {
+        const url = openAppBtn.dataset.openApp;
+        try {
+            window.location.href = url;
+        } catch(err) {
+            showToast("⚠️ 调起 APP 失败，请尝试直接在手机打开应用");
+        }
+        return;
+    }
+
     const now = Date.now();
     if (now - lastClickTime < CLICK_DELAY && !e.target.closest('summary') && !e.target.closest('.history-date-tag') && !e.target.closest('.btn-more-history') && !e.target.closest('.task-checkbox')) return;
     lastClickTime = now;
 
-    // 批量模式点击卡片选中
     if (batchMode && currentPage === 'all' && !e.target.closest('button') && !e.target.closest('summary') && !e.target.closest('.history-date-tag') && !e.target.closest('.btn-more-history')) {
         const card = e.target.closest('.task-card');
         if (card) {
@@ -1487,7 +1424,6 @@ function handleCardAction(e) {
         }
     }
 
-    // 复选框点击
     const checkbox = e.target.closest('.task-checkbox');
     if (checkbox) {
         const taskId = Number(checkbox.dataset.taskId);
@@ -1612,6 +1548,9 @@ function openAdd() {
     editId = null;
     el.popTitle.innerText = "新增羊毛任务";
     el.inpName.value = "";
+    el.inpAppScheme.value = "auto";
+    el.customSchemeWrap.style.display = "none";
+    el.inpCustomScheme.value = "";
     el.inpCategory.value = "默认分组";
     el.inpRemark.value = "";
     el.inpDay.value = "30";
@@ -1631,6 +1570,20 @@ function openEdit(id) {
     const item = taskList.find(t => t.id === id);
     el.popTitle.innerText = "编辑任务";
     el.inpName.value = item.name;
+    
+    const schemeVal = item.appScheme || "auto";
+    const isPresetOption = Array.from(el.inpAppScheme.options).some(opt => opt.value === schemeVal && opt.value !== 'custom');
+    
+    if (isPresetOption) {
+        el.inpAppScheme.value = schemeVal;
+        el.customSchemeWrap.style.display = "none";
+        el.inpCustomScheme.value = "";
+    } else {
+        el.inpAppScheme.value = "custom";
+        el.customSchemeWrap.style.display = "block";
+        el.inpCustomScheme.value = schemeVal;
+    }
+
     el.inpCategory.value = item.category || "默认分组";
     el.inpRemark.value = item.remark || "";
     el.inpDay.value = item.totalDay;
@@ -1653,17 +1606,18 @@ function openEdit(id) {
 }
 
 function saveTask() {
-    const minAllowDate = getOffsetDateStr(-90);
-    const maxAllowDate = getOffsetDateStr(30);
-    const selectStartDate = el.inpStart.value;
-    if (selectStartDate < minAllowDate || selectStartDate > maxAllowDate) {
-        return showToast(`任务起始日期仅允许：${minAllowDate} ~ ${maxAllowDate}`);
-    }
     const name = el.inpName.value.trim();
     if (!name) return showToast("请填写任务名称");
     
-    const repeat = taskList.some(t => t.name === name && t.id !== editId);
-    if(repeat) return showToast("已存在同名任务，请修改名称");
+    const category = el.inpCategory.value.trim() || "默认分组";
+    const repeat = taskList.some(t => t.name === name && (t.category || "默认分组") === category && t.id !== editId);
+    if(repeat) return showToast("相同分类下已存在同名任务");
+
+    let savedAppScheme = el.inpAppScheme.value;
+    if (savedAppScheme === "custom") {
+        savedAppScheme = el.inpCustomScheme.value.trim();
+    }
+
     const selectedType = document.querySelector('input[name="rewardType"]:checked').value;
     let finalRewardValue = "";
     if (selectedType === "money") {
@@ -1674,7 +1628,8 @@ function saveTask() {
     const existingTask = editId ? taskList.find(i => i.id === editId) : null;
     const data = {
         name,
-        category: el.inpCategory.value.trim() || "默认分组",
+        appScheme: savedAppScheme,
+        category: category,
         remark: el.inpRemark.value.trim(),
         totalDay: Number(el.inpDay.value) || 30,
         timesPerDay: Number(el.inpTimesPerDay.value) || 1,
@@ -1703,7 +1658,6 @@ function saveTask() {
     showToast("保存成功");
 }
 
-// ========== 备份导出 ==========
 function exportBackup() {
     let defaultDev = localStorage.getItem('daka_device_name') || '手机';
     let dev = prompt("请输入当前设备标识后缀（用于多设备区分）：", defaultDev);
@@ -1806,7 +1760,6 @@ function bindGlobalEvent() {
     el.todayListWrap.addEventListener('click', handleCardAction);
     el.allListWrap.addEventListener('click', handleCardAction);
     
-    // 同步按钮
     el.syncBtn.addEventListener('click', () => {
         if (!syncPassword) {
             setSyncPassword();
@@ -1814,15 +1767,22 @@ function bindGlobalEvent() {
             loadStorage();
         }
     });
-    // 双击同步按钮修改密码
     el.syncBtn.addEventListener('dblclick', setSyncPassword);
     
     el.themeBtn.addEventListener('click', toggleTheme);
     
-    // 搜索防抖
     const debouncedRender = debounce(() => renderPage(), 300);
     el.searchTodayInput.addEventListener("input", debouncedRender);
     el.searchAllInput.addEventListener("input", debouncedRender);
+
+    el.inpAppScheme.addEventListener('change', (e) => {
+        if (e.target.value === 'custom') {
+            el.customSchemeWrap.style.display = 'block';
+            el.inpCustomScheme.focus();
+        } else {
+            el.customSchemeWrap.style.display = 'none';
+        }
+    });
 
     el.radios.forEach(radio => {
         radio.addEventListener('change', (e) => {
@@ -1848,7 +1808,6 @@ function bindGlobalEvent() {
         };
     });
 
-    // 排序事件
     el.sortToggleBtn.addEventListener('click', toggleSortDropdown);
     document.querySelectorAll('.sort-option').forEach(opt => {
         opt.addEventListener('click', () => {
@@ -1861,7 +1820,6 @@ function bindGlobalEvent() {
         }
     });
 
-    // 批量操作事件
     el.batchModeBtn.addEventListener('click', toggleBatchMode);
     el.batchSelectAll.addEventListener('change', batchSelectAll);
     el.batchPinBtn.addEventListener('click', batchTogglePin);
@@ -1929,7 +1887,6 @@ async function init() {
     initWidgetStates();
     bindGlobalEvent();
     
-    // 异步加载数据（本地+云端）
     await loadStorage();
     archiveOldHistory(false);
     renderPage();
