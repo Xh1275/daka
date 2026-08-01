@@ -65,7 +65,8 @@ body {
     overscroll-behavior: none;
 }
 .nav-bar{background:var(--card-bg);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,0.05);position:sticky;top:0;z-index:99; transition: background-color 0.3s ease;}
-.nav-title{font-size:18px;font-weight:bold;color:var(--text-main);}
+.sync-btn-left{font-size:14px;color:var(--primary);cursor:pointer;font-weight:500;display:flex;align-items:center;gap:4px;}
+.sync-btn-left.error{color:var(--danger);font-weight:bold;}
 .time-text{font-size:12px;color:var(--text-sub);font-family:monospace;}
 .top-tool{display:flex;gap:10px;align-items:center;}
 .tool-btn{font-size:15px;color:var(--primary);cursor:pointer;font-weight:500;}
@@ -200,9 +201,8 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator { 
 <body>
 <div id="app">
     <div class="nav-bar">
-        <div class="nav-title">羊毛打卡管家</div>
+        <div class="sync-btn-left" id="syncBtn">☁️ 同步中...</div>
         <div class="top-tool">
-            <span class="tool-btn" id="syncBtn">☁️ 同步</span>
             <span class="tool-btn" id="themeBtn">🌙</span>
             <span class="tool-btn" id="exportBtn">备份</span>
             <span class="tool-btn" id="importBtn">导入</span>
@@ -545,6 +545,20 @@ const el = {
     batchCancelBtn: document.getElementById('batchCancelBtn')
 };
 
+function updateSyncStatus(status, text) {
+    if (!el.syncBtn) return;
+    if (status === 'success') {
+        el.syncBtn.classList.remove('error');
+        el.syncBtn.innerText = `☁️ 最后同步：${text}`;
+    } else if (status === 'error') {
+        el.syncBtn.classList.add('error');
+        el.syncBtn.innerText = `❌ 同步失败！点击重试`;
+    } else {
+        el.syncBtn.classList.remove('error');
+        el.syncBtn.innerText = `☁️ 同步中...`;
+    }
+}
+
 async function fetchRemoteData() {
     const res = await fetch('/api/get-data', {
         headers: { 'X-Sync-Password': syncPassword }
@@ -785,6 +799,7 @@ async function loadStorage() {
     initAnnouncement(localAnnounce);
     
     if (syncPassword) {
+        updateSyncStatus('syncing');
         try {
             const remoteData = await fetchRemoteData();
             if (remoteData && remoteData.tasks && Array.isArray(remoteData.tasks)) {
@@ -799,20 +814,34 @@ async function loadStorage() {
                     localStorage.setItem('persistent_announcement_v3', remoteData.announcement);
                 }
                 saveLocalStorage();
+                const now = new Date();
+                const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                updateSyncStatus('success', timeStr);
                 showToast('☁️ 云端数据同步成功');
             }
         } catch (e) {
             console.error('云端同步失败', e);
+            updateSyncStatus('error');
             showToast(`⚠️ ${e.message}，已使用本地数据`);
         }
+    } else {
+        const now = new Date();
+        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        updateSyncStatus('success', timeStr);
     }
 }
 
 function saveStorage() {
     saveLocalStorage();
     if (syncPassword) {
-        saveRemoteData().catch(e => {
+        updateSyncStatus('syncing');
+        saveRemoteData().then(() => {
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            updateSyncStatus('success', timeStr);
+        }).catch(e => {
             console.error('云端保存失败', e);
+            updateSyncStatus('error');
         });
     }
 }
