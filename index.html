@@ -33,7 +33,8 @@ html[data-theme="dark"] {
     --text-light: #777777;
     --border-color: #333333;
 }
-html[data-theme="dark"] .task-card.card-done-today { background: #1a1a1a !important; border-color: #2a2a2a !important; opacity: 0.6; }
+/* 深色模式已完成卡片透明度统一调整为 0.72 */
+html[data-theme="dark"] .task-card.card-done-today { background: #181818 !important; border-color: #2a2a2a !important; opacity: 0.72; }
 html[data-theme="dark"] .tag-doing { background: #1a3a5a !important; color: #4ba3ff !important; }
 html[data-theme="dark"] .tag-finish { background: #1a3f24 !important; color: #42c76a !important; }
 html[data-theme="dark"] .tag-wait { background: #40321a !important; color: #f5a623 !important; }
@@ -97,10 +98,48 @@ body {
 .category-badge.has-unchecked { background: #e8f4ff; color: var(--primary); font-weight: bold; }
 .category-content { padding: 4px 0 12px 0; border-top: 1px solid var(--border-color); }
 .category-group-card .task-card { margin: 10px 12px; box-shadow: none; border: 1px solid var(--border-color); }
-.task-card{background:var(--card-bg);margin:12px 16px;padding:14px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06); transition: 0.3s;user-select: none;-webkit-user-select: none;}
-.task-card.card-done-today {background: #fdfdfd; box-shadow: 0 1px 3px rgba(0,0,0,0.03); border: 1px solid var(--border-color); opacity: 0.85;}
+
+/* 特效与打卡视觉降权样式 */
+@keyframes checkPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+@keyframes successPop {
+    0% { opacity:0; transform:scale(.5) translateY(10px); }
+    50% { opacity:1; transform:scale(1.15) translateY(0); }
+    100% { opacity:0; transform:scale(1) translateY(-25px); }
+}
+
+@keyframes syncSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+.check-success-float {
+    position:fixed; left:50%; top:42%; transform:translateX(-50%);
+    font-size:48px; z-index:9999; pointer-events:none;
+    animation:successPop .9s ease forwards;
+}
+.today-progress-card {
+    margin:0 16px 10px; padding:14px; background:var(--card-bg);
+    border-radius:14px; box-shadow:0 2px 8px rgba(0,0,0,.06);
+}
+.today-progress-title {display:flex;justify-content:space-between;font-size:13px;color:var(--text-sub);margin-bottom:8px;}
+.today-progress-title b {font-size:20px;color:var(--primary);}
+.today-progress-bar {height:10px;background:var(--border-color);border-radius:99px;overflow:hidden;}
+.today-progress-inner {height:100%;background:linear-gradient(90deg,var(--primary),var(--success));border-radius:99px;transition:width .5s ease;}
+.hand-btn {min-height:34px;padding:7px 16px;border-radius:18px;font-size:13px;}
+.hand-btn.todo:hover,.hand-btn.retro:hover {filter:brightness(1.05);transform:translateY(-1px);}
+
+.task-card{background:var(--card-bg);margin:12px 16px;padding:14px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06); transition: all 0.3s ease;user-select: none;-webkit-user-select: none;}
+/* 浅色模式已完成卡片透明度统一调整为 0.72 */
+.task-card.card-done-today {background: var(--bg-color); box-shadow: none; border: 1px solid var(--border-color); opacity: 0.72;}
+.task-card.card-done-today .task-name {color: var(--text-light); text-decoration: line-through; font-weight: normal;}
+/* 动画时长微调至 0.5s，更加柔和 */
+.task-card.card-just-checked {animation: checkPulse 0.5s ease-in-out;}
+
 .task-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;gap:8px;}
-.task-name{font-size:16px;font-weight:500;color:var(--text-main); word-break: break-all; flex: 1;}
+.task-name{font-size:16px;font-weight:bold;color:var(--text-main); word-break: break-all; flex: 1; transition: color 0.3s ease, text-decoration 0.3s ease;}
 .task-tags-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end;}
 .tag{font-size:11px;padding:2px 6px;border-radius:4px;}
 .tag-doing{background:#e8f4ff;color:var(--primary);}
@@ -197,11 +236,416 @@ body {
 .confirm-btns button{flex:1;padding:11px;border-radius:8px;border:none;font-size:14px;cursor:pointer;}
 html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
 </style>
+
+<style>
+html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
+    color-scheme: light dark;
+}
+body {
+    min-height: 100vh;
+    line-height: 1.5;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+    padding-top: env(safe-area-inset-top);
+}
+body, button, input, select, textarea {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+button, .tool-btn, .sync-btn-left, .tab-item, .filter-tab span, .sort-btn, .batch-btn, .hand-btn, .big-btn, .edit-btn, .cal-nav-btn, .oper-btn-group button {
+    transition: transform .15s ease, box-shadow .2s ease, background-color .2s ease, color .2s ease, border-color .2s ease, opacity .2s ease;
+}
+button:active, .tool-btn:active, .sync-btn-left:active, .tab-item:active, .filter-tab span:active, .sort-btn:active, .batch-btn:active, .hand-btn:active, .big-btn:active, .edit-btn:active, .cal-nav-btn:active, .oper-btn-group button:active {
+    transform: scale(0.98);
+}
+:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+.nav-bar {
+    padding: 12px 14px;
+    gap: 10px;
+    justify-content: flex-start;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+.nav-title {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: .5px;
+    color: var(--text-main);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.sync-btn-left {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    max-width: 52vw;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(25, 137, 250, .08);
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 600;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.sync-btn-left .sync-icon {
+    width: 15px;
+    height: 15px;
+    flex: 0 0 auto;
+    stroke: currentColor;
+}
+
+.sync-btn-left .sync-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sync-btn-left[data-status="syncing"] .sync-icon {
+    animation: syncSpin 1s linear infinite;
+}
+
+.sync-btn-left.error {
+    color: var(--danger);
+    background: rgba(238, 10, 36, .08);
+}
+.top-tool {
+    flex: 0 0 auto;
+    gap: 6px;
+}
+.tool-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    min-height: 32px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: var(--bg-color);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+    font-size: 13px;
+}
+.announcement-bar {
+    margin: 10px 12px 0;
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+.announcement-prefix {
+    color: var(--primary);
+    font-weight: 700;
+}
+.announcement-text {
+    border-radius: 8px;
+    padding: 6px 8px;
+    background: transparent;
+}
+.search-wrap {
+    padding: 10px 12px 0;
+}
+.search-input {
+    height: 42px;
+    padding: 0 14px;
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.35);
+}
+.search-input::placeholder {
+    color: var(--text-light);
+}
+.stat-box, .calendar-card, .today-progress-card, .category-group-card, .task-card {
+    border-radius: 16px;
+}
+.stat-box, .calendar-card, .today-progress-card {
+    margin-left: 12px;
+    margin-right: 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 8px 24px rgba(0,0,0,.04);
+}
+.widget-toggle-header {
+    margin-bottom: 10px;
+    padding: 2px 0;
+}
+.widget-toggle-header span {
+    opacity: .9;
+}
+.today-progress-card {
+    background: linear-gradient(180deg, rgba(25,137,250,.05), transparent 70%), var(--card-bg);
+}
+.today-progress-title b {
+    font-size: 18px;
+}
+.today-progress-bar {
+    height: 10px;
+}
+.task-card {
+    margin: 10px 12px;
+    padding: 15px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 6px 18px rgba(0,0,0,.05);
+}
+.task-card:hover {
+    transform: translateY(-1px);
+}
+.task-card.card-done-today {
+    opacity: .78;
+}
+.task-name {
+    line-height: 1.35;
+    letter-spacing: .1px;
+}
+.task-desc {
+    color: var(--text-sub);
+}
+.tag {
+    padding: 3px 8px;
+    border-radius: 999px;
+}
+.progress-bar {
+    height: 9px;
+}
+.action-row {
+    margin-top: 14px;
+}
+.hand-btn {
+    min-height: 36px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+.hand-btn.todo {
+    box-shadow: 0 6px 16px rgba(25, 137, 250, 0.18);
+}
+.hand-btn.done {
+    box-shadow: 0 6px 16px rgba(7, 193, 96, 0.12);
+}
+.hand-btn.retro {
+    box-shadow: 0 6px 16px rgba(245, 166, 35, 0.12);
+}
+.filter-tab {
+    margin: 10px 12px 8px;
+    padding-bottom: 2px;
+}
+.filter-tab span {
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 6px 12px;
+}
+.filter-tab span.active {
+    border-color: var(--primary);
+    box-shadow: 0 6px 14px rgba(25,137,250,.16);
+}
+.sort-wrap {
+    margin: 0 12px 10px;
+    flex-wrap: wrap;
+}
+.sort-btn {
+    min-height: 32px;
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+}
+.sort-btn.active {
+    box-shadow: 0 6px 14px rgba(25,137,250,.16);
+}
+.sort-dropdown {
+    left: 0;
+    right: auto;
+}
+.add-btn-box {
+    padding: 8px 12px 10px;
+}
+.big-btn {
+    min-height: 44px;
+    border-radius: 14px;
+    box-shadow: 0 8px 16px rgba(0,0,0,.04);
+}
+.big-btn.secondary {
+    background: rgba(25, 137, 250, .06);
+}
+.big-btn.danger {
+    background: rgba(238, 10, 36, .05);
+}
+.category-group-card {
+    margin: 10px 12px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 6px 18px rgba(0,0,0,.04);
+}
+.category-group-header {
+    padding: 13px 14px;
+}
+
+.category-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+}
+
+.category-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.category-icon {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+    color: var(--primary);
+    opacity: .95;
+}
+
+.category-group-header {
+    gap: 12px;
+}
+
+.category-group-header > .category-title {
+    flex: 1 1 auto;
+}
+.calendar-card {
+    background: linear-gradient(180deg, rgba(25,137,250,.03), transparent 65%), var(--card-bg);
+}
+.calendar-cell {
+    border-radius: 10px;
+}
+.tab-bar {
+    box-shadow: 0 -6px 24px rgba(0,0,0,.05);
+}
+.tab-item {
+    padding: 11px 0;
+}
+.tab-item.active {
+    position: relative;
+}
+.tab-item.active::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 6px;
+    transform: translateX(-50%);
+    width: 18px;
+    height: 3px;
+    border-radius: 99px;
+    background: var(--primary);
+}
+.batch-bar {
+    box-shadow: 0 -8px 24px rgba(0,0,0,.08);
+    border-radius: 18px 18px 0 0;
+}
+.batch-btn {
+    min-height: 34px;
+}
+.big-btn, .btn, .batch-btn, .sort-btn, .edit-btn, .cal-nav-btn, .tool-btn, .oper-btn-group button {
+    border-radius: 999px;
+}
+.mask, .confirm-pop {
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+.pop, .confirm-inner {
+    border: 1px solid var(--border-color);
+    box-shadow: 0 20px 50px rgba(0,0,0,.18);
+}
+.pop {
+    width: calc(100% - 20px);
+}
+.form-item label {
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+.form-item input[type="text"], .form-item input[type="number"], .form-item input[type="date"], .form-item select {
+    height: 42px;
+    border-radius: 12px;
+    background: var(--bg-color);
+}
+.radio-group {
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.toast {
+    border-radius: 999px;
+    box-shadow: 0 10px 28px rgba(0,0,0,.18);
+}
+.empty-box {
+    padding: 56px 20px;
+}
+.empty-box p {
+    margin-top: 8px;
+    line-height: 1.6;
+}
+html[data-theme="dark"] .nav-bar,
+html[data-theme="dark"] .announcement-bar,
+html[data-theme="dark"] .stat-box,
+html[data-theme="dark"] .calendar-card,
+html[data-theme="dark"] .today-progress-card,
+html[data-theme="dark"] .category-group-card,
+html[data-theme="dark"] .task-card,
+html[data-theme="dark"] .mask .pop,
+html[data-theme="dark"] .confirm-inner {
+    box-shadow: 0 8px 24px rgba(0,0,0,.42) !important;
+}
+html[data-theme="dark"] .sync-btn-left {
+    background: rgba(25,137,250,.14);
+}
+html[data-theme="dark"] .tool-btn,
+html[data-theme="dark"] .sort-btn,
+html[data-theme="dark"] .batch-btn,
+html[data-theme="dark"] .edit-btn,
+html[data-theme="dark"] .cal-nav-btn,
+html[data-theme="dark"] .oper-btn-group button {
+    background: rgba(255,255,255,.03);
+}
+@media (max-width: 420px) {
+    .nav-bar {
+        padding: 10px 10px;
+    }
+    .nav-title {
+        font-size: 14px;
+        letter-spacing: .2px;
+    }
+    .sync-btn-left {
+        max-width: 46vw;
+        padding: 5px 8px;
+        font-size: 11px;
+    }
+
+    .sync-btn-left .sync-icon {
+        width: 14px;
+        height: 14px;
+    }
+    .tool-btn {
+        min-width: 32px;
+        padding: 0 8px;
+        font-size: 12px;
+    }
+    .search-wrap, .stat-box, .calendar-card, .today-progress-card, .category-group-card, .task-card, .filter-tab, .sort-wrap {
+        margin-left: 10px;
+        margin-right: 10px;
+    }
+}
+</style>
+
 </head>
 <body>
 <div id="app">
     <div class="nav-bar">
-        <div class="sync-btn-left" id="syncBtn">☁️ 同步中...</div>
+        <div class="sync-btn-left" id="syncBtn" data-status="syncing"><svg viewBox="0 0 24 24" class="sync-icon" aria-hidden="true"><path d="M20 12a8 8 0 0 1-13.9 5.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M5 12a7 7 0 0 1 11.8-5.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16.4 6.4H18V4.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.6 17.6H6v1.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="sync-text">同步中...</span></div>
+        <div class="nav-title"></div>
         <div class="top-tool">
             <span class="tool-btn" id="themeBtn">🌙</span>
             <span class="tool-btn" id="exportBtn">备份</span>
@@ -221,6 +665,13 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator { 
         </div>
         <div class="top-tip" id="todayTipWrap">
             <span class="tip-text">今日剩余 <span id="todayCount" style="color:var(--primary);font-weight:bold;">0</span> 项待打卡</span>
+        </div>
+        <div class="today-progress-card">
+            <div class="today-progress-title">
+                <span>📈 今日完成进度</span>
+                <b id="todayProgressPercent">0%</b>
+            </div>
+            <div class="today-progress-bar"><div class="today-progress-inner" id="todayProgressInner" style="width:0%"></div></div>
         </div>
         <div class="empty-box" id="todayEmpty" style="display:none">
             <div style="font-size:48px;color:var(--success);margin-bottom:10px;">👌</div>
@@ -431,6 +882,15 @@ const appSchemeRules = [
   {k:"微信",s:"weixin://"}
 ];
 
+
+
+const SYNC_ICON_SVG = {
+  syncing: `<svg viewBox="0 0 24 24" class="sync-icon" aria-hidden="true"><path d="M20 12a8 8 0 0 1-13.9 5.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M5 12a7 7 0 0 1 11.8-5.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16.4 6.4H18V4.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.6 17.6H6v1.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  success: `<svg viewBox="0 0 24 24" class="sync-icon" aria-hidden="true"><path d="M20 11.8A7.5 7.5 0 0 0 6.3 7.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M6 7.6H8.8V4.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 12.2A7.5 7.5 0 0 1 7.7 17.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M17.6 17.4H15V20.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.2 13.1l2 2 3.6-4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  error: `<svg viewBox="0 0 24 24" class="sync-icon" aria-hidden="true"><path d="M12 4.5 3.8 18.6h16.4L12 4.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 9v4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 16.6h.01" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`
+};
+
+const FOLDER_ICON = `<svg viewBox="0 0 24 24" class="category-icon" aria-hidden="true"><path d="M3.8 7.5A2.2 2.2 0 0 1 6 5.3h4.1c.7 0 1.3.3 1.8.8l1 1.1c.4.4 1 .7 1.6.7H18a2.2 2.2 0 0 1 2.2 2.2v6.1A2.2 2.2 0 0 1 18 18.4H6A2.2 2.2 0 0 1 3.8 16.2V7.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3.8 9.2h16.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
 function getTaskAppScheme(item) {
     if (item.appScheme !== undefined && item.appScheme !== null && item.appScheme !== 'auto') {
         return item.appScheme;
@@ -476,6 +936,8 @@ const el = {
     pageAll: document.getElementById("pageAll"),
     todayTipWrap: document.getElementById("todayTipWrap"),
     todayCount: document.getElementById("todayCount"),
+    todayProgressPercent: document.getElementById("todayProgressPercent"),
+    todayProgressInner: document.getElementById("todayProgressInner"),
     todayEmpty: document.getElementById("todayEmpty"),
     todayListWrap: document.getElementById("todayListWrap"),
     allEmpty: document.getElementById("allEmpty"),
@@ -547,15 +1009,16 @@ const el = {
 
 function updateSyncStatus(status, text) {
     if (!el.syncBtn) return;
+    el.syncBtn.dataset.status = status;
     if (status === 'success') {
         el.syncBtn.classList.remove('error');
-        el.syncBtn.innerText = `☁️ 最后同步：${text}`;
+        el.syncBtn.innerHTML = `${SYNC_ICON_SVG.success}<span class="sync-text">已同步 ${text}</span>`;
     } else if (status === 'error') {
         el.syncBtn.classList.add('error');
-        el.syncBtn.innerText = `❌ 同步失败！点击重试`;
+        el.syncBtn.innerHTML = `${SYNC_ICON_SVG.error}<span class="sync-text">同步失败 · 点击重试</span>`;
     } else {
         el.syncBtn.classList.remove('error');
-        el.syncBtn.innerText = `☁️ 同步中...`;
+        el.syncBtn.innerHTML = `${SYNC_ICON_SVG.syncing}<span class="sync-text">同步中...</span>`;
     }
 }
 
@@ -678,7 +1141,7 @@ function initAnnouncement(defaultText) {
         if (savedAnnounce !== null && savedAnnounce.trim() !== '') {
             contentDiv.innerHTML = savedAnnounce;
         } else {
-            contentDiv.innerHTML = '妈妈露营椅 <span style="background-color: #ee0a24; color: #ffffff; padding: 2px 6px; border-radius: 4px; font-weight: bold;">⏰ 2026.8.7 24点过期</span>';
+            contentDiv.innerHTML = '妈妈露营椅 <span style="background-color: #ee0a24; color: #ffffff; padding: 2px 6px; border-radius: 4px; font-weight: bold;">⏰ 过期提醒</span>';
         }
     }
 }
@@ -1121,8 +1584,10 @@ function renderTaskCard(item, isTodayPage = false) {
     if (status === "doing" && leftDays <= 3 && leftDays > 0) {
         extraTagsHtml += `<span class="tag tag-warning">即将到期(${leftDays}天)</span>`;
     }
+
+    // 1. 打卡/补卡按钮逻辑：仅在【今日打卡】页面保留，全部任务页面隐藏
     let checkBtnHtml = "";
-    if (status === "doing") {
+    if (isTodayPage && status === "doing") {
         if (needsYesterdayRetro) {
             checkBtnHtml += `<button class="hand-btn retro" data-retro="${item.id}" title="昨日未完成打卡，点击一键补签">🩹 补卡 (${yesterdayCount}/${tPerDay})</button>`;
         }
@@ -1132,7 +1597,18 @@ function renderTaskCard(item, isTodayPage = false) {
             checkBtnHtml += `<button class="hand-btn todo" data-check="${item.id}">✍️ 打卡 (${todayCount}/${tPerDay})</button>`;
         }
     }
-    const cardExtraClass = `${isChecked ? "card-done-today" : ""} ${showBatch ? "batch-mode" : ""}`;
+
+    // 2. 置灰规则逻辑：
+    // - 今日打卡页面：表示“今日已打卡完毕”
+    // - 全部任务页面：表示“已暂停/已下架/未开始/已完成”（不在今日任务生成中的项目）
+    let isDimmed = false;
+    if (isTodayPage) {
+        isDimmed = isChecked;
+    } else {
+        isDimmed = (status === "finish" || status === "wait");
+    }
+
+    const cardExtraClass = `${isDimmed ? "card-done-today" : ""} ${showBatch ? "batch-mode" : ""}`;
     
     let rewardDisplay = "";
     const rType = item.rewardType || "money";
@@ -1524,7 +2000,7 @@ function renderPage() {
         todayCategoryHtml += `
         <details class="category-group-card" data-category="${escapeHTML(cat)}" ${isOpen ? 'open' : ''}>
             <summary class="category-group-header">
-                <span>📁 ${escapeHTML(cat)}</span>
+                <span class="category-title">${FOLDER_ICON}<span class="category-name">${escapeHTML(cat)}</span></span>
                 <span class="${badgeClass}">${badgeText}</span>
             </summary>
             <div class="category-content">
@@ -1533,6 +2009,11 @@ function renderPage() {
         </details>`;
     }
     el.todayCount.innerText = totalRemainingCount;
+    const todayTotal = todayList.length;
+    const todayDone = todayList.filter(t => isCheckedToday(t)).length;
+    const todayPercent = todayTotal ? Math.round(todayDone / todayTotal * 100) : 0;
+    if (el.todayProgressPercent) el.todayProgressPercent.innerText = todayPercent + "%";
+    if (el.todayProgressInner) el.todayProgressInner.style.width = todayPercent + "%";
     el.tabBadge.innerText = totalRemainingCount > 0 ? `(${totalRemainingCount})` : "";
     el.todayTipWrap.style.display = todayList.length > 0 ? "flex" : "none";
     el.todayEmpty.style.display = (todayList.length === 0) ? "block" : "none";
@@ -1563,29 +2044,34 @@ function renderPage() {
     filterArr.sort((a, b) => {
         const aPin = a.isPinned ? 1 : 0;
         const bPin = b.isPinned ? 1 : 0;
-        if (aPin !== bPin) return bPin - aPin;
-        
+        if (aPin !== bPin) return bPin - aPin; // 置顶始终优先
+
         let compareResult = 0;
-        switch(currentSortField) {
-            case 'deadline':
-                const aLeft = (Number(a.totalDay) || 1) - getCompletedDaysCount(a);
-                const bLeft = (Number(b.totalDay) || 1) - getCompletedDaysCount(b);
+        switch (currentSortField) {
+            case 'deadline': {
+                const aLeft = Math.max(0, (Number(a.totalDay) || 1) - getCompletedDaysCount(a));
+                const bLeft = Math.max(0, (Number(b.totalDay) || 1) - getCompletedDaysCount(b));
                 compareResult = aLeft - bLeft;
                 break;
-            case 'reward':
+            }
+            case 'reward': {
                 const aReward = a.rewardType === 'money' ? Number(a.rewardValue || a.money || 0) : 0;
                 const bReward = b.rewardType === 'money' ? Number(b.rewardValue || b.money || 0) : 0;
                 compareResult = aReward - bReward;
                 break;
+            }
             case 'name':
-                compareResult = a.name.localeCompare(b.name, 'zh-CN');
+                compareResult = String(a.name || '').localeCompare(String(b.name || ''), 'zh-CN', { numeric: true, sensitivity: 'base' });
                 break;
             case 'id':
             default:
-                compareResult = a.id - b.id;
+                compareResult = (Number(a.id) || 0) - (Number(b.id) || 0);
                 break;
         }
-        
+
+        if (compareResult === 0) {
+            compareResult = (Number(a.id) || 0) - (Number(b.id) || 0);
+        }
         return currentSortOrder === 'asc' ? compareResult : -compareResult;
     });
     
@@ -1607,7 +2093,7 @@ function renderPage() {
         categoryHtml += `
         <details class="category-group-card" open>
             <summary class="category-group-header">
-                <span>📁 ${escapeHTML(cat)}</span>
+                <span class="category-title">${FOLDER_ICON}<span class="category-name">${escapeHTML(cat)}</span></span>
                 <span class="${badgeClass}">${badgeText}</span>
             </summary>
             <div class="category-content">
@@ -1748,6 +2234,7 @@ function retroCheck(id) {
     const second = String(Math.max(0, 59 - yesterdayCount)).padStart(2, "0");
     item.history.push(`${yesterday} 23:59:${second}`);
     item.history.sort();
+    showCheckAnimation();
     item.updateAt = getNowDateTimeStr();
 
     saveStorage();
@@ -1755,6 +2242,14 @@ function retroCheck(id) {
 
     const newCount = getYesterdayCheckCount(item);
     showToast(`🩹 昨日补卡成功 (${newCount}/${tPerDay})，连续打卡续上！`);
+}
+
+function showCheckAnimation() {
+    const el = document.createElement("div");
+    el.className = "check-success-float";
+    el.innerHTML = "🎉";
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),900);
 }
 
 function toggleCheck(id) {
@@ -1797,15 +2292,52 @@ function toggleCheck(id) {
     if(!Array.isArray(item.history)) item.history = [];
     item.history.push(getNowDateTimeStr());
     item.updateAt = getNowDateTimeStr();
+    showCheckAnimation();
     saveStorage(); 
-    renderPage();
-    
+
     const newCount = getTodayCheckCount(item);
-    if (newCount >= tPerDay) {
+    const isDone = newCount >= tPerDay;
+
+    // 1. 立即更新当前卡片的 UI 状态与触发缩放连打特效
+    const cardEls = document.querySelectorAll(`.task-card[data-id="${id}"]`);
+    cardEls.forEach(cardEl => {
+        cardEl.classList.add('card-just-checked');
+        if (isDone) {
+            cardEl.classList.add('card-done-today');
+        }
+        const btn = cardEl.querySelector('[data-check]');
+        if (btn) {
+            if (isDone) {
+                btn.className = 'hand-btn done';
+                btn.innerHTML = `👌 今日已完成 (${newCount}/${tPerDay})`;
+            } else {
+                btn.className = 'hand-btn todo';
+                btn.innerHTML = `✍️ 打卡 (${newCount}/${tPerDay})`;
+            }
+        }
+        const pct = getPercent(item);
+        const completedD = getCompletedDaysCount(item);
+        const totalD = Number(item.totalDay) || 1;
+        const progressInner = cardEl.querySelector('.progress-inner');
+        if (progressInner) progressInner.style.width = pct + '%';
+        const progressRowSpans = cardEl.querySelectorAll('.progress-row span');
+        if (progressRowSpans.length >= 2) {
+            progressRowSpans[0].innerText = `进度: ${completedD}/${totalD}天 ${tPerDay > 1 ? `(今日 ${newCount}/${tPerDay}次)` : ''}`;
+            progressRowSpans[1].innerText = `${pct}%`;
+        }
+    });
+
+    // 2. 立即显示 Toast 提醒
+    if (isDone) {
         showToast(`👌 今日打卡圆满完成 (${newCount}/${tPerDay})`);
     } else {
         showToast(`👌 打卡成功 (${newCount}/${tPerDay})`);
     }
+
+    // 3. 增加 600ms 视觉沉浸延迟，延迟结束后再重排页面下沉
+    setTimeout(() => {
+        renderPage();
+    }, 600);
 }
 
 function toggleRewardInputForm(type) {
@@ -2006,6 +2538,7 @@ function triggerImport(e) {
     reader.readAsText(file);
     el.fileInput.value = "";
 }
+
 el.importOverwriteBtn.onclick = () => {
     if(tempImportData) {
         taskList = tempImportData;
@@ -2118,73 +2651,57 @@ function bindGlobalEvent() {
     el.batchDeleteBtn.addEventListener('click', batchDeleteTasks);
     el.batchCancelBtn.addEventListener('click', toggleBatchMode);
 
-    el.toggleStatBtn.onclick = () => {
-        const isHidden = el.statContentWrap.style.display === "none";
-        const nextState = !isHidden;
-        el.statContentWrap.style.display = nextState ? "none" : "block";
-        el.statToggleText.innerText = nextState ? "点击展开 ∧" : "点击收起 ∨";
-        localStorage.setItem("daka_stat_hidden", nextState);
-    };
-    el.toggleCalBtn.onclick = () => {
-        const isHidden = el.calContentWrap.style.display === "none";
-        const nextState = !isHidden;
-        el.calContentWrap.style.display = nextState ? "none" : "block";
-        el.calToggleText.innerText = nextState ? "点击展开 ∧" : "点击收起 ∨";
-        localStorage.setItem("daka_cal_hidden", nextState);
-    };
-    el.prevMonthBtn.onclick = () => {
-        currentCalMonth--;
-        if (currentCalMonth < 0) {
-            currentCalMonth = 11;
-            currentCalYear--;
-        }
-        renderCalendar();
-    };
-    el.nextMonthBtn.onclick = () => {
-        currentCalMonth++;
-        if (currentCalMonth > 11) {
-            currentCalMonth = 0;
-            currentCalYear++;
-        }
-        renderCalendar();
-    };
+    el.popCancel.onclick = () => el.maskWrap.style.display = "none";
+    el.popSave.onclick = saveTask;
     el.addTaskBtn.onclick = openAdd;
     el.archiveBtn.onclick = () => archiveOldHistory(true);
-    el.popCancel.onclick = () => { el.maskWrap.style.display = "none"; };
-    el.popSave.onclick = saveTask;
-    el.maskWrap.onclick = e => { if (e.target === el.maskWrap) el.maskWrap.style.display = "none"; };
     el.exportBtn.onclick = exportBackup;
     el.exportCsvBtn.onclick = exportCsv;
     el.importBtn.onclick = () => el.fileInput.click();
     el.fileInput.onchange = triggerImport;
     el.clearAllBtn.onclick = clearAllData;
-    
-    el.confirmCancel.onclick = () => { closeConfirm(); };
+    el.confirmCancel.onclick = closeConfirm;
     el.confirmOk.onclick = () => {
-        if(confirmCallback) confirmCallback();
+        if (confirmCallback) confirmCallback();
         closeConfirm();
     };
     
-    document.addEventListener("keydown", e => {
-        if(el.maskWrap.style.display === "block" && e.key === "Enter"){
-            saveTask();
-        }
-    });
+    el.prevMonthBtn.onclick = () => {
+        currentCalMonth--;
+        if (currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; }
+        renderCalendar();
+    };
+    el.nextMonthBtn.onclick = () => {
+        currentCalMonth++;
+        if (currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; }
+        renderCalendar();
+    };
+    
+    el.toggleStatBtn.onclick = () => {
+        const isHidden = el.statContentWrap.style.display === "none";
+        el.statContentWrap.style.display = isHidden ? "block" : "none";
+        el.statToggleText.innerText = isHidden ? "点击收起 ∨" : "点击展开 ∧";
+        localStorage.setItem("daka_stat_hidden", !isHidden);
+    };
+    
+    el.toggleCalBtn.onclick = () => {
+        const isHidden = el.calContentWrap.style.display === "none";
+        el.calContentWrap.style.display = isHidden ? "block" : "none";
+        el.calToggleText.innerText = isHidden ? "点击收起 ∨" : "点击展开 ∧";
+        localStorage.setItem("daka_cal_hidden", !isHidden);
+    };
 }
 
-async function init() {
+window.onload = function() {
     initThemeUI();
     initWidgetStates();
+    loadStorage();
     bindGlobalEvent();
-    
-    await loadStorage();
+    updateTime();
+    setInterval(updateTime, 1000);
     archiveOldHistory(false);
     renderPage();
-    updateTime();
-    
-    setInterval(updateTime, 1000);
-}
-init();
+};
 </script>
 </body>
 </html>
