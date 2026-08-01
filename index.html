@@ -594,7 +594,6 @@ function mergeTasks(localList, remoteList) {
 
     const mergedMap = new Map();
 
-    // 先把远程或基础列表放进去
     remoteList.forEach(item => {
         mergedMap.set(item.id, { ...item });
     });
@@ -603,13 +602,11 @@ function mergeTasks(localList, remoteList) {
         if (mergedMap.has(localItem.id)) {
             const remoteItem = mergedMap.get(localItem.id);
             
-            // 融合两边打卡记录
             const mergedHistory = Array.from(new Set([
                 ...(Array.isArray(localItem.history) ? localItem.history : []),
                 ...(Array.isArray(remoteItem.history) ? remoteItem.history : [])
             ])).sort();
 
-            // 融合归档记录
             const archivesMap = new Map();
             (Array.isArray(remoteItem.archives) ? remoteItem.archives : []).forEach(a => {
                 if (a && a.month) archivesMap.set(a.month, a);
@@ -620,14 +617,11 @@ function mergeTasks(localList, remoteList) {
                 }
             });
 
-            // 对比 updateAt 时间戳[span_1](start_span)[span_1](end_span)
             const localTime = new Date(localItem.updateAt || 0).getTime();
             const remoteTime = new Date(remoteItem.updateAt || 0).getTime();
 
-            // 选择 updateAt 更新的整条任务基础字段[span_2](start_span)[span_2](end_span)
             let baseTask = localTime >= remoteTime ? { ...localItem } : { ...remoteItem };
 
-            // 确保融合后的打卡与归档记录不丢失
             baseTask.history = mergedHistory;
             baseTask.archives = Array.from(archivesMap.values());
 
@@ -768,7 +762,7 @@ function loadLocalStorage() {
                 parsed.forEach(t => {
                     if (!Array.isArray(t.history)) t.history = [];
                     if (!Array.isArray(t.archives)) t.archives = [];
-                    if (!t.updateAt) t.updateAt = getNowDateTimeStr(); // 兼容旧数据补全时间戳[span_3](start_span)[span_3](end_span)
+                    if (!t.updateAt) t.updateAt = getNowDateTimeStr();
                 });
                 taskList = parsed;
             }
@@ -880,7 +874,7 @@ function archiveOldHistory(isManual = false) {
                 archivedTotalCount += count;
             }
             item.history = keepEntries;
-            item.updateAt = getNowDateTimeStr(); // 归档也刷新时间戳[span_4](start_span)[span_4](end_span)
+            item.updateAt = getNowDateTimeStr();
         }
     });
     if (archivedTotalCount > 0) {
@@ -897,10 +891,30 @@ function getTodayCheckCount(item) {
     return item.history.filter(h => typeof h === 'string' && h.startsWith(today)).length;
 }
 
+// 修复误判核心：同时兼顾历史记录 history 与已归档 archives[span_13](start_span)[span_13](end_span)
 function getYesterdayCheckCount(item) {
-    if (!Array.isArray(item.history) || item.history.length === 0) return 0;
     const yesterday = getYesterdayStr();
-    return item.history.filter(h => typeof h === 'string' && h.startsWith(yesterday)).length;
+    let count = 0;
+    
+    // 1. 从当前 history 查
+    if (Array.isArray(item.history)) {
+        count += item.history.filter(h => typeof h === 'string' && h.startsWith(yesterday)).length;
+    }
+    
+    // 2. 从跨月归档的 archives 查
+    if (Array.isArray(item.archives)) {
+        item.archives.forEach(arc => {
+            if (arc && Array.isArray(arc.dates) && arc.dates.includes(yesterday)) {
+                if (Array.isArray(arc.completedDates) && arc.completedDates.includes(yesterday)) {
+                    count += Number(item.timesPerDay) || 1;
+                } else {
+                    count += 1;
+                }
+            }
+        });
+    }
+    
+    return count;
 }
 
 function getCompletedDaysCount(item) {
@@ -1320,7 +1334,7 @@ function batchTogglePin() {
     taskList.forEach(t => {
         if (selectedTaskIds.has(t.id)) {
             t.isPinned = !allPinned;
-            t.updateAt = nowStr; // 批量修改刷新时间戳[span_5](start_span)[span_5](end_span)
+            t.updateAt = nowStr;
         }
     });
     saveStorage();
@@ -1336,7 +1350,7 @@ function batchUpdateCategory() {
     taskList.forEach(t => {
         if (selectedTaskIds.has(t.id)) {
             t.category = newCategory.trim();
-            t.updateAt = nowStr; // 批量修改刷新时间戳[span_6](start_span)[span_6](end_span)
+            t.updateAt = nowStr;
         }
     });
     saveStorage();
@@ -1410,7 +1424,7 @@ function batchArchiveHistory() {
                     archivedCount += count;
                 }
                 item.history = keepEntries;
-                item.updateAt = nowStr; // 批量归档刷新时间戳[span_7](start_span)[span_7](end_span)
+                item.updateAt = nowStr;
             }
         }
     });
@@ -1628,7 +1642,7 @@ function handleCardAction(e) {
         const item = taskList.find(t => t.id === taskId);
         if (item) {
             item.isPinned = !item.isPinned;
-            item.updateAt = getNowDateTimeStr(); // 刷新时间戳[span_8](start_span)[span_8](end_span)
+            item.updateAt = getNowDateTimeStr();
             saveStorage();
             renderPage();
             showToast(item.isPinned ? "📌 已置顶任务" : "已取消置顶");
@@ -1646,7 +1660,7 @@ function handleCardAction(e) {
                     const idx = item.history.indexOf(recordStr);
                     if (idx > -1) {
                         item.history.splice(idx, 1);
-                        item.updateAt = getNowDateTimeStr(); // 刷新时间戳[span_9](start_span)[span_9](end_span)
+                        item.updateAt = getNowDateTimeStr();
                     }
                 }
                 saveStorage();
@@ -1704,7 +1718,7 @@ function retroCheck(id) {
     const second = String(Math.max(0, 59 - yesterdayCount)).padStart(2, "0");
     item.history.push(`${yesterday} 23:59:${second}`);
     item.history.sort();
-    item.updateAt = getNowDateTimeStr(); // 刷新时间戳[span_10](start_span)[span_10](end_span)
+    item.updateAt = getNowDateTimeStr();
 
     saveStorage();
     renderPage();
@@ -1730,7 +1744,7 @@ function toggleCheck(id) {
                 const idx = item.history.indexOf(lastRec);
                 if (idx > -1) {
                     item.history.splice(idx, 1);
-                    item.updateAt = getNowDateTimeStr(); // 刷新时间戳[span_11](start_span)[span_11](end_span)
+                    item.updateAt = getNowDateTimeStr();
                 }
                 saveStorage();
                 renderPage();
@@ -1743,7 +1757,7 @@ function toggleCheck(id) {
         openConfirm("⚠️ 断签提示", "该任务要求连续打卡，您已断签！\n继续打卡将清空之前的进度并从今天重新计算，是否继续？", () => {
             item.history = [getNowDateTimeStr()];
             item.archives = [];
-            item.updateAt = getNowDateTimeStr(); // 刷新时间戳[span_12](start_span)[span_12](end_span)
+            item.updateAt = getNowDateTimeStr();
             saveStorage(); 
             renderPage();
             showToast("👌 进度已重置并打卡");
@@ -1752,7 +1766,7 @@ function toggleCheck(id) {
     }
     if(!Array.isArray(item.history)) item.history = [];
     item.history.push(getNowDateTimeStr());
-    item.updateAt = getNowDateTimeStr(); // 刷新时间戳[span_13](start_span)[span_13](end_span)
+    item.updateAt = getNowDateTimeStr();
     saveStorage(); 
     renderPage();
     
@@ -1875,7 +1889,7 @@ function saveTask() {
         isPinned: existingTask ? !!existingTask.isPinned : false,
         history: existingTask && Array.isArray(existingTask.history) ? existingTask.history : [],
         archives: existingTask && Array.isArray(existingTask.archives) ? existingTask.archives : [],
-        updateAt: nowStr // 新增/编辑时刷新时间戳[span_14](start_span)[span_14](end_span)
+        updateAt: nowStr
     };
     
     if (editId) {
@@ -1973,7 +1987,6 @@ el.importOverwriteBtn.onclick = () => {
 };
 el.importMergeBtn.onclick = () => {
     if(tempImportData) {
-        // 使用配置好的 mergeTasks 函数进行智能合并（对比 updateAt 并融合打卡与归档记录）[span_15](start_span)[span_15](end_span)
         taskList = mergeTasks(taskList, tempImportData);
         saveStorage(); 
         renderPage();
