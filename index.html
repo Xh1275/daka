@@ -324,8 +324,10 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator { 
                     <option value="">🚫 不跳转</option>
                     <option value="snssdk2329://">抖音极速版</option>
                     <option value="snssdk1128://">抖音</option>
-                    <option value="kslite://">快手极速版</option>
+                    <option value="ksnebula://">快手极速版</option>
                     <option value="kwai://">快手</option>
+                    <option value="tbopen://m.taobao.com/tbopen/index.html?h5Url=https%3A%2F%2Fpages-fast.m.taobao.com%2Fwow%2Fz%2Fhdwk%2Ftmfarm%2Fbabanongchang%3FdisableNav%3DYES%26disableProgress%3DYES">淘宝芭芭农场</option>
+                    <option value="tbopen://m.taobao.com/tbopen/index.html?h5Url=https%3A%2F%2Fpages-fast.m.taobao.com%2Fwow%2Fz%2Ftblife%2Fachievement-i%2FJX4ezmspfN8txPMWyawe%3Fx-ssr%3Dtrue%26disableNav%3DYES%26tao_mini_h5%3Dtrue%26uniapp_id%3D1012454%26uniapp_page%3Dhome">淘宝成就中心</option>
                     <option value="taobao://">淘宝</option>
                     <option value="pinduoduo://">拼多多</option>
                     <option value="jdmobile://">京东</option>
@@ -417,8 +419,10 @@ html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator { 
 const appSchemeRules = [
   {k:"抖音极速版",s:"snssdk2329://"},
   {k:"抖音",s:"snssdk1128://"},
-  {k:"快手极速版",s:"kslite://"},
+  {k:"快手极速版",s:"ksnebula://"},
   {k:"快手",s:"kwai://"},
+  {k:"成就中心",s:"tbopen://m.taobao.com/tbopen/index.html?h5Url=https%3A%2F%2Fpages-fast.m.taobao.com%2Fwow%2Fz%2Ftblife%2Fachievement-i%2FJX4ezmspfN8txPMWyawe%3Fx-ssr%3Dtrue%26disableNav%3DYES%26tao_mini_h5%3Dtrue%26uniapp_id%3D1012454%26uniapp_page%3Dhome"},
+  {k:"芭芭农场",s:"tbopen://m.taobao.com/tbopen/index.html?h5Url=https%3A%2F%2Fpages-fast.m.taobao.com%2Fwow%2Fz%2Fhdwk%2Ftmfarm%2Fbabanongchang%3FdisableNav%3DYES%26disableProgress%3DYES"},
   {k:"淘宝",s:"taobao://"},
   {k:"拼多多",s:"pinduoduo://"},
   {k:"京东",s:"jdmobile://"},
@@ -891,17 +895,14 @@ function getTodayCheckCount(item) {
     return item.history.filter(h => typeof h === 'string' && h.startsWith(today)).length;
 }
 
-// 修复误判核心：同时兼顾历史记录 history 与已归档 archives[span_13](start_span)[span_13](end_span)
 function getYesterdayCheckCount(item) {
     const yesterday = getYesterdayStr();
     let count = 0;
     
-    // 1. 从当前 history 查
     if (Array.isArray(item.history)) {
         count += item.history.filter(h => typeof h === 'string' && h.startsWith(yesterday)).length;
     }
     
-    // 2. 从跨月归档的 archives 查
     if (Array.isArray(item.archives)) {
         item.archives.forEach(arc => {
             if (arc && Array.isArray(arc.dates) && arc.dates.includes(yesterday)) {
