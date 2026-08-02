@@ -65,17 +65,9 @@ body {
     transition: background-color 0.3s ease; 
     overscroll-behavior: none;
 }
-body.modal-lock{
-    position:fixed;
-    left:0;
-    right:0;
-    width:100%;
-    overflow:hidden;
-}
 .nav-bar{background:var(--card-bg);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,0.05);position:sticky;top:0;z-index:99; transition: background-color 0.3s ease;}
 .sync-btn-left{font-size:14px;color:var(--primary);cursor:pointer;font-weight:500;display:flex;align-items:center;gap:4px;}
 .sync-btn-left.error{color:var(--danger);font-weight:bold;}
-.sync-btn-left.sync-hidden{display:none !important;}
 .time-text{font-size:12px;color:var(--text-sub);font-family:monospace;}
 .top-tool{display:flex;gap:6px;align-items:center;}
 .tool-btn{font-size:15px;color:var(--primary);cursor:pointer;font-weight:500;}
@@ -188,40 +180,17 @@ body.modal-lock{
 .filter-tab span{padding:4px 12px;border-radius:16px;font-size:12px;white-space:nowrap;background:var(--border-color);color:var(--text-sub);cursor:pointer;}
 .filter-tab span.active{background:var(--primary);color:#fff;}
 
+.sort-wrap { position: relative; margin: 0 16px 10px; display: flex; align-items: center; gap: 8px; }
+.sort-label { font-size: 13px; color: var(--text-sub); white-space: nowrap; }
+.sort-btn { padding: 4px 12px; border-radius: 16px; font-size: 12px; background: var(--border-color); color: var(--text-sub); cursor: pointer; border: none; display: flex; align-items: center; gap: 4px; }
+.sort-btn.active { background: var(--primary); color: #fff; }
+.sort-dropdown { position: absolute; top: 100%; left: 0; margin-top: 4px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 10; min-width: 140px; display: none; overflow: hidden; }
+.sort-dropdown.show { display: block; }
+.sort-option { padding: 10px 14px; font-size: 13px; color: var(--text-main); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.sort-option:hover { background: var(--bg-color); }
+.sort-option.active { color: var(--primary); font-weight: bold; }
+.sort-order-icon { font-size: 11px; }
 
-.all-filter-row{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    padding:10px 12px 0;
-    flex-wrap:wrap;
-}
-.filter-tab-inline{
-    flex:1 1 auto;
-    min-width:0;
-    margin:0;
-    padding-bottom:0;
-}
-.filter-tab-inline .filter-item{
-    flex:0 0 auto;
-}
-.batch-inline-btn{
-    flex:0 0 auto;
-    min-height:34px;
-    padding:0 14px;
-    border-radius:999px;
-    white-space:nowrap;
-    margin-left:auto;
-    box-shadow:0 6px 16px rgba(0,0,0,.05);
-}
-@media (max-width: 420px){
-    .all-filter-row{
-        padding:10px 10px 0;
-    }
-    .batch-inline-btn{
-        margin-left:0;
-    }
-}
 .batch-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); border-top: 1px solid var(--border-color); padding: 10px 16px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); display: none; z-index: 100; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
 .batch-bar.show { display: flex; }
 .batch-info { font-size: 13px; color: var(--text-main); font-weight: 500; }
@@ -528,10 +497,9 @@ button:active, .tool-btn:active, .sync-btn-left:active, .tab-item:active, .filte
     border-color: var(--primary);
     box-shadow: 0 6px 14px rgba(25,137,250,.16);
 }
-.all-filter-row {
+.sort-wrap {
     margin: 0 12px 10px;
     flex-wrap: wrap;
-    justify-content: flex-end;
 }
 .sort-btn {
     min-height: 32px;
@@ -718,7 +686,7 @@ html[data-theme="dark"] .oper-btn-group button {
         width: min(84vw, 200px);
     }
 
-    .search-wrap, .stat-box, .calendar-card, .today-progress-card, .category-group-card, .task-card, .filter-tab {
+    .search-wrap, .stat-box, .calendar-card, .today-progress-card, .category-group-card, .task-card, .filter-tab, .sort-wrap {
         margin-left: 10px;
         margin-right: 10px;
     }
@@ -995,18 +963,15 @@ html[data-theme="dark"] .calendar-header-bar{
     max-height:calc(82vh - 170px);
     overflow:auto;
     padding-right:2px;
-    overscroll-behavior:contain;
-    -webkit-overflow-scrolling:touch;
 }
 .calendar-detail-item{
     display:flex;
-    align-items:flex-start;
+    align-items:center;
     gap:10px;
     padding:11px 12px;
     border-radius:14px;
     background:var(--bg-color);
     border:1px solid var(--border-color);
-    box-shadow:0 4px 10px rgba(0,0,0,.04);
 }
 .calendar-detail-index{
     width:24px;
@@ -1021,25 +986,13 @@ html[data-theme="dark"] .calendar-header-bar{
     font-weight:800;
     flex:0 0 auto;
 }
-.calendar-detail-main{
-    flex:1;
-    min-width:0;
-    display:flex;
-    flex-direction:column;
-    gap:4px;
-}
 .calendar-detail-name{
     flex:1;
     min-width:0;
     font-size:13px;
-    font-weight:700;
+    font-weight:600;
     color:var(--text-main);
     word-break:break-all;
-}
-.calendar-detail-meta{
-    font-size:11px;
-    color:var(--text-light);
-    line-height:1.4;
 }
 .calendar-detail-tag{
     flex:0 0 auto;
@@ -1050,12 +1003,6 @@ html[data-theme="dark"] .calendar-header-bar{
     border-radius:999px;
     padding:3px 8px;
     white-space:nowrap;
-    margin-top:2px;
-}
-.calendar-detail-tag.archive{
-    color:var(--warning);
-    background:rgba(245,166,35,.10);
-    border-color:rgba(245,166,35,.18);
 }
 .calendar-detail-empty{
     padding:26px 16px;
@@ -1216,16 +1163,23 @@ html[data-theme="dark"] .calendar-detail-stat{
             <div class="calendar-hint">点击带标记的日期查看当天打卡明细</div>
         </div>
 
-        
-        <div class="all-filter-row">
-            <div class="filter-tab filter-tab-inline">
-                <span data-filter="doing" class="filter-item active">进行中</span>
-                <span data-filter="finish" class="filter-item">已归档/完成</span>
-                <span data-filter="all" class="filter-item">全部</span>
-            </div>
-            <button class="sort-btn batch-inline-btn" id="batchModeBtn">批量管理</button>
+        <div class="filter-tab">
+            <span data-filter="doing" class="filter-item active">进行中</span>
+            <span data-filter="wait" class="filter-item">未开始</span>
+            <span data-filter="finish" class="filter-item">已归档/完成</span>
+            <span data-filter="all" class="filter-item">全部</span>
         </div>
-
+        <div class="sort-wrap">
+            <span class="sort-label">排序：</span>
+            <button class="sort-btn" id="sortToggleBtn">创建时间 <span class="sort-order-icon">↓</span></button>
+            <div class="sort-dropdown" id="sortDropdown">
+                <div class="sort-option active" data-sort="id">创建时间 <span class="sort-order-icon">↓</span></div>
+                <div class="sort-option" data-sort="deadline">到期日 <span class="sort-order-icon"></span></div>
+                <div class="sort-option" data-sort="reward">收益金额 <span class="sort-order-icon"></span></div>
+                <div class="sort-option" data-sort="name">任务名称 <span class="sort-order-icon"></span></div>
+            </div>
+            <button class="sort-btn" id="batchModeBtn" style="margin-left: auto;">批量管理</button>
+        </div>
         <div class="add-btn-box">
             <button class="big-btn" id="addTaskBtn">+ 添加新任务</button>
         </div>
@@ -1419,14 +1373,7 @@ function getTaskAppScheme(item) {
 
 const KEY = "daka_offline_data";
 const SYNC_PASSWORD_KEY = 'sync_password';
-const SYNC_UNLOCK_KEY = 'sync_feature_unlocked_v1';
-const SYNC_SCHEMA_VERSION = 2;
 let taskList = [];
-let syncMeta = {
-    tombstones: {},
-    clearAt: 0,
-    schemaVersion: SYNC_SCHEMA_VERSION
-};
 let currentPage = "today";
 let filterType = "doing";
 let editId = null;
@@ -1438,16 +1385,13 @@ let historyLimits = {};
 let currentCalYear = new Date().getFullYear();
 let currentCalMonth = new Date().getMonth();
 let syncPassword = localStorage.getItem(SYNC_PASSWORD_KEY) || '';
-let syncFeatureUnlocked = localStorage.getItem(SYNC_UNLOCK_KEY) === 'true';
-let syncRevealClicks = [];
-let syncClickTimer = null;
-let bodyLockCount = 0;
-let bodyScrollY = 0;
 
 let lastUploadedRemotePayload = '';
 let remoteSaveInFlightPromise = null;
 let remoteSaveInFlightPayload = '';
 
+let currentSortField = 'id';
+let currentSortOrder = 'desc';
 
 let batchMode = false;
 let selectedTaskIds = new Set();
@@ -1534,6 +1478,8 @@ const el = {
     calendarDetailMonthText: document.getElementById("calendarDetailMonthText"),
     calendarDetailList: document.getElementById("calendarDetailList"),
 
+    sortToggleBtn: document.getElementById('sortToggleBtn'),
+    sortDropdown: document.getElementById('sortDropdown'),
     batchModeBtn: document.getElementById('batchModeBtn'),
     batchBar: document.getElementById('batchBar'),
     batchSelectAll: document.getElementById('batchSelectAll'),
@@ -1560,261 +1506,13 @@ function updateSyncStatus(status, text) {
     }
 }
 
-
-function getAnnouncementHTML() {
-    const contentDiv = document.getElementById('announcementContent');
-    return contentDiv ? contentDiv.innerHTML : '';
-}
-
-function getCurrentTimestampValue(value) {
-    if (!value) return 0;
-    const ts = parseSafeDate(value).getTime();
-    return Number.isNaN(ts) ? 0 : ts;
-}
-
-function normalizeTaskForSync(item) {
-    if (!item || item.id === undefined || item.id === null) return null;
-    const task = { ...item };
-    if (!Array.isArray(task.history)) task.history = [];
-    if (!Array.isArray(task.archives)) task.archives = [];
-    if (!task.updateAt) task.updateAt = getNowDateTimeStr();
-    return task;
-}
-
-function normalizeTaskList(list) {
-    if (!Array.isArray(list)) return [];
-    return list
-        .map(normalizeTaskForSync)
-        .filter(Boolean);
-}
-
-function normalizeTombstoneMap(raw) {
-    const map = {};
-    const addEntry = (id, deletedAt) => {
-        if (id === undefined || id === null) return;
-        const key = String(id);
-        const ts = Number(deletedAt) || 0;
-        if (!ts) return;
-        map[key] = Math.max(map[key] || 0, ts);
-    };
-
-    if (Array.isArray(raw)) {
-        raw.forEach(entry => {
-            if (!entry || entry.id === undefined || entry.id === null) return;
-            addEntry(entry.id, entry.deletedAt ?? entry.at ?? entry.time ?? entry.updateAt);
-        });
-        return map;
-    }
-
-    if (raw && typeof raw === 'object') {
-        Object.entries(raw).forEach(([key, value]) => {
-            if (value && typeof value === 'object') {
-                addEntry(key, value.deletedAt ?? value.at ?? value.time ?? value.updateAt);
-            } else {
-                addEntry(key, value);
-            }
-        });
-    }
-    return map;
-}
-
-function tombstoneMapToArray(map) {
-    return Object.entries(map || {})
-        .map(([id, deletedAt]) => {
-            const numId = Number(id);
-            return {
-                id: Number.isNaN(numId) || String(numId) !== String(id) ? id : numId,
-                deletedAt: Number(deletedAt) || 0
-            };
-        })
-        .filter(entry => entry.deletedAt > 0)
-        .sort((a, b) => {
-            const diff = (a.deletedAt || 0) - (b.deletedAt || 0);
-            if (diff !== 0) return diff;
-            return String(a.id).localeCompare(String(b.id), 'zh-CN', { numeric: true, sensitivity: 'base' });
-        });
-}
-
-function mergeTombstoneMaps(baseMap, incomingMap) {
-    const merged = { ...(baseMap || {}) };
-    Object.entries(incomingMap || {}).forEach(([id, deletedAt]) => {
-        const ts = Number(deletedAt) || 0;
-        if (!ts) return;
-        merged[id] = Math.max(merged[id] || 0, ts);
-    });
-    return merged;
-}
-
-function normalizeSyncPackage(raw) {
-    if (Array.isArray(raw)) {
-        return {
-            tasks: normalizeTaskList(raw),
-            announcement: '',
-            announcementProvided: false,
-            tombstones: {},
-            clearAt: 0,
-            schemaVersion: SYNC_SCHEMA_VERSION
-        };
-    }
-
-    const source = raw && typeof raw === 'object' ? raw : {};
-    return {
-        tasks: normalizeTaskList(source.tasks),
-        announcement: source.announcement !== undefined ? source.announcement : '',
-        announcementProvided: Object.prototype.hasOwnProperty.call(source, 'announcement'),
-        tombstones: normalizeTombstoneMap(source.tombstones ?? source.deletedTasks ?? source.deletedIds ?? source.tombstoneMap),
-        clearAt: Number(source.clearAt ?? source.clearedAt ?? source.deletedAllAt ?? source.resetAt ?? 0) || 0,
-        schemaVersion: Number(source.schemaVersion ?? source.version ?? SYNC_SCHEMA_VERSION) || SYNC_SCHEMA_VERSION
-    };
-}
-
-function getCurrentSyncPackage() {
-    return {
-        tasks: normalizeTaskList(taskList),
-        announcement: getAnnouncementHTML(),
-        tombstones: tombstoneMapToArray(syncMeta.tombstones),
-        clearAt: Number(syncMeta.clearAt) || 0,
-        schemaVersion: SYNC_SCHEMA_VERSION
-    };
-}
-
-function applySyncPackage(pkg, options = {}) {
-    const normalized = normalizeSyncPackage(pkg);
-    taskList = normalized.tasks;
-    syncMeta = {
-        tombstones: normalized.tombstones,
-        clearAt: normalized.clearAt,
-        schemaVersion: normalized.schemaVersion || SYNC_SCHEMA_VERSION
-    };
-
-    if (options.applyAnnouncement !== false && normalized.announcementProvided) {
-        const contentDiv = document.getElementById('announcementContent');
-        if (contentDiv) contentDiv.innerHTML = normalized.announcement || '';
-        localStorage.setItem('persistent_announcement_v3', normalized.announcement || '');
-    }
-    return normalized;
-}
-
-function getTaskTombstoneKey(taskId) {
-    return `task:${String(taskId)}`;
-}
-
-function getHistoryTombstoneKey(taskId, recordStr) {
-    return `history:${String(taskId)}|${String(recordStr)}`;
-}
-
-function markTaskDeleted(taskId, deletedAt = getNowDateTimeStr()) {
-    if (taskId === undefined || taskId === null) return;
-    const key = getTaskTombstoneKey(taskId);
-    const ts = getCurrentTimestampValue(deletedAt);
-    if (!ts) return;
-    syncMeta.tombstones[key] = Math.max(syncMeta.tombstones[key] || 0, ts);
-}
-
-function markHistoryDeleted(taskId, recordStr, deletedAt = getNowDateTimeStr()) {
-    if (taskId === undefined || taskId === null || !recordStr) return;
-    const key = getHistoryTombstoneKey(taskId, recordStr);
-    const ts = getCurrentTimestampValue(deletedAt);
-    if (!ts) return;
-    syncMeta.tombstones[key] = Math.max(syncMeta.tombstones[key] || 0, ts);
-}
-
-function markClearAll(clearAt = getNowDateTimeStr()) {
-    const ts = getCurrentTimestampValue(clearAt);
-    if (!ts) return;
-    syncMeta.clearAt = Math.max(Number(syncMeta.clearAt) || 0, ts);
-}
-
-function purgeTaskIds(ids = []) {
-    const idSet = new Set(ids.map(id => String(id)));
-    if (idSet.size === 0) return;
-    const deletedAt = getNowDateTimeStr();
-    idSet.forEach(id => markTaskDeleted(id, deletedAt));
-    taskList = taskList.filter(t => !idSet.has(String(t.id)));
-}
-
-function sanitizePackageForStorage(pkg) {
-    const normalized = normalizeSyncPackage(pkg);
-    return {
-        tasks: normalized.tasks,
-        announcement: normalized.announcement,
-        tombstones: tombstoneMapToArray(normalized.tombstones),
-        clearAt: normalized.clearAt,
-        schemaVersion: normalized.schemaVersion
-    };
-}
-
-function mergeTaskRecords(baseList, incomingList, tombstones = {}, clearAt = 0) {
-    const mergedMap = new Map();
-    const tombstoneMap = normalizeTombstoneMap(tombstones);
-    const clearTs = Number(clearAt) || 0;
-
-    const getTaskDeletedAt = (taskId) => tombstoneMap[getTaskTombstoneKey(taskId)] || 0;
-    const isHistoryDeleted = (taskId, recordStr) => !!tombstoneMap[getHistoryTombstoneKey(taskId, recordStr)];
-
-    const shouldKeep = (task) => {
-        const normalized = normalizeTaskForSync(task);
-        if (!normalized) return null;
-        const taskTs = getCurrentTimestampValue(normalized.updateAt);
-        if (clearTs && taskTs <= clearTs) return null;
-        const deletedAt = getTaskDeletedAt(normalized.id);
-        if (deletedAt && taskTs <= deletedAt) return null;
-        return normalized;
-    };
-
-    const filterHistory = (taskId, list) => safeArray(list)
-        .filter(record => typeof record === 'string' && !isHistoryDeleted(taskId, record));
-
-    const mergeTwo = (existing, incoming) => {
-        const existingTime = getCurrentTimestampValue(existing.updateAt);
-        const incomingTime = getCurrentTimestampValue(incoming.updateAt);
-        const newer = incomingTime >= existingTime ? incoming : existing;
-        const older = incomingTime >= existingTime ? existing : incoming;
-
-        const history = Array.from(new Set([
-            ...filterHistory(existing.id, existing.history),
-            ...filterHistory(incoming.id, incoming.history)
-        ])).sort();
-
-        const archivesMap = new Map();
-        [...safeArray(existing.archives), ...safeArray(incoming.archives)].forEach(a => {
-            if (a && a.month && !archivesMap.has(a.month)) {
-                archivesMap.set(a.month, a);
-            }
-        });
-
-        const merged = { ...older, ...newer };
-        merged.history = history;
-        merged.archives = Array.from(archivesMap.values()).sort((a, b) => String(a.month || '').localeCompare(String(b.month || ''), 'zh-CN', { numeric: true, sensitivity: 'base' }));
-        merged.updateAt = newer.updateAt || older.updateAt || getNowDateTimeStr();
-        return merged;
-    };
-
-    [...safeArray(baseList), ...safeArray(incomingList)].forEach(rawTask => {
-        const task = shouldKeep(rawTask);
-        if (!task) return;
-        const key = String(task.id);
-        if (!mergedMap.has(key)) {
-            mergedMap.set(key, task);
-        } else {
-            mergedMap.set(key, mergeTwo(mergedMap.get(key), task));
-        }
-    });
-
-    return {
-        tasks: Array.from(mergedMap.values()),
-        tombstones: tombstoneMap,
-        clearAt: clearTs,
-        schemaVersion: SYNC_SCHEMA_VERSION
-    };
-}
-
 function buildRemotePayload() {
-    return getCurrentSyncPackage();
+    const announcement = document.getElementById('announcementContent').innerHTML;
+    return { tasks: taskList, announcement };
 }
 
 function getRemotePayloadString() {
-    return JSON.stringify(sanitizePackageForStorage(buildRemotePayload()));
+    return JSON.stringify(buildRemotePayload());
 }
 
 async function fetchRemoteData() {
@@ -1851,21 +1549,7 @@ async function saveRemoteData() {
             if (res.status === 401) throw new Error('同步密码错误');
             throw new Error('云端保存失败');
         }
-
-        // 服务端会把本次上传的数据和云端已有数据合并（比如另一台设备这期间也打了卡），
-        // 这里把合并后的结果同步回本地，避免本机数据落后于合并结果。
-        try {
-            const result = await res.json();
-            const mergedResult = normalizeSyncPackage(result);
-            applySyncPackage(mergedResult, { applyAnnouncement: true });
-            saveLocalStorage();
-            renderPage();
-            lastUploadedRemotePayload = getRemotePayloadString();
-        } catch (e) {
-            // 合并结果解析失败不影响本次保存已经成功的事实，忽略即可
-            lastUploadedRemotePayload = payloadStr;
-        }
-
+        lastUploadedRemotePayload = payloadStr;
         return { skipped: false, ok: true };
     })();
 
@@ -1888,7 +1572,6 @@ function setSyncPassword() {
     syncPassword = pwd.trim();
     localStorage.setItem(SYNC_PASSWORD_KEY, syncPassword);
     if (syncPassword) {
-        revealSyncFeature(false);
         showToast('正在同步云端数据...');
         loadStorage();
     }
@@ -1903,16 +1586,49 @@ function debounce(func, wait) {
 }
 
 function mergeTasks(localList, remoteList) {
-    const localPkg = normalizeSyncPackage(Array.isArray(localList) ? localList : localList);
-    const remotePkg = normalizeSyncPackage(Array.isArray(remoteList) ? remoteList : remoteList);
-    const mergedTasks = mergeTaskRecords(
-        localPkg.tasks,
-        remotePkg.tasks,
-        mergeTombstoneMaps(localPkg.tombstones, remotePkg.tombstones),
-        Math.max(localPkg.clearAt || 0, remotePkg.clearAt || 0)
-    );
+    if (!Array.isArray(localList) || localList.length === 0) return remoteList;
+    if (!Array.isArray(remoteList) || remoteList.length === 0) return localList;
 
-    return mergedTasks.tasks;
+    const mergedMap = new Map();
+
+    remoteList.forEach(item => {
+        mergedMap.set(item.id, { ...item });
+    });
+
+    localList.forEach(localItem => {
+        if (mergedMap.has(localItem.id)) {
+            const remoteItem = mergedMap.get(localItem.id);
+            
+            const mergedHistory = Array.from(new Set([
+                ...(Array.isArray(localItem.history) ? localItem.history : []),
+                ...(Array.isArray(remoteItem.history) ? remoteItem.history : [])
+            ])).sort();
+
+            const archivesMap = new Map();
+            (Array.isArray(remoteItem.archives) ? remoteItem.archives : []).forEach(a => {
+                if (a && a.month) archivesMap.set(a.month, a);
+            });
+            (Array.isArray(localItem.archives) ? localItem.archives : []).forEach(a => {
+                if (a && a.month && !archivesMap.has(a.month)) {
+                    archivesMap.set(a.month, a);
+                }
+            });
+
+            const localTime = new Date(localItem.updateAt || 0).getTime();
+            const remoteTime = new Date(remoteItem.updateAt || 0).getTime();
+
+            let baseTask = localTime >= remoteTime ? { ...localItem } : { ...remoteItem };
+
+            baseTask.history = mergedHistory;
+            baseTask.archives = Array.from(archivesMap.values());
+
+            mergedMap.set(localItem.id, baseTask);
+        } else {
+            mergedMap.set(localItem.id, { ...localItem });
+        }
+    });
+
+    return Array.from(mergedMap.values());
 }
 
 function initThemeUI() {
@@ -2021,82 +1737,15 @@ function openConfirm(title, desc, onConfirm, isDanger = false) {
     el.confirmOk.style.background = isDanger ? "var(--danger)" : "var(--primary)";
     el.confirmPopWrap.style.display = "block";
     confirmCallback = onConfirm;
-    lockBodyScroll();
 }
 function closeConfirm() {
     el.confirmPopWrap.style.display = "none";
     confirmCallback = null;
-    unlockBodyScroll();
-}
-
-function lockBodyScroll() {
-    bodyLockCount += 1;
-    if (bodyLockCount > 1) return;
-    bodyScrollY = window.scrollY || window.pageYOffset || 0;
-    document.body.classList.add('modal-lock');
-    document.body.style.top = `-${bodyScrollY}px`;
-}
-
-function unlockBodyScroll() {
-    if (bodyLockCount > 0) bodyLockCount -= 1;
-    if (bodyLockCount > 0) return;
-    document.body.classList.remove('modal-lock');
-    document.body.style.top = '';
-    window.scrollTo(0, bodyScrollY || 0);
-}
-
-function applySyncVisibility() {
-    if (!el.syncBtn) return;
-    el.syncBtn.classList.toggle('sync-hidden', !syncFeatureUnlocked);
-}
-
-function initSyncVisibility() {
-    applySyncVisibility();
-}
-
-function revealSyncFeature(showToastMessage = true) {
-    if (syncFeatureUnlocked) {
-        applySyncVisibility();
-        return;
-    }
-    syncFeatureUnlocked = true;
-    localStorage.setItem(SYNC_UNLOCK_KEY, 'true');
-    applySyncVisibility();
-    if (showToastMessage) showToast('同步入口已显示');
-}
-
-function handleThemeSecretTap() {
-    const now = Date.now();
-    syncRevealClicks = syncRevealClicks.filter(ts => now - ts <= 3000);
-    syncRevealClicks.push(now);
-    if (syncRevealClicks.length >= 5) {
-        syncRevealClicks = [];
-        revealSyncFeature(true);
-    }
-}
-
-// 通用安全日期解析：iOS Safari / 微信内置浏览器对 "2026-08-02"、"2026-08-02 12:34:56"
-// 这类横杠分隔的日期字符串解析支持不稳定，容易返回 Invalid Date(NaN)。
-// 这里统一将横杠 "-" 替换为斜杠 "/"，将 "T" 替换为空格，再交给 Date 构造，全平台兼容。
-// 注意：本函数仅用于内部计算，导出/存储/展示用的日期字符串仍然保持 "YYYY-MM-DD" 横杠格式不变。
-function parseSafeDate(dateStr) {
-    if (dateStr instanceof Date) return dateStr;
-    if (typeof dateStr === 'number') return new Date(dateStr);
-    if (!dateStr) return new Date(NaN);
-    const normalized = String(dateStr).trim().replace('T', ' ').replace(/-/g, '/');
-    return new Date(normalized);
-}
-
-function parseCalendarDateTime(str) {
-    if (typeof str !== 'string' || !str) return 0;
-    const ts = parseSafeDate(str).getTime();
-    return Number.isNaN(ts) ? 0 : ts;
 }
 
 function closeCalendarDetail() {
     if (!el.calendarDetailPopWrap) return;
     el.calendarDetailPopWrap.style.display = "none";
-    unlockBodyScroll();
 }
 
 function loadLocalStorage() {
@@ -2106,67 +1755,54 @@ function loadLocalStorage() {
         if (!raw) raw = localStorage.getItem("daka_offline_data_v2");
         if (raw) {
             const parsed = JSON.parse(raw);
-            const pkg = normalizeSyncPackage(parsed);
-            taskList = pkg.tasks;
-            syncMeta = {
-                tombstones: pkg.tombstones,
-                clearAt: pkg.clearAt,
-                schemaVersion: pkg.schemaVersion || SYNC_SCHEMA_VERSION
-            };
-            return pkg;
+            if (Array.isArray(parsed)) {
+                parsed.forEach(t => {
+                    if (!Array.isArray(t.history)) t.history = [];
+                    if (!Array.isArray(t.archives)) t.archives = [];
+                    if (!t.updateAt) t.updateAt = getNowDateTimeStr();
+                });
+                taskList = parsed;
+            }
         }
-    } catch (e) {
-        console.error("本地数据加载失败", e);
-    }
-    syncMeta = {
-        tombstones: {},
-        clearAt: 0,
-        schemaVersion: SYNC_SCHEMA_VERSION
-    };
-    return null;
+    } catch (e) { console.error("本地数据加载失败", e); }
 }
 
 function saveLocalStorage() {
-    const payload = sanitizePackageForStorage(getCurrentSyncPackage());
-    localStorage.setItem(KEY, JSON.stringify(payload));
+    const dataStr = JSON.stringify(taskList);
+    localStorage.setItem(KEY, dataStr);
 }
 
 async function loadStorage() {
-    const localPkg = loadLocalStorage();
-    const localAnnounce = localStorage.getItem('persistent_announcement_v3') || (localPkg ? localPkg.announcement : '');
+    loadLocalStorage();
+    const localAnnounce = localStorage.getItem('persistent_announcement_v3');
     initAnnouncement(localAnnounce);
-
+    
     if (syncPassword) {
         updateSyncStatus('syncing');
         try {
             const remoteData = await fetchRemoteData();
-            const remotePkg = normalizeSyncPackage(remoteData);
-            const mergedPkg = mergeTaskRecords(
-                normalizeSyncPackage({ tasks: taskList, announcement: localAnnounce, tombstones: syncMeta.tombstones, clearAt: syncMeta.clearAt }).tasks,
-                remotePkg.tasks,
-                mergeTombstoneMaps(syncMeta.tombstones, remotePkg.tombstones),
-                Math.max(syncMeta.clearAt || 0, remotePkg.clearAt || 0)
-            );
-            const finalPkg = {
-                tasks: mergedPkg.tasks,
-                announcement: remotePkg.announcement !== undefined ? remotePkg.announcement : localAnnounce,
-                tombstones: mergedPkg.tombstones,
-                clearAt: mergedPkg.clearAt,
-                schemaVersion: SYNC_SCHEMA_VERSION
-            };
-            applySyncPackage(finalPkg, { applyAnnouncement: true });
-            saveLocalStorage();
-            lastUploadedRemotePayload = getRemotePayloadString();
-            const now = new Date();
-            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-            updateSyncStatus('success', timeStr);
-            showToast('☁️ 云端数据同步成功');
-            renderPage();
+            if (remoteData && remoteData.tasks && Array.isArray(remoteData.tasks)) {
+                remoteData.tasks.forEach(t => {
+                    if (!Array.isArray(t.history)) t.history = [];
+                    if (!Array.isArray(t.archives)) t.archives = [];
+                    if (!t.updateAt) t.updateAt = getNowDateTimeStr();
+                });
+                taskList = mergeTasks(taskList, remoteData.tasks);
+                if (remoteData.announcement !== undefined) {
+                    initAnnouncement(remoteData.announcement);
+                    localStorage.setItem('persistent_announcement_v3', remoteData.announcement);
+                }
+                saveLocalStorage();
+                lastUploadedRemotePayload = getRemotePayloadString();
+                const now = new Date();
+                const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+                updateSyncStatus('success', timeStr);
+                showToast('☁️ 云端数据同步成功');
+            }
         } catch (e) {
             console.error('云端同步失败', e);
             updateSyncStatus('error');
             showToast(`⚠️ ${e.message}，已使用本地数据`);
-            renderPage();
         }
     } else {
         const now = new Date();
@@ -2389,8 +2025,8 @@ function calculateMaxStreak(item) {
     let currentStreak = 1;
     
     for (let i = 1; i < completedDates.length; i++) {
-        const prev = parseSafeDate(completedDates[i - 1]);
-        const curr = parseSafeDate(completedDates[i]);
+        const prev = new Date(completedDates[i - 1]);
+        const curr = new Date(completedDates[i]);
         const diffDays = Math.round((curr - prev) / (1000 * 60 * 60 * 24));
         
         if (diffDays === 1) { currentStreak++; } 
@@ -2566,77 +2202,37 @@ function renderTaskCard(item, isTodayPage = false) {
 }
 
 
-function buildCalendarDayMap() {
-    const dayMap = {};
-    if (!Array.isArray(taskList)) return dayMap;
-
-    const pushRecord = (dateKey, record) => {
-        if (!dateKey) return;
-        if (!dayMap[dateKey]) dayMap[dateKey] = [];
-        dayMap[dateKey].push(record);
-    };
-
-    taskList.forEach(task => {
-        const taskName = task && task.name ? String(task.name) : '未命名任务';
-        const taskCategory = task && task.category ? String(task.category) : '默认分组';
-
-        if (Array.isArray(task.history)) {
-            task.history.forEach((hStr, idx) => {
-                if (typeof hStr !== 'string' || hStr.length < 10) return;
-                const dateKey = hStr.substring(0, 10);
-                const ts = parseCalendarDateTime(hStr);
-                const timePart = hStr.length >= 19 ? hStr.substring(11, 19) : '';
-                pushRecord(dateKey, {
-                    taskId: task.id,
-                    taskName,
-                    taskCategory,
-                    source: 'history',
-                    sourceLabel: '打卡',
-                    timestamp: ts || (Date.now() - idx),
-                    timeText: timePart || (ts ? new Date(ts).toTimeString().slice(0, 8) : ''),
-                    raw: hStr
-                });
-            });
-        }
-
-        if (Array.isArray(task.archives)) {
-            task.archives.forEach(arc => {
-                if (!arc || !Array.isArray(arc.dates)) return;
-                arc.dates.forEach(dStr => {
-                    if (typeof dStr !== 'string' || dStr.length < 10) return;
-                    pushRecord(dStr, {
-                        taskId: task.id,
-                        taskName,
-                        taskCategory,
-                        source: 'archive',
-                        sourceLabel: '归档',
-                        timestamp: parseCalendarDateTime(`${dStr} 23:59:59`) || 0,
-                        timeText: '归档记录',
-                        raw: dStr
-                    });
-                });
-            });
-        }
-    });
-
-    Object.keys(dayMap).forEach(dateKey => {
-        dayMap[dateKey].sort((a, b) => {
-            const diff = (a.timestamp || 0) - (b.timestamp || 0);
-            if (diff !== 0) return diff;
-            return String(a.taskName || '').localeCompare(String(b.taskName || ''), 'zh-CN', { numeric: true, sensitivity: 'base' });
-        });
-    });
-
-    return dayMap;
-}
-
 function renderCalendar() {
     el.calendarTitleText.innerText = `${currentCalYear}年${currentCalMonth + 1}月`;
     el.calendarGrid.innerHTML = "";
     const firstDayIndex = new Date(currentCalYear, currentCalMonth, 1).getDay();
     const totalDaysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
     const todayStr = getTodayStr();
-    const dayMap = buildCalendarDayMap();
+
+    const checkDateMap = {};
+    if (Array.isArray(taskList)) {
+        taskList.forEach(task => {
+            if (Array.isArray(task.history)) {
+                task.history.forEach(hStr => {
+                    if (typeof hStr === 'string' && hStr.length >= 10) {
+                        const dStr = hStr.substring(0, 10);
+                        if (!checkDateMap[dStr]) checkDateMap[dStr] = new Set();
+                        checkDateMap[dStr].add(task.name);
+                    }
+                });
+            }
+            if (Array.isArray(task.archives)) {
+                task.archives.forEach(arc => {
+                    if (arc && Array.isArray(arc.dates)) {
+                        arc.dates.forEach(dStr => {
+                            if (!checkDateMap[dStr]) checkDateMap[dStr] = new Set();
+                            checkDateMap[dStr].add(task.name);
+                        });
+                    }
+                });
+            }
+        });
+    }
 
     for (let i = 0; i < firstDayIndex; i++) {
         const cell = document.createElement("div");
@@ -2651,9 +2247,8 @@ function renderCalendar() {
         const cell = document.createElement("div");
         cell.className = "calendar-cell";
 
-        const records = dayMap[dateString] || [];
-        const hasCheck = records.length > 0;
-        const count = records.length;
+        const hasCheck = checkDateMap[dateString] && checkDateMap[dateString].size > 0;
+        const count = hasCheck ? checkDateMap[dateString].size : 0;
 
         if (dateString === todayStr) cell.classList.add("today");
         if (hasCheck) cell.classList.add("has-check");
@@ -2665,7 +2260,7 @@ function renderCalendar() {
 
         cell.onclick = () => {
             if (hasCheck) {
-                openCalendarDetail(dateString, records);
+                openCalendarDetail(dateString, Array.from(checkDateMap[dateString]));
             } else {
                 showToast(`${dateString} 暂无打卡记录`);
             }
@@ -2674,40 +2269,22 @@ function renderCalendar() {
     }
 }
 
-function openCalendarDetail(dateString, records) {
-    const sortedRecords = Array.isArray(records) ? [...records].sort((a, b) => {
-        const diff = (a.timestamp || 0) - (b.timestamp || 0);
-        if (diff !== 0) return diff;
-        return String(a.taskName || '').localeCompare(String(b.taskName || ''), 'zh-CN', { numeric: true, sensitivity: 'base' });
-    }) : [];
-    const dayCount = sortedRecords.length;
-    const weekText = (() => {
-        const weekMap = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-        const d = parseSafeDate(`${dateString} 12:00:00`);
-        return weekMap[d.getDay()] || '';
-    })();
-
+function openCalendarDetail(dateString, taskNames) {
+    const cleanList = Array.from(new Set((taskNames || []).filter(Boolean)));
+    const dayCount = cleanList.length;
     el.calendarDetailDate.innerText = dateString;
     el.calendarDetailTitle.innerText = dayCount ? '当天打卡明细' : '当天暂无记录';
     el.calendarDetailCount.innerText = String(dayCount);
     el.calendarDetailDayType.innerText = dayCount ? '有记录' : '空白';
-    el.calendarDetailMonthText.innerText = `${dateString.slice(0, 7)} · ${weekText}`;
-
+    el.calendarDetailMonthText.innerText = `${dateString.slice(0, 7)}`;
     if (dayCount > 0) {
-        el.calendarDetailList.innerHTML = sortedRecords.map((record, idx) => {
-            const timeText = record.source === 'archive'
-                ? '归档记录'
-                : (record.timeText || (record.timestamp ? new Date(record.timestamp).toTimeString().slice(0, 8) : ''));
-            return `
+        el.calendarDetailList.innerHTML = cleanList.map((name, idx) => `
             <div class="calendar-detail-item">
                 <div class="calendar-detail-index">${idx + 1}</div>
-                <div class="calendar-detail-main">
-                    <div class="calendar-detail-name">${escapeHTML(record.taskName || '未命名任务')}</div>
-                    <div class="calendar-detail-meta">${escapeHTML(timeText)}${record.taskCategory ? ` · ${escapeHTML(record.taskCategory)}` : ''}</div>
-                </div>
-                <div class="calendar-detail-tag ${record.source === 'archive' ? 'archive' : ''}">${escapeHTML(record.sourceLabel || '打卡')}</div>
-            </div>`;
-        }).join('');
+                <div class="calendar-detail-name">${escapeHTML(name)}</div>
+                <div class="calendar-detail-tag">已打卡</div>
+            </div>
+        `).join('');
     } else {
         el.calendarDetailList.innerHTML = `
             <div class="calendar-detail-empty">
@@ -2717,9 +2294,39 @@ function openCalendarDetail(dateString, records) {
         `;
     }
     el.calendarDetailPopWrap.style.display = 'block';
-    lockBodyScroll();
 }
 
+function toggleSortDropdown() {
+    el.sortDropdown.classList.toggle('show');
+}
+function setSortField(field) {
+    if (currentSortField === field) {
+        currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSortField = field;
+        currentSortOrder = 'desc';
+    }
+    updateSortUI();
+    renderPage();
+}
+function updateSortUI() {
+    const fieldNames = {
+        id: '创建时间',
+        deadline: '到期日',
+        reward: '收益金额',
+        name: '任务名称'
+    };
+    el.sortToggleBtn.innerHTML = `${fieldNames[currentSortField]} <span class="sort-order-icon">${currentSortOrder === 'asc' ? '↑' : '↓'}</span>`;
+    
+    document.querySelectorAll('.sort-option').forEach(opt => {
+        const field = opt.dataset.sort;
+        opt.classList.toggle('active', field === currentSortField);
+        const icon = opt.querySelector('.sort-order-icon');
+        icon.innerText = field === currentSortField ? (currentSortOrder === 'asc' ? '↑' : '↓') : '';
+    });
+    
+    el.sortDropdown.classList.remove('show');
+}
 
 function getFilteredAllTasks() {
     const queryAll = (el.searchAllInput.value || "").toLowerCase().trim();
@@ -2888,8 +2495,6 @@ function batchArchiveHistory() {
 function batchDeleteTasks() {
     if (selectedTaskIds.size === 0) return showToast('请先选择任务');
     openConfirm('批量删除', `确定删除选中的 ${selectedTaskIds.size} 个任务吗？记录无法恢复`, () => {
-        const deletedIds = Array.from(selectedTaskIds);
-        deletedIds.forEach(id => markTaskDeleted(id, getNowDateTimeStr()));
         taskList = taskList.filter(t => !selectedTaskIds.has(t.id));
         selectedTaskIds.clear();
         saveStorage();
@@ -2989,7 +2594,40 @@ function renderPage() {
         filterArr = filterAllTaskList.filter(i => getTaskStatus(i) === filterType);
     }
 
+    filterArr.sort((a, b) => {
+        const aPin = a.isPinned ? 1 : 0;
+        const bPin = b.isPinned ? 1 : 0;
+        if (aPin !== bPin) return bPin - aPin; // 置顶始终优先
 
+        let compareResult = 0;
+        switch (currentSortField) {
+            case 'deadline': {
+                const aLeft = Math.max(0, (Number(a.totalDay) || 1) - getCompletedDaysCount(a));
+                const bLeft = Math.max(0, (Number(b.totalDay) || 1) - getCompletedDaysCount(b));
+                compareResult = aLeft - bLeft;
+                break;
+            }
+            case 'reward': {
+                const aReward = a.rewardType === 'money' ? Number(a.rewardValue || a.money || 0) : 0;
+                const bReward = b.rewardType === 'money' ? Number(b.rewardValue || b.money || 0) : 0;
+                compareResult = aReward - bReward;
+                break;
+            }
+            case 'name':
+                compareResult = String(a.name || '').localeCompare(String(b.name || ''), 'zh-CN', { numeric: true, sensitivity: 'base' });
+                break;
+            case 'id':
+            default:
+                compareResult = (Number(a.id) || 0) - (Number(b.id) || 0);
+                break;
+        }
+
+        if (compareResult === 0) {
+            compareResult = (Number(a.id) || 0) - (Number(b.id) || 0);
+        }
+        return currentSortOrder === 'asc' ? compareResult : -compareResult;
+    });
+    
     el.allEmpty.style.display = filterArr.length === 0 ? "block" : "none";
     let groups = {};
     filterArr.forEach(item => {
@@ -3090,7 +2728,6 @@ function handleCardAction(e) {
                 if (Array.isArray(item.history)) {
                     const idx = item.history.indexOf(recordStr);
                     if (idx > -1) {
-                        markHistoryDeleted(taskId, recordStr, getNowDateTimeStr());
                         item.history.splice(idx, 1);
                         item.updateAt = getNowDateTimeStr();
                     }
@@ -3125,9 +2762,7 @@ function handleCardAction(e) {
     const delBtn = e.target.closest('[data-del]');
     if (delBtn) {
         openConfirm("删除任务", "确定删除该任务？打卡记录无法恢复", () => {
-            const deleteId = Number(delBtn.dataset.del);
-            markTaskDeleted(deleteId, getNowDateTimeStr());
-            taskList = taskList.filter(t => t.id !== deleteId);
+            taskList = taskList.filter(t => t.id !== Number(delBtn.dataset.del));
             saveStorage(); renderPage();
             showToast("已删除");
         }, true);
@@ -3393,8 +3028,7 @@ function exportBackup() {
     if (dev === null) return;
     dev = dev.trim() || '手机';
     localStorage.setItem('daka_device_name', dev);
-    const payload = sanitizePackageForStorage(getCurrentSyncPackage());
-    const str = JSON.stringify(payload, null, 2);
+    const str = JSON.stringify(taskList, null, 2);
     const blob = new Blob([str], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -3440,11 +3074,15 @@ function triggerImport(e) {
     reader.onload = ev => {
         try {
             const parsed = JSON.parse(ev.target.result);
-            const pkg = normalizeSyncPackage(parsed);
-            if (!Array.isArray(pkg.tasks)) {
-                throw new Error("Invalid Schema: expected tasks array");
+            if (!Array.isArray(parsed)) {
+                throw new Error("Invalid Schema: expected array");
             }
-            tempImportData = pkg;
+            parsed.forEach(t => {
+                if (!Array.isArray(t.history)) t.history = [];
+                if (!Array.isArray(t.archives)) t.archives = [];
+                if (!t.updateAt) t.updateAt = getNowDateTimeStr();
+            });
+            tempImportData = parsed;
             el.importPopWrap.style.display = "block";
         } catch (err) {
             showToast("⚠️ 备份文件格式错误");
@@ -3456,9 +3094,8 @@ function triggerImport(e) {
 
 el.importOverwriteBtn.onclick = () => {
     if(tempImportData) {
-        applySyncPackage(tempImportData, { applyAnnouncement: true });
-        saveStorage();
-        renderPage();
+        taskList = tempImportData;
+        saveStorage(); renderPage();
         showToast("✅ 已覆盖本地数据");
     }
     el.importPopWrap.style.display = "none";
@@ -3466,22 +3103,7 @@ el.importOverwriteBtn.onclick = () => {
 };
 el.importMergeBtn.onclick = () => {
     if(tempImportData) {
-        const merged = mergeTaskRecords(
-            getCurrentSyncPackage().tasks,
-            tempImportData.tasks,
-            mergeTombstoneMaps(syncMeta.tombstones, tempImportData.tombstones),
-            Math.max(Number(syncMeta.clearAt) || 0, Number(tempImportData.clearAt) || 0)
-        );
-        const finalPkg = {
-            tasks: merged.tasks,
-            announcement: tempImportData.announcement !== undefined && tempImportData.announcement !== ''
-                ? tempImportData.announcement
-                : getAnnouncementHTML(),
-            tombstones: merged.tombstones,
-            clearAt: merged.clearAt,
-            schemaVersion: SYNC_SCHEMA_VERSION
-        };
-        applySyncPackage(finalPkg, { applyAnnouncement: true });
+        taskList = mergeTasks(taskList, tempImportData);
         saveStorage(); 
         renderPage();
         showToast(`✅ 合并完成，已智能融合本地与导入数据`);
@@ -3495,10 +3117,8 @@ el.importCancelBtn.onclick = () => {
 };
 function clearAllData() {
     openConfirm("🗑️ 清空全部数据", "确定清空所有打卡任务？\n数据无法恢复，建议先在顶部进行【备份】！", () => {
-        markClearAll(getNowDateTimeStr());
         taskList = [];
-        saveStorage();
-        renderPage();
+        saveStorage(); renderPage();
         showToast("已清空全部数据");
     }, true);
 }
@@ -3512,7 +3132,6 @@ function initWidgetStates() {
     el.toggleCalBtn.classList.toggle('active', !calHidden);
     el.toggleStatBtn.setAttribute('aria-expanded', String(!statHidden));
     el.toggleCalBtn.setAttribute('aria-expanded', String(!calHidden));
-    initSyncVisibility();
 }
 
 function bindGlobalEvent() {
@@ -3520,30 +3139,15 @@ function bindGlobalEvent() {
     el.allListWrap.addEventListener('click', handleCardAction);
     
     el.syncBtn.addEventListener('click', () => {
-        if (syncClickTimer) return;
-        syncClickTimer = setTimeout(() => {
-            syncClickTimer = null;
-            if (!syncPassword) {
-                setSyncPassword();
-            } else {
-                loadStorage();
-            }
-        }, 220);
-    });
-    el.syncBtn.addEventListener('dblclick', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        if (syncClickTimer) {
-            clearTimeout(syncClickTimer);
-            syncClickTimer = null;
+        if (!syncPassword) {
+            setSyncPassword();
+        } else {
+            loadStorage();
         }
-        setSyncPassword();
     });
-
-    el.themeBtn.addEventListener('click', () => {
-        toggleTheme();
-        handleThemeSecretTap();
-    });
+    el.syncBtn.addEventListener('dblclick', setSyncPassword);
+    
+    el.themeBtn.addEventListener('click', toggleTheme);
     if (el.moreBtn && el.moreMenu) {
         const closeMoreMenu = () => el.moreMenu.classList.remove('show');
         el.moreBtn.addEventListener('click', (e) => {
@@ -3599,6 +3203,18 @@ function bindGlobalEvent() {
             updateBatchCount();
             renderPage();
         };
+    });
+
+    el.sortToggleBtn.addEventListener('click', toggleSortDropdown);
+    document.querySelectorAll('.sort-option').forEach(opt => {
+        opt.addEventListener('click', () => {
+            setSortField(opt.dataset.sort);
+        });
+    });
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.sort-wrap')) {
+            el.sortDropdown.classList.remove('show');
+        }
     });
 
     el.batchModeBtn.addEventListener('click', toggleBatchMode);
@@ -3659,12 +3275,11 @@ function bindGlobalEvent() {
     }
 }
 
-window.onload = async function() {
+window.onload = function() {
     initThemeUI();
     initWidgetStates();
-    initSyncVisibility();
+    loadStorage();
     bindGlobalEvent();
-    await loadStorage();
     archiveOldHistory(false);
     renderPage();
 };
