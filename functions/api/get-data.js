@@ -13,7 +13,7 @@ export async function onRequestGet(context) {
   
   try {
     const data = await env.dk.get('daka_main_data');
-    return new Response(data || '{"tasks": [], "announcement": ""}', {
+    return new Response(data || '{"tasks": [], "announcement": "", "tombstones": [], "clearAt": 0, "schemaVersion": 2}', {
       headers: { 'Content-Type': 'application/json' }
     });
   } catch (e) {
