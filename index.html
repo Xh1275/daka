@@ -994,6 +994,13 @@ html[data-theme="dark"] .calendar-header-bar{
     color:var(--text-main);
     word-break:break-all;
 }
+.calendar-detail-time{
+    flex:0 0 auto;
+    font-size:12px;
+    font-family:monospace;
+    color:var(--text-sub);
+    white-space:nowrap;
+}
 .calendar-detail-tag{
     flex:0 0 auto;
     font-size:11px;
@@ -1165,19 +1172,8 @@ html[data-theme="dark"] .calendar-detail-stat{
 
         <div class="filter-tab">
             <span data-filter="doing" class="filter-item active">进行中</span>
-            <span data-filter="wait" class="filter-item">未开始</span>
             <span data-filter="finish" class="filter-item">已归档/完成</span>
             <span data-filter="all" class="filter-item">全部</span>
-        </div>
-        <div class="sort-wrap">
-            <span class="sort-label">排序：</span>
-            <button class="sort-btn" id="sortToggleBtn">创建时间 <span class="sort-order-icon">↓</span></button>
-            <div class="sort-dropdown" id="sortDropdown">
-                <div class="sort-option active" data-sort="id">创建时间 <span class="sort-order-icon">↓</span></div>
-                <div class="sort-option" data-sort="deadline">到期日 <span class="sort-order-icon"></span></div>
-                <div class="sort-option" data-sort="reward">收益金额 <span class="sort-order-icon"></span></div>
-                <div class="sort-option" data-sort="name">任务名称 <span class="sort-order-icon"></span></div>
-            </div>
             <button class="sort-btn" id="batchModeBtn" style="margin-left: auto;">批量管理</button>
         </div>
         <div class="add-btn-box">
@@ -1390,9 +1386,6 @@ let lastUploadedRemotePayload = '';
 let remoteSaveInFlightPromise = null;
 let remoteSaveInFlightPayload = '';
 
-let currentSortField = 'id';
-let currentSortOrder = 'desc';
-
 let batchMode = false;
 let selectedTaskIds = new Set();
 let todayGroupOpenState = {};
@@ -1478,8 +1471,6 @@ const el = {
     calendarDetailMonthText: document.getElementById("calendarDetailMonthText"),
     calendarDetailList: document.getElementById("calendarDetailList"),
 
-    sortToggleBtn: document.getElementById('sortToggleBtn'),
-    sortDropdown: document.getElementById('sortDropdown'),
     batchModeBtn: document.getElementById('batchModeBtn'),
     batchBar: document.getElementById('batchBar'),
     batchSelectAll: document.getElementById('batchSelectAll'),
@@ -1809,6 +1800,7 @@ async function loadStorage() {
         const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         updateSyncStatus('success', timeStr);
     }
+    renderPage();
 }
 
 function saveStorage() {
@@ -2216,8 +2208,12 @@ function renderCalendar() {
                 task.history.forEach(hStr => {
                     if (typeof hStr === 'string' && hStr.length >= 10) {
                         const dStr = hStr.substring(0, 10);
-                        if (!checkDateMap[dStr]) checkDateMap[dStr] = new Set();
-                        checkDateMap[dStr].add(task.name);
+                        const timeFull = hStr.length >= 19 ? hStr : null;
+                        if (!checkDateMap[dStr]) checkDateMap[dStr] = new Map();
+                        const existing = checkDateMap[dStr].get(task.name);
+                        if (!existing || (timeFull && (!existing.time || timeFull < existing.time))) {
+                            checkDateMap[dStr].set(task.name, { time: timeFull });
+                        }
                     }
                 });
             }
@@ -2225,8 +2221,10 @@ function renderCalendar() {
                 task.archives.forEach(arc => {
                     if (arc && Array.isArray(arc.dates)) {
                         arc.dates.forEach(dStr => {
-                            if (!checkDateMap[dStr]) checkDateMap[dStr] = new Set();
-                            checkDateMap[dStr].add(task.name);
+                            if (!checkDateMap[dStr]) checkDateMap[dStr] = new Map();
+                            if (!checkDateMap[dStr].has(task.name)) {
+                                checkDateMap[dStr].set(task.name, { time: null });
+                            }
                         });
                     }
                 });
@@ -2260,7 +2258,8 @@ function renderCalendar() {
 
         cell.onclick = () => {
             if (hasCheck) {
-                openCalendarDetail(dateString, Array.from(checkDateMap[dateString]));
+                const entries = Array.from(checkDateMap[dateString].entries()).map(([name, info]) => ({ name, time: info.time }));
+                openCalendarDetail(dateString, entries);
             } else {
                 showToast(`${dateString} 暂无打卡记录`);
             }
@@ -2269,8 +2268,14 @@ function renderCalendar() {
     }
 }
 
-function openCalendarDetail(dateString, taskNames) {
-    const cleanList = Array.from(new Set((taskNames || []).filter(Boolean)));
+function openCalendarDetail(dateString, taskEntries) {
+    const cleanList = Array.isArray(taskEntries) ? taskEntries.filter(t => t && t.name) : [];
+    cleanList.sort((a, b) => {
+        if (a.time && b.time) return a.time.localeCompare(b.time);
+        if (a.time && !b.time) return -1;
+        if (!a.time && b.time) return 1;
+        return String(a.name || '').localeCompare(String(b.name || ''), 'zh-CN');
+    });
     const dayCount = cleanList.length;
     el.calendarDetailDate.innerText = dateString;
     el.calendarDetailTitle.innerText = dayCount ? '当天打卡明细' : '当天暂无记录';
@@ -2278,10 +2283,11 @@ function openCalendarDetail(dateString, taskNames) {
     el.calendarDetailDayType.innerText = dayCount ? '有记录' : '空白';
     el.calendarDetailMonthText.innerText = `${dateString.slice(0, 7)}`;
     if (dayCount > 0) {
-        el.calendarDetailList.innerHTML = cleanList.map((name, idx) => `
+        el.calendarDetailList.innerHTML = cleanList.map((item, idx) => `
             <div class="calendar-detail-item">
                 <div class="calendar-detail-index">${idx + 1}</div>
-                <div class="calendar-detail-name">${escapeHTML(name)}</div>
+                <div class="calendar-detail-name">${escapeHTML(item.name)}</div>
+                <div class="calendar-detail-time">${item.time ? escapeHTML(item.time.slice(11, 16)) : '--:--'}</div>
                 <div class="calendar-detail-tag">已打卡</div>
             </div>
         `).join('');
@@ -2294,38 +2300,6 @@ function openCalendarDetail(dateString, taskNames) {
         `;
     }
     el.calendarDetailPopWrap.style.display = 'block';
-}
-
-function toggleSortDropdown() {
-    el.sortDropdown.classList.toggle('show');
-}
-function setSortField(field) {
-    if (currentSortField === field) {
-        currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
-    } else {
-        currentSortField = field;
-        currentSortOrder = 'desc';
-    }
-    updateSortUI();
-    renderPage();
-}
-function updateSortUI() {
-    const fieldNames = {
-        id: '创建时间',
-        deadline: '到期日',
-        reward: '收益金额',
-        name: '任务名称'
-    };
-    el.sortToggleBtn.innerHTML = `${fieldNames[currentSortField]} <span class="sort-order-icon">${currentSortOrder === 'asc' ? '↑' : '↓'}</span>`;
-    
-    document.querySelectorAll('.sort-option').forEach(opt => {
-        const field = opt.dataset.sort;
-        opt.classList.toggle('active', field === currentSortField);
-        const icon = opt.querySelector('.sort-order-icon');
-        icon.innerText = field === currentSortField ? (currentSortOrder === 'asc' ? '↑' : '↓') : '';
-    });
-    
-    el.sortDropdown.classList.remove('show');
 }
 
 function getFilteredAllTasks() {
@@ -2598,34 +2572,7 @@ function renderPage() {
         const aPin = a.isPinned ? 1 : 0;
         const bPin = b.isPinned ? 1 : 0;
         if (aPin !== bPin) return bPin - aPin; // 置顶始终优先
-
-        let compareResult = 0;
-        switch (currentSortField) {
-            case 'deadline': {
-                const aLeft = Math.max(0, (Number(a.totalDay) || 1) - getCompletedDaysCount(a));
-                const bLeft = Math.max(0, (Number(b.totalDay) || 1) - getCompletedDaysCount(b));
-                compareResult = aLeft - bLeft;
-                break;
-            }
-            case 'reward': {
-                const aReward = a.rewardType === 'money' ? Number(a.rewardValue || a.money || 0) : 0;
-                const bReward = b.rewardType === 'money' ? Number(b.rewardValue || b.money || 0) : 0;
-                compareResult = aReward - bReward;
-                break;
-            }
-            case 'name':
-                compareResult = String(a.name || '').localeCompare(String(b.name || ''), 'zh-CN', { numeric: true, sensitivity: 'base' });
-                break;
-            case 'id':
-            default:
-                compareResult = (Number(a.id) || 0) - (Number(b.id) || 0);
-                break;
-        }
-
-        if (compareResult === 0) {
-            compareResult = (Number(a.id) || 0) - (Number(b.id) || 0);
-        }
-        return currentSortOrder === 'asc' ? compareResult : -compareResult;
+        return (Number(b.id) || 0) - (Number(a.id) || 0); // 按创建时间倒序
     });
     
     el.allEmpty.style.display = filterArr.length === 0 ? "block" : "none";
@@ -3203,18 +3150,6 @@ function bindGlobalEvent() {
             updateBatchCount();
             renderPage();
         };
-    });
-
-    el.sortToggleBtn.addEventListener('click', toggleSortDropdown);
-    document.querySelectorAll('.sort-option').forEach(opt => {
-        opt.addEventListener('click', () => {
-            setSortField(opt.dataset.sort);
-        });
-    });
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.sort-wrap')) {
-            el.sortDropdown.classList.remove('show');
-        }
     });
 
     el.batchModeBtn.addEventListener('click', toggleBatchMode);
