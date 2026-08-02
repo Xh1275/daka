@@ -65,9 +65,17 @@ body {
     transition: background-color 0.3s ease; 
     overscroll-behavior: none;
 }
+body.modal-lock{
+    position:fixed;
+    left:0;
+    right:0;
+    width:100%;
+    overflow:hidden;
+}
 .nav-bar{background:var(--card-bg);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 1px 4px rgba(0,0,0,0.05);position:sticky;top:0;z-index:99; transition: background-color 0.3s ease;}
 .sync-btn-left{font-size:14px;color:var(--primary);cursor:pointer;font-weight:500;display:flex;align-items:center;gap:4px;}
 .sync-btn-left.error{color:var(--danger);font-weight:bold;}
+.sync-btn-left.sync-hidden{display:none !important;}
 .time-text{font-size:12px;color:var(--text-sub);font-family:monospace;}
 .top-tool{display:flex;gap:6px;align-items:center;}
 .tool-btn{font-size:15px;color:var(--primary);cursor:pointer;font-weight:500;}
@@ -180,17 +188,40 @@ body {
 .filter-tab span{padding:4px 12px;border-radius:16px;font-size:12px;white-space:nowrap;background:var(--border-color);color:var(--text-sub);cursor:pointer;}
 .filter-tab span.active{background:var(--primary);color:#fff;}
 
-.sort-wrap { position: relative; margin: 0 16px 10px; display: flex; align-items: center; gap: 8px; }
-.sort-label { font-size: 13px; color: var(--text-sub); white-space: nowrap; }
-.sort-btn { padding: 4px 12px; border-radius: 16px; font-size: 12px; background: var(--border-color); color: var(--text-sub); cursor: pointer; border: none; display: flex; align-items: center; gap: 4px; }
-.sort-btn.active { background: var(--primary); color: #fff; }
-.sort-dropdown { position: absolute; top: 100%; left: 0; margin-top: 4px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 10; min-width: 140px; display: none; overflow: hidden; }
-.sort-dropdown.show { display: block; }
-.sort-option { padding: 10px 14px; font-size: 13px; color: var(--text-main); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-.sort-option:hover { background: var(--bg-color); }
-.sort-option.active { color: var(--primary); font-weight: bold; }
-.sort-order-icon { font-size: 11px; }
 
+.all-filter-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 12px 0;
+    flex-wrap:wrap;
+}
+.filter-tab-inline{
+    flex:1 1 auto;
+    min-width:0;
+    margin:0;
+    padding-bottom:0;
+}
+.filter-tab-inline .filter-item{
+    flex:0 0 auto;
+}
+.batch-inline-btn{
+    flex:0 0 auto;
+    min-height:34px;
+    padding:0 14px;
+    border-radius:999px;
+    white-space:nowrap;
+    margin-left:auto;
+    box-shadow:0 6px 16px rgba(0,0,0,.05);
+}
+@media (max-width: 420px){
+    .all-filter-row{
+        padding:10px 10px 0;
+    }
+    .batch-inline-btn{
+        margin-left:0;
+    }
+}
 .batch-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card-bg); border-top: 1px solid var(--border-color); padding: 10px 16px; padding-bottom: calc(10px + env(safe-area-inset-bottom)); display: none; z-index: 100; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
 .batch-bar.show { display: flex; }
 .batch-info { font-size: 13px; color: var(--text-main); font-weight: 500; }
@@ -497,9 +528,10 @@ button:active, .tool-btn:active, .sync-btn-left:active, .tab-item:active, .filte
     border-color: var(--primary);
     box-shadow: 0 6px 14px rgba(25,137,250,.16);
 }
-.sort-wrap {
+.all-filter-row {
     margin: 0 12px 10px;
     flex-wrap: wrap;
+    justify-content: flex-end;
 }
 .sort-btn {
     min-height: 32px;
@@ -686,7 +718,7 @@ html[data-theme="dark"] .oper-btn-group button {
         width: min(84vw, 200px);
     }
 
-    .search-wrap, .stat-box, .calendar-card, .today-progress-card, .category-group-card, .task-card, .filter-tab, .sort-wrap {
+    .search-wrap, .stat-box, .calendar-card, .today-progress-card, .category-group-card, .task-card, .filter-tab {
         margin-left: 10px;
         margin-right: 10px;
     }
@@ -963,15 +995,18 @@ html[data-theme="dark"] .calendar-header-bar{
     max-height:calc(82vh - 170px);
     overflow:auto;
     padding-right:2px;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
 }
 .calendar-detail-item{
     display:flex;
-    align-items:center;
+    align-items:flex-start;
     gap:10px;
     padding:11px 12px;
     border-radius:14px;
     background:var(--bg-color);
     border:1px solid var(--border-color);
+    box-shadow:0 4px 10px rgba(0,0,0,.04);
 }
 .calendar-detail-index{
     width:24px;
@@ -986,13 +1021,25 @@ html[data-theme="dark"] .calendar-header-bar{
     font-weight:800;
     flex:0 0 auto;
 }
+.calendar-detail-main{
+    flex:1;
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+}
 .calendar-detail-name{
     flex:1;
     min-width:0;
     font-size:13px;
-    font-weight:600;
+    font-weight:700;
     color:var(--text-main);
     word-break:break-all;
+}
+.calendar-detail-meta{
+    font-size:11px;
+    color:var(--text-light);
+    line-height:1.4;
 }
 .calendar-detail-tag{
     flex:0 0 auto;
@@ -1003,6 +1050,12 @@ html[data-theme="dark"] .calendar-header-bar{
     border-radius:999px;
     padding:3px 8px;
     white-space:nowrap;
+    margin-top:2px;
+}
+.calendar-detail-tag.archive{
+    color:var(--warning);
+    background:rgba(245,166,35,.10);
+    border-color:rgba(245,166,35,.18);
 }
 .calendar-detail-empty{
     padding:26px 16px;
@@ -1163,23 +1216,17 @@ html[data-theme="dark"] .calendar-detail-stat{
             <div class="calendar-hint">点击带标记的日期查看当天打卡明细</div>
         </div>
 
-        <div class="filter-tab">
-            <span data-filter="doing" class="filter-item active">进行中</span>
-            <span data-filter="wait" class="filter-item">未开始</span>
-            <span data-filter="finish" class="filter-item">已归档/完成</span>
-            <span data-filter="all" class="filter-item">全部</span>
-        </div>
-        <div class="sort-wrap">
-            <span class="sort-label">排序：</span>
-            <button class="sort-btn" id="sortToggleBtn">创建时间 <span class="sort-order-icon">↓</span></button>
-            <div class="sort-dropdown" id="sortDropdown">
-                <div class="sort-option active" data-sort="id">创建时间 <span class="sort-order-icon">↓</span></div>
-                <div class="sort-option" data-sort="deadline">到期日 <span class="sort-order-icon"></span></div>
-                <div class="sort-option" data-sort="reward">收益金额 <span class="sort-order-icon"></span></div>
-                <div class="sort-option" data-sort="name">任务名称 <span class="sort-order-icon"></span></div>
+        
+        <div class="all-filter-row">
+            <div class="filter-tab filter-tab-inline">
+                <span data-filter="doing" class="filter-item active">进行中</span>
+                <span data-filter="wait" class="filter-item">未开始</span>
+                <span data-filter="finish" class="filter-item">已归档/完成</span>
+                <span data-filter="all" class="filter-item">全部</span>
             </div>
-            <button class="sort-btn" id="batchModeBtn" style="margin-left: auto;">批量管理</button>
+            <button class="sort-btn batch-inline-btn" id="batchModeBtn">批量管理</button>
         </div>
+
         <div class="add-btn-box">
             <button class="big-btn" id="addTaskBtn">+ 添加新任务</button>
         </div>
@@ -1373,6 +1420,7 @@ function getTaskAppScheme(item) {
 
 const KEY = "daka_offline_data";
 const SYNC_PASSWORD_KEY = 'sync_password';
+const SYNC_UNLOCK_KEY = 'sync_feature_unlocked_v1';
 let taskList = [];
 let currentPage = "today";
 let filterType = "doing";
@@ -1385,13 +1433,16 @@ let historyLimits = {};
 let currentCalYear = new Date().getFullYear();
 let currentCalMonth = new Date().getMonth();
 let syncPassword = localStorage.getItem(SYNC_PASSWORD_KEY) || '';
+let syncFeatureUnlocked = localStorage.getItem(SYNC_UNLOCK_KEY) === 'true';
+let syncRevealClicks = [];
+let syncClickTimer = null;
+let bodyLockCount = 0;
+let bodyScrollY = 0;
 
 let lastUploadedRemotePayload = '';
 let remoteSaveInFlightPromise = null;
 let remoteSaveInFlightPayload = '';
 
-let currentSortField = 'id';
-let currentSortOrder = 'desc';
 
 let batchMode = false;
 let selectedTaskIds = new Set();
@@ -1478,8 +1529,6 @@ const el = {
     calendarDetailMonthText: document.getElementById("calendarDetailMonthText"),
     calendarDetailList: document.getElementById("calendarDetailList"),
 
-    sortToggleBtn: document.getElementById('sortToggleBtn'),
-    sortDropdown: document.getElementById('sortDropdown'),
     batchModeBtn: document.getElementById('batchModeBtn'),
     batchBar: document.getElementById('batchBar'),
     batchSelectAll: document.getElementById('batchSelectAll'),
@@ -1572,6 +1621,7 @@ function setSyncPassword() {
     syncPassword = pwd.trim();
     localStorage.setItem(SYNC_PASSWORD_KEY, syncPassword);
     if (syncPassword) {
+        revealSyncFeature(false);
         showToast('正在同步云端数据...');
         loadStorage();
     }
@@ -1737,15 +1787,71 @@ function openConfirm(title, desc, onConfirm, isDanger = false) {
     el.confirmOk.style.background = isDanger ? "var(--danger)" : "var(--primary)";
     el.confirmPopWrap.style.display = "block";
     confirmCallback = onConfirm;
+    lockBodyScroll();
 }
 function closeConfirm() {
     el.confirmPopWrap.style.display = "none";
     confirmCallback = null;
+    unlockBodyScroll();
+}
+
+function lockBodyScroll() {
+    bodyLockCount += 1;
+    if (bodyLockCount > 1) return;
+    bodyScrollY = window.scrollY || window.pageYOffset || 0;
+    document.body.classList.add('modal-lock');
+    document.body.style.top = `-${bodyScrollY}px`;
+}
+
+function unlockBodyScroll() {
+    if (bodyLockCount > 0) bodyLockCount -= 1;
+    if (bodyLockCount > 0) return;
+    document.body.classList.remove('modal-lock');
+    document.body.style.top = '';
+    window.scrollTo(0, bodyScrollY || 0);
+}
+
+function applySyncVisibility() {
+    if (!el.syncBtn) return;
+    el.syncBtn.classList.toggle('sync-hidden', !syncFeatureUnlocked);
+}
+
+function initSyncVisibility() {
+    applySyncVisibility();
+}
+
+function revealSyncFeature(showToastMessage = true) {
+    if (syncFeatureUnlocked) {
+        applySyncVisibility();
+        return;
+    }
+    syncFeatureUnlocked = true;
+    localStorage.setItem(SYNC_UNLOCK_KEY, 'true');
+    applySyncVisibility();
+    if (showToastMessage) showToast('同步入口已显示');
+}
+
+function handleThemeSecretTap() {
+    const now = Date.now();
+    syncRevealClicks = syncRevealClicks.filter(ts => now - ts <= 3000);
+    syncRevealClicks.push(now);
+    if (syncRevealClicks.length >= 5) {
+        syncRevealClicks = [];
+        revealSyncFeature(true);
+    }
+}
+
+function parseCalendarDateTime(str) {
+    if (typeof str !== 'string' || !str) return 0;
+    const normalized = str.includes('T') ? str : str.replace(' ', 'T');
+    const ts = Date.parse(normalized);
+    return Number.isNaN(ts) ? 0 : ts;
 }
 
 function closeCalendarDetail() {
     if (!el.calendarDetailPopWrap) return;
     el.calendarDetailPopWrap.style.display = "none";
+    unlockBodyScroll();
 }
 
 function loadLocalStorage() {
@@ -2202,37 +2308,77 @@ function renderTaskCard(item, isTodayPage = false) {
 }
 
 
+function buildCalendarDayMap() {
+    const dayMap = {};
+    if (!Array.isArray(taskList)) return dayMap;
+
+    const pushRecord = (dateKey, record) => {
+        if (!dateKey) return;
+        if (!dayMap[dateKey]) dayMap[dateKey] = [];
+        dayMap[dateKey].push(record);
+    };
+
+    taskList.forEach(task => {
+        const taskName = task && task.name ? String(task.name) : '未命名任务';
+        const taskCategory = task && task.category ? String(task.category) : '默认分组';
+
+        if (Array.isArray(task.history)) {
+            task.history.forEach((hStr, idx) => {
+                if (typeof hStr !== 'string' || hStr.length < 10) return;
+                const dateKey = hStr.substring(0, 10);
+                const ts = parseCalendarDateTime(hStr);
+                const timePart = hStr.length >= 19 ? hStr.substring(11, 19) : '';
+                pushRecord(dateKey, {
+                    taskId: task.id,
+                    taskName,
+                    taskCategory,
+                    source: 'history',
+                    sourceLabel: '打卡',
+                    timestamp: ts || (Date.now() - idx),
+                    timeText: timePart || (ts ? new Date(ts).toTimeString().slice(0, 8) : ''),
+                    raw: hStr
+                });
+            });
+        }
+
+        if (Array.isArray(task.archives)) {
+            task.archives.forEach(arc => {
+                if (!arc || !Array.isArray(arc.dates)) return;
+                arc.dates.forEach(dStr => {
+                    if (typeof dStr !== 'string' || dStr.length < 10) return;
+                    pushRecord(dStr, {
+                        taskId: task.id,
+                        taskName,
+                        taskCategory,
+                        source: 'archive',
+                        sourceLabel: '归档',
+                        timestamp: parseCalendarDateTime(`${dStr} 23:59:59`) || 0,
+                        timeText: '归档记录',
+                        raw: dStr
+                    });
+                });
+            });
+        }
+    });
+
+    Object.keys(dayMap).forEach(dateKey => {
+        dayMap[dateKey].sort((a, b) => {
+            const diff = (a.timestamp || 0) - (b.timestamp || 0);
+            if (diff !== 0) return diff;
+            return String(a.taskName || '').localeCompare(String(b.taskName || ''), 'zh-CN', { numeric: true, sensitivity: 'base' });
+        });
+    });
+
+    return dayMap;
+}
+
 function renderCalendar() {
     el.calendarTitleText.innerText = `${currentCalYear}年${currentCalMonth + 1}月`;
     el.calendarGrid.innerHTML = "";
     const firstDayIndex = new Date(currentCalYear, currentCalMonth, 1).getDay();
     const totalDaysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
     const todayStr = getTodayStr();
-
-    const checkDateMap = {};
-    if (Array.isArray(taskList)) {
-        taskList.forEach(task => {
-            if (Array.isArray(task.history)) {
-                task.history.forEach(hStr => {
-                    if (typeof hStr === 'string' && hStr.length >= 10) {
-                        const dStr = hStr.substring(0, 10);
-                        if (!checkDateMap[dStr]) checkDateMap[dStr] = new Set();
-                        checkDateMap[dStr].add(task.name);
-                    }
-                });
-            }
-            if (Array.isArray(task.archives)) {
-                task.archives.forEach(arc => {
-                    if (arc && Array.isArray(arc.dates)) {
-                        arc.dates.forEach(dStr => {
-                            if (!checkDateMap[dStr]) checkDateMap[dStr] = new Set();
-                            checkDateMap[dStr].add(task.name);
-                        });
-                    }
-                });
-            }
-        });
-    }
+    const dayMap = buildCalendarDayMap();
 
     for (let i = 0; i < firstDayIndex; i++) {
         const cell = document.createElement("div");
@@ -2247,8 +2393,9 @@ function renderCalendar() {
         const cell = document.createElement("div");
         cell.className = "calendar-cell";
 
-        const hasCheck = checkDateMap[dateString] && checkDateMap[dateString].size > 0;
-        const count = hasCheck ? checkDateMap[dateString].size : 0;
+        const records = dayMap[dateString] || [];
+        const hasCheck = records.length > 0;
+        const count = records.length;
 
         if (dateString === todayStr) cell.classList.add("today");
         if (hasCheck) cell.classList.add("has-check");
@@ -2260,7 +2407,7 @@ function renderCalendar() {
 
         cell.onclick = () => {
             if (hasCheck) {
-                openCalendarDetail(dateString, Array.from(checkDateMap[dateString]));
+                openCalendarDetail(dateString, records);
             } else {
                 showToast(`${dateString} 暂无打卡记录`);
             }
@@ -2269,22 +2416,40 @@ function renderCalendar() {
     }
 }
 
-function openCalendarDetail(dateString, taskNames) {
-    const cleanList = Array.from(new Set((taskNames || []).filter(Boolean)));
-    const dayCount = cleanList.length;
+function openCalendarDetail(dateString, records) {
+    const sortedRecords = Array.isArray(records) ? [...records].sort((a, b) => {
+        const diff = (a.timestamp || 0) - (b.timestamp || 0);
+        if (diff !== 0) return diff;
+        return String(a.taskName || '').localeCompare(String(b.taskName || ''), 'zh-CN', { numeric: true, sensitivity: 'base' });
+    }) : [];
+    const dayCount = sortedRecords.length;
+    const weekText = (() => {
+        const weekMap = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+        const d = new Date(`${dateString}T12:00:00`);
+        return weekMap[d.getDay()] || '';
+    })();
+
     el.calendarDetailDate.innerText = dateString;
     el.calendarDetailTitle.innerText = dayCount ? '当天打卡明细' : '当天暂无记录';
     el.calendarDetailCount.innerText = String(dayCount);
     el.calendarDetailDayType.innerText = dayCount ? '有记录' : '空白';
-    el.calendarDetailMonthText.innerText = `${dateString.slice(0, 7)}`;
+    el.calendarDetailMonthText.innerText = `${dateString.slice(0, 7)} · ${weekText}`;
+
     if (dayCount > 0) {
-        el.calendarDetailList.innerHTML = cleanList.map((name, idx) => `
+        el.calendarDetailList.innerHTML = sortedRecords.map((record, idx) => {
+            const timeText = record.source === 'archive'
+                ? '归档记录'
+                : (record.timeText || (record.timestamp ? new Date(record.timestamp).toTimeString().slice(0, 8) : ''));
+            return `
             <div class="calendar-detail-item">
                 <div class="calendar-detail-index">${idx + 1}</div>
-                <div class="calendar-detail-name">${escapeHTML(name)}</div>
-                <div class="calendar-detail-tag">已打卡</div>
-            </div>
-        `).join('');
+                <div class="calendar-detail-main">
+                    <div class="calendar-detail-name">${escapeHTML(record.taskName || '未命名任务')}</div>
+                    <div class="calendar-detail-meta">${escapeHTML(timeText)}${record.taskCategory ? ` · ${escapeHTML(record.taskCategory)}` : ''}</div>
+                </div>
+                <div class="calendar-detail-tag ${record.source === 'archive' ? 'archive' : ''}">${escapeHTML(record.sourceLabel || '打卡')}</div>
+            </div>`;
+        }).join('');
     } else {
         el.calendarDetailList.innerHTML = `
             <div class="calendar-detail-empty">
@@ -2294,39 +2459,9 @@ function openCalendarDetail(dateString, taskNames) {
         `;
     }
     el.calendarDetailPopWrap.style.display = 'block';
+    lockBodyScroll();
 }
 
-function toggleSortDropdown() {
-    el.sortDropdown.classList.toggle('show');
-}
-function setSortField(field) {
-    if (currentSortField === field) {
-        currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
-    } else {
-        currentSortField = field;
-        currentSortOrder = 'desc';
-    }
-    updateSortUI();
-    renderPage();
-}
-function updateSortUI() {
-    const fieldNames = {
-        id: '创建时间',
-        deadline: '到期日',
-        reward: '收益金额',
-        name: '任务名称'
-    };
-    el.sortToggleBtn.innerHTML = `${fieldNames[currentSortField]} <span class="sort-order-icon">${currentSortOrder === 'asc' ? '↑' : '↓'}</span>`;
-    
-    document.querySelectorAll('.sort-option').forEach(opt => {
-        const field = opt.dataset.sort;
-        opt.classList.toggle('active', field === currentSortField);
-        const icon = opt.querySelector('.sort-order-icon');
-        icon.innerText = field === currentSortField ? (currentSortOrder === 'asc' ? '↑' : '↓') : '';
-    });
-    
-    el.sortDropdown.classList.remove('show');
-}
 
 function getFilteredAllTasks() {
     const queryAll = (el.searchAllInput.value || "").toLowerCase().trim();
@@ -2594,40 +2729,7 @@ function renderPage() {
         filterArr = filterAllTaskList.filter(i => getTaskStatus(i) === filterType);
     }
 
-    filterArr.sort((a, b) => {
-        const aPin = a.isPinned ? 1 : 0;
-        const bPin = b.isPinned ? 1 : 0;
-        if (aPin !== bPin) return bPin - aPin; // 置顶始终优先
 
-        let compareResult = 0;
-        switch (currentSortField) {
-            case 'deadline': {
-                const aLeft = Math.max(0, (Number(a.totalDay) || 1) - getCompletedDaysCount(a));
-                const bLeft = Math.max(0, (Number(b.totalDay) || 1) - getCompletedDaysCount(b));
-                compareResult = aLeft - bLeft;
-                break;
-            }
-            case 'reward': {
-                const aReward = a.rewardType === 'money' ? Number(a.rewardValue || a.money || 0) : 0;
-                const bReward = b.rewardType === 'money' ? Number(b.rewardValue || b.money || 0) : 0;
-                compareResult = aReward - bReward;
-                break;
-            }
-            case 'name':
-                compareResult = String(a.name || '').localeCompare(String(b.name || ''), 'zh-CN', { numeric: true, sensitivity: 'base' });
-                break;
-            case 'id':
-            default:
-                compareResult = (Number(a.id) || 0) - (Number(b.id) || 0);
-                break;
-        }
-
-        if (compareResult === 0) {
-            compareResult = (Number(a.id) || 0) - (Number(b.id) || 0);
-        }
-        return currentSortOrder === 'asc' ? compareResult : -compareResult;
-    });
-    
     el.allEmpty.style.display = filterArr.length === 0 ? "block" : "none";
     let groups = {};
     filterArr.forEach(item => {
@@ -3132,6 +3234,7 @@ function initWidgetStates() {
     el.toggleCalBtn.classList.toggle('active', !calHidden);
     el.toggleStatBtn.setAttribute('aria-expanded', String(!statHidden));
     el.toggleCalBtn.setAttribute('aria-expanded', String(!calHidden));
+    initSyncVisibility();
 }
 
 function bindGlobalEvent() {
@@ -3139,15 +3242,30 @@ function bindGlobalEvent() {
     el.allListWrap.addEventListener('click', handleCardAction);
     
     el.syncBtn.addEventListener('click', () => {
-        if (!syncPassword) {
-            setSyncPassword();
-        } else {
-            loadStorage();
-        }
+        if (syncClickTimer) return;
+        syncClickTimer = setTimeout(() => {
+            syncClickTimer = null;
+            if (!syncPassword) {
+                setSyncPassword();
+            } else {
+                loadStorage();
+            }
+        }, 220);
     });
-    el.syncBtn.addEventListener('dblclick', setSyncPassword);
-    
-    el.themeBtn.addEventListener('click', toggleTheme);
+    el.syncBtn.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (syncClickTimer) {
+            clearTimeout(syncClickTimer);
+            syncClickTimer = null;
+        }
+        setSyncPassword();
+    });
+
+    el.themeBtn.addEventListener('click', () => {
+        toggleTheme();
+        handleThemeSecretTap();
+    });
     if (el.moreBtn && el.moreMenu) {
         const closeMoreMenu = () => el.moreMenu.classList.remove('show');
         el.moreBtn.addEventListener('click', (e) => {
@@ -3203,18 +3321,6 @@ function bindGlobalEvent() {
             updateBatchCount();
             renderPage();
         };
-    });
-
-    el.sortToggleBtn.addEventListener('click', toggleSortDropdown);
-    document.querySelectorAll('.sort-option').forEach(opt => {
-        opt.addEventListener('click', () => {
-            setSortField(opt.dataset.sort);
-        });
-    });
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.sort-wrap')) {
-            el.sortDropdown.classList.remove('show');
-        }
     });
 
     el.batchModeBtn.addEventListener('click', toggleBatchMode);
@@ -3278,6 +3384,7 @@ function bindGlobalEvent() {
 window.onload = function() {
     initThemeUI();
     initWidgetStates();
+    initSyncVisibility();
     loadStorage();
     bindGlobalEvent();
     archiveOldHistory(false);
