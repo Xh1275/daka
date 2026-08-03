@@ -155,6 +155,85 @@ body {
 .action-row{display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:8px;flex-wrap:wrap;}
 .date-small{font-size:12px;color:var(--text-light);}
 .empty-box{text-align:center;padding:60px 20px;color:var(--text-light);}
+@keyframes emptyStateFadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+.empty-state{
+    text-align:center;
+    padding:36px 20px;
+    margin:12px 0;
+    background:var(--card-bg);
+    border:1px solid var(--border-color);
+    border-radius:16px;
+    box-shadow:0 4px 16px rgba(0,0,0,.06);
+    animation:emptyStateFadeIn .35s ease both;
+}
+.empty-state-icon{ font-size:44px; line-height:1; margin-bottom:10px; }
+.empty-state-title{ font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px; }
+.empty-state-desc{ font-size:12.5px; color:var(--text-light); line-height:1.6; }
+.empty-state-btn{
+    margin-top:16px;
+    padding:9px 22px;
+    border:none;
+    border-radius:999px;
+    background:var(--primary);
+    color:#fff;
+    font-size:13px;
+    font-weight:700;
+}
+.empty-state-btn:active{ transform:scale(0.96); }
+
+/* Toast 类型样式 */
+.toast{ display:none; align-items:center; gap:8px; }
+.toast .toast-icon{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:18px; height:18px; border-radius:50%; font-size:12px; font-weight:700; flex:0 0 auto;
+    background:rgba(255,255,255,0.18);
+}
+.toast-success{ background:rgba(7,193,96,0.92); }
+.toast-error{ background:rgba(238,10,36,0.92); }
+.toast-warning{ background:rgba(245,166,35,0.94); color:#3a2a00; }
+.toast-info{ background:rgba(0,0,0,0.75); }
+.toast.toast-success{ background:rgba(7,193,96,0.92); }
+.toast.toast-error{ background:rgba(238,10,36,0.92); }
+.toast.toast-warning{ background:rgba(245,166,35,0.94); color:#3a2a00; }
+.toast.toast-info{ background:rgba(0,0,0,0.75); }
+
+/* 同步记录：摘要与详情展开 */
+.sync-log-item{ cursor:default; }
+.sync-log-item.expandable{ cursor:pointer; }
+.sync-log-row-top{ display:flex; align-items:center; justify-content:space-between; width:100%; gap:8px; }
+.sync-log-summary{ font-size:11px; color:var(--text-light); flex:0 0 auto; }
+.sync-log-summary.changed{ color:var(--primary); font-weight:700; }
+.sync-log-stats{ font-size:11px; color:var(--text-sub); margin-top:2px; }
+.sync-log-detail{
+    width:100%;
+    max-height:0;
+    overflow:hidden;
+    opacity:0;
+    transition:max-height .25s ease, opacity .2s ease, margin-top .25s ease;
+}
+.sync-log-item.expanded .sync-log-detail{
+    max-height:600px;
+    opacity:1;
+    margin-top:8px;
+    padding-top:8px;
+    border-top:1px dashed var(--border-color);
+}
+.sync-detail-block{ margin-bottom:8px; font-size:12px; }
+.sync-detail-block:last-child{ margin-bottom:0; }
+.sync-detail-head{ font-weight:700; color:var(--text-main); margin-bottom:3px; }
+.sync-detail-row{ color:var(--text-sub); display:flex; gap:4px; flex-wrap:wrap; }
+.sync-detail-row span{ flex:0 0 auto; color:var(--text-light); }
+.sync-detail-empty{ font-size:12px; color:var(--text-light); }
+
+/* 再开一轮 按钮 */
+.restart-round{ color:var(--primary); border-color:var(--primary); }
+
+/* 按钮忙碌态：轻微透明 + 禁用点击反馈 */
+button.btn-busy, .btn-busy{ opacity:0.65; pointer-events:none; }
+.oper-btn-group button:active, .backup-action-btn:active, .snapshot-restore-btn:active, .big-btn:active, .empty-state-btn:active{
+    transform:scale(0.96);
+}
+
 .history-details { margin-top: 10px; font-size: 12px; color: var(--text-sub); border-top: 1px dashed var(--border-color); padding-top: 8px;}
 .history-details summary { cursor: pointer; outline: none; user-select: none; color: var(--text-light); }
 .history-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
@@ -1496,6 +1575,9 @@ let remoteSaveInFlightPayload = '';
 let batchMode = false;
 let selectedTaskIds = new Set();
 let todayGroupOpenState = {};
+let lastSyncedSnapshot = null;
+let toastTimer = null;
+let syncInFlight = false;
 
 const el = {
     syncBtn: document.getElementById("syncBtn"),
@@ -1824,10 +1906,157 @@ function escapeHTML(str) {
         '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
     }[tag] || tag));
 }
-function showToast(msg) {
-    el.toastBox.innerText = msg;
-    el.toastBox.style.display = "block";
-    setTimeout(() => el.toastBox.style.display = "none", 1500);
+// 统一 Toast 组件：type 不传时按文案关键字自动判断成功/失败/警告/提示
+function showToast(msg, type) {
+    if (!type) {
+        if (/失败|错误|无法|不能/.test(msg)) type = 'error';
+        else if (/⚠/.test(msg)) type = 'warning';
+        else if (/成功|✅|👌|📌|已恢复|已删除|已置顶|已取消置顶|已开启/.test(msg)) type = 'success';
+        else type = 'info';
+    }
+    const icons = { success: '✓', error: '×', warning: '⚠', info: 'i' };
+    el.toastBox.innerHTML = `<span class="toast-icon">${icons[type] || ''}</span><span class="toast-msg"></span>`;
+    el.toastBox.querySelector('.toast-msg').innerText = msg;
+    el.toastBox.className = `toast toast-${type}`;
+    el.toastBox.style.display = "flex";
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.toastBox.style.display = "none"; }, 1800);
+}
+
+// 通用空状态组件：所有页面共用，避免重复写 HTML/CSS
+function emptyStateHTML({ icon = '📭', title = '', desc = '', actionText = '' } = {}) {
+    return `
+    <div class="empty-state">
+        <div class="empty-state-icon">${icon}</div>
+        ${title ? `<div class="empty-state-title">${escapeHTML(title)}</div>` : ''}
+        ${desc ? `<div class="empty-state-desc">${escapeHTML(desc)}</div>` : ''}
+        ${actionText ? `<button type="button" class="empty-state-btn" data-empty-action="add">${escapeHTML(actionText)}</button>` : ''}
+    </div>`;
+}
+
+// 简单按钮忙碌态封装：禁用按钮 + 文案切换，防止重复点击，操作结束后自动恢复
+function withBtnBusy(btn, busyText, fn) {
+    if (!btn || btn.disabled) return;
+    const original = btn.innerHTML;
+    btn.disabled = true;
+    btn.classList.add('btn-busy');
+    if (busyText) btn.innerHTML = busyText;
+    const restore = () => {
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.classList.remove('btn-busy');
+            btn.innerHTML = original;
+        }, 300);
+    };
+    try {
+        const ret = fn();
+        if (ret && typeof ret.then === 'function') {
+            ret.then(restore).catch(restore);
+        } else {
+            restore();
+        }
+    } catch (e) {
+        restore();
+    }
+}
+
+function cloneTasks(list) {
+    try { return JSON.parse(JSON.stringify(Array.isArray(list) ? list : [])); } catch (e) { return []; }
+}
+
+// 对比同步前后两份任务数据，得到新增/修改/删除/打卡/撤销打卡的详细差异
+function diffTaskLists(oldList, newList) {
+    oldList = Array.isArray(oldList) ? oldList : [];
+    newList = Array.isArray(newList) ? newList : [];
+    const oldMap = new Map(oldList.map(t => [t.id, t]));
+    const newMap = new Map(newList.map(t => [t.id, t]));
+    const added = [], removed = [], modified = [], checkins = [], uncheckins = [];
+    const fieldsToCheck = [
+        ['name', '任务名称'], ['remark', '备注'], ['rewardType', '奖励类型'], ['rewardValue', '奖励内容'],
+        ['category', '分类'], ['totalDay', '总天数'], ['timesPerDay', '每日次数'], ['startDate', '开始日期'], ['isContinuous', '连续打卡']
+    ];
+    // 只保留展示需要的原始值快照（字符串/数字），不持有任务对象的引用，
+    // 避免任务之后被改名/编辑时，历史同步记录里的详情跟着"被篡改"。
+    const snapshotTask = (t) => ({
+        name: t.name, rewardType: t.rewardType || 'money',
+        rewardValue: t.rewardValue !== undefined ? t.rewardValue : t.money,
+        money: t.money, remark: t.remark || ''
+    });
+    newMap.forEach((t, id) => { if (!oldMap.has(id)) added.push(snapshotTask(t)); });
+    oldMap.forEach((t, id) => { if (!newMap.has(id)) removed.push(snapshotTask(t)); });
+    newMap.forEach((newT, id) => {
+        const oldT = oldMap.get(id);
+        if (!oldT) return;
+        const oldHist = new Set(Array.isArray(oldT.history) ? oldT.history : []);
+        const newHist = new Set(Array.isArray(newT.history) ? newT.history : []);
+        const taskName = newT.name;
+        newHist.forEach(d => { if (!oldHist.has(d)) checkins.push({ taskName, date: d }); });
+        oldHist.forEach(d => { if (!newHist.has(d)) uncheckins.push({ taskName, date: d }); });
+        const changes = [];
+        fieldsToCheck.forEach(([f, label]) => {
+            let ov = oldT[f], nv = newT[f];
+            if (f === 'isContinuous') { ov = ov ? '是' : '否'; nv = nv ? '是' : '否'; }
+            if (String(ov ?? '') !== String(nv ?? '')) changes.push({ field: f, label, from: ov, to: nv });
+        });
+        if (changes.length) modified.push({ taskName, changes });
+    });
+    return { added, removed, modified, checkins, uncheckins };
+}
+
+function diffHasChange(diff) {
+    if (!diff) return false;
+    return (diff.added.length + diff.removed.length + diff.modified.length + diff.checkins.length + diff.uncheckins.length) > 0;
+}
+
+// 把差异对象渲染成同步详情里的可读列表
+function renderSyncDetailHTML(diff) {
+    if (!diff) return `<div class="sync-detail-empty">无详细变化记录</div>`;
+    let html = '';
+    diff.checkins.forEach(c => {
+        html += `<div class="sync-detail-block">
+            <div class="sync-detail-head">✅ 打卡成功</div>
+            <div class="sync-detail-row"><span>任务：</span>${escapeHTML(c.taskName)}</div>
+            <div class="sync-detail-row"><span>完成时间：</span>${escapeHTML(c.date)}</div>
+        </div>`;
+    });
+    diff.uncheckins.forEach(c => {
+        html += `<div class="sync-detail-block">
+            <div class="sync-detail-head">↩️ 撤销打卡</div>
+            <div class="sync-detail-row"><span>任务：</span>${escapeHTML(c.taskName)}</div>
+            <div class="sync-detail-row"><span>日期：</span>${escapeHTML(c.date)}</div>
+        </div>`;
+    });
+    diff.added.forEach(t => {
+        const rType = t.rewardType || 'money';
+        const rValue = t.rewardValue !== undefined ? t.rewardValue : t.money;
+        const rewardText = rType === 'money' ? `现金${formatMoney(rValue)}元` : escapeHTML(rValue || '');
+        html += `<div class="sync-detail-block">
+            <div class="sync-detail-head">➕ 新增任务</div>
+            <div class="sync-detail-row"><span>任务：</span>${escapeHTML(t.name)}</div>
+            <div class="sync-detail-row"><span>奖励：</span>${rewardText}</div>
+            ${t.remark ? `<div class="sync-detail-row"><span>备注：</span>${escapeHTML(t.remark)}</div>` : ''}
+        </div>`;
+    });
+    diff.modified.forEach(m => {
+        const rows = m.changes.map(c => `<div class="sync-detail-row"><span>${escapeHTML(c.label)}：</span>${escapeHTML(String(c.from === undefined || c.from === '' ? '无' : c.from))} → ${escapeHTML(String(c.to === undefined || c.to === '' ? '无' : c.to))}</div>`).join('');
+        html += `<div class="sync-detail-block">
+            <div class="sync-detail-head">✏️ 修改任务</div>
+            <div class="sync-detail-row"><span>任务：</span>${escapeHTML(m.taskName)}</div>
+            ${rows}
+        </div>`;
+    });
+    diff.removed.forEach(t => {
+        const rType = t.rewardType || 'money';
+        const rValue = t.rewardValue !== undefined ? t.rewardValue : t.money;
+        const rewardText = rType === 'money' ? `现金${formatMoney(rValue)}元` : escapeHTML(rValue || '');
+        html += `<div class="sync-detail-block">
+            <div class="sync-detail-head">🗑 删除任务</div>
+            <div class="sync-detail-row"><span>任务：</span>${escapeHTML(t.name)}</div>
+            <div class="sync-detail-row"><span>奖励：</span>${rewardText}</div>
+        </div>`;
+    });
+    if (!html) html = `<div class="sync-detail-empty">无详细变化记录</div>`;
+    return html;
 }
 function openConfirm(title, desc, onConfirm, isDanger = false) {
     el.confirmTitle.innerText = title;
@@ -1881,8 +2110,8 @@ function saveLocalStorage() {
 }
 
 // 记一条同步记录，最多保留 SYNC_LOG_MAX 条（超出的旧记录自动丢弃）
-function addSyncLog(type, ok, reason) {
-    syncLog.unshift({ t: getNowDateTimeStr(), type, ok, reason: reason || null });
+function addSyncLog(type, ok, reason, detail) {
+    syncLog.unshift({ t: getNowDateTimeStr(), type, ok, reason: reason || null, detail: detail || null });
     if (syncLog.length > SYNC_LOG_MAX) syncLog = syncLog.slice(0, SYNC_LOG_MAX);
 }
 
@@ -1948,6 +2177,7 @@ async function loadStorage() {
     
     if (syncPassword) {
         updateSyncStatus('syncing');
+        const localBeforeSync = cloneTasks(taskList);
         try {
             const remoteData = await fetchRemoteData();
             if (remoteData && remoteData.tasks && Array.isArray(remoteData.tasks)) {
@@ -1966,7 +2196,7 @@ async function loadStorage() {
                     initAnnouncement(remoteData.announcement);
                     localStorage.setItem('persistent_announcement_v3', remoteData.announcement);
                 }
-                addSyncLog('download', true);
+                addSyncLog('download', true, null, diffTaskLists(localBeforeSync, taskList));
                 maybeCreateDailySnapshot();
                 saveLocalStorage();
                 const now = new Date();
@@ -1991,16 +2221,19 @@ async function loadStorage() {
         const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         updateSyncStatus('success', timeStr);
     }
+    lastSyncedSnapshot = cloneTasks(taskList);
     renderPage();
 }
 
 function saveStorage() {
+    const beforeUploadSnapshot = lastSyncedSnapshot;
     saveLocalStorage();
     if (syncPassword) {
         updateSyncStatus('syncing');
         saveRemoteData().then((result) => {
             if (result && !result.skipped) {
-                addSyncLog('upload', true);
+                addSyncLog('upload', true, null, diffTaskLists(beforeUploadSnapshot, taskList));
+                lastSyncedSnapshot = cloneTasks(taskList);
                 saveLocalStorage();
             }
             const now = new Date();
@@ -2353,6 +2586,7 @@ function renderTaskCard(item, isTodayPage = false) {
     const pinBtnClass = isPinned ? "pin active-pin" : "pin";
 
     const editDelBtnsHtml = isTodayPage ? "" : `
+        ${status === "finish" ? `<button class="restart-round" data-restart="${item.id}">🔄 再开一轮</button>` : ''}
         <button data-edit="${item.id}">编辑</button>
         <button class="del" data-del="${item.id}">删除</button>
     `;
@@ -2488,12 +2722,7 @@ function openCalendarDetail(dateString, taskEntries) {
             </div>
         `).join('');
     } else {
-        el.calendarDetailList.innerHTML = `
-            <div class="calendar-detail-empty">
-                这一天还没有打卡记录。<br>
-                继续保持，慢慢把绿点点满吧。
-            </div>
-        `;
+        el.calendarDetailList.innerHTML = emptyStateHTML({ icon: '📅', title: '当天没有打卡记录', desc: '继续坚持保持习惯' });
     }
     el.calendarDetailPopWrap.style.display = 'block';
 }
@@ -2739,7 +2968,18 @@ function renderPage() {
     if (el.todayProgressInner) el.todayProgressInner.style.width = todayPercent + "%";
     el.tabBadge.innerText = totalRemainingCount > 0 ? `(${totalRemainingCount})` : "";
     el.todayTipWrap.style.display = todayList.length > 0 ? "flex" : "none";
-    el.todayEmpty.style.display = (todayList.length === 0) ? "block" : "none";
+    if (todayList.length === 0) {
+        el.todayEmpty.style.display = "block";
+        if (taskList.length === 0) {
+            el.todayEmpty.innerHTML = emptyStateHTML({ icon: '👋', title: '还没有创建任务', desc: '点击添加第一个任务开始使用', actionText: '添加任务' });
+        } else if (queryToday && filterTodayAll.length === 0) {
+            el.todayEmpty.innerHTML = emptyStateHTML({ icon: '🔍', title: '没有找到相关任务', desc: '换个关键词试试看' });
+        } else {
+            el.todayEmpty.innerHTML = emptyStateHTML({ icon: '🎉', title: '今天没有需要打卡的任务', desc: '享受轻松的一天吧！' });
+        }
+    } else {
+        el.todayEmpty.style.display = "none";
+    }
     el.todayListWrap.innerHTML = todayCategoryHtml;
 
     el.todayListWrap.querySelectorAll('.category-group-card').forEach(detail => {
@@ -2771,7 +3011,18 @@ function renderPage() {
         return (Number(b.id) || 0) - (Number(a.id) || 0); // 按创建时间倒序
     });
     
-    el.allEmpty.style.display = filterArr.length === 0 ? "block" : "none";
+    if (filterArr.length === 0) {
+        el.allEmpty.style.display = "block";
+        if (taskList.length === 0) {
+            el.allEmpty.innerHTML = emptyStateHTML({ icon: '👋', title: '欢迎使用羊毛打卡管家', desc: '创建第一个任务，开始管理你的打卡计划', actionText: '添加任务' });
+        } else if (queryAll && filterAllTaskList.length === 0) {
+            el.allEmpty.innerHTML = emptyStateHTML({ icon: '🔍', title: '没有找到相关任务', desc: '换个关键词试试看' });
+        } else {
+            el.allEmpty.innerHTML = emptyStateHTML({ icon: '📭', title: '暂无任务', desc: '当前分类下还没有任务' });
+        }
+    } else {
+        el.allEmpty.style.display = "none";
+    }
     let groups = {};
     filterArr.forEach(item => {
         let cat = item.category || "默认分组";
@@ -2848,6 +3099,11 @@ function handleCardAction(e) {
         renderPage();
         return;
     }
+    const restartBtn = e.target.closest('[data-restart]');
+    if (restartBtn) {
+        restartTask(Number(restartBtn.dataset.restart));
+        return;
+    }
     const pinBtn = e.target.closest('[data-pin]');
     if (pinBtn) {
         const taskId = Number(pinBtn.dataset.pin);
@@ -2911,6 +3167,48 @@ function handleCardAction(e) {
         }, true);
         return;
     }
+}
+
+// 「再开一轮」：复制已完成/归档任务生成一个新任务，原任务保持不变（数据、历史都不动）
+function restartTask(id) {
+    const item = taskList.find(t => t.id === id);
+    if (!item) return;
+    openConfirm("再开一轮", `确定要为「${item.name}」再开一轮吗？将生成一个全新的进行中任务，原任务记录保留不变。`, () => {
+        const roundMatch = /^(.*?)（第(\d+)轮）$/.exec(item.name);
+        const baseName = roundMatch ? roundMatch[1] : item.name;
+        const nextRound = roundMatch ? (Number(roundMatch[2]) + 1) : 2;
+        let newName = `${baseName}（第${nextRound}轮）`;
+        // 避免极端情况下名称冲突（例如用户已手动创建过同名任务）
+        let dedupeSuffix = 0;
+        while (taskList.some(t => t.name === newName && (t.category || "默认分组") === (item.category || "默认分组"))) {
+            dedupeSuffix++;
+            newName = `${baseName}（第${nextRound}轮${dedupeSuffix > 0 ? '-' + (dedupeSuffix + 1) : ''}）`;
+        }
+        const nowStr = getNowDateTimeStr();
+        const newTask = {
+            id: Date.now(),
+            name: newName,
+            appScheme: item.appScheme,
+            category: item.category,
+            remark: item.remark,
+            totalDay: item.totalDay,
+            timesPerDay: item.timesPerDay,
+            rewardType: item.rewardType,
+            rewardValue: item.rewardValue,
+            money: item.money,
+            startDate: getTodayStr(),
+            isContinuous: item.isContinuous,
+            isPinned: false,
+            history: [],
+            archives: [],
+            createAt: nowStr,
+            updateAt: nowStr
+        };
+        taskList.push(newTask);
+        saveStorage();
+        renderPage();
+        showToast(`🔄 已开启新一轮：${newName}`);
+    });
 }
 
 function retroCheck(id) {
@@ -3301,7 +3599,7 @@ function renderSnapshotList() {
     const box = document.getElementById('snapshotList');
     if (!box) return;
     if (snapshots.length === 0) {
-        box.innerHTML = `<div class="backup-empty-hint">暂无历史快照，从明天开始会自动生成</div>`;
+        box.innerHTML = emptyStateHTML({ icon: '📦', title: '暂无历史快照', desc: '系统会自动保存历史版本，用于数据恢复' });
         return;
     }
     box.innerHTML = snapshots.map(s => `
@@ -3319,7 +3617,7 @@ function renderSyncLogList() {
     const box = document.getElementById('syncLogList');
     if (!box) return;
     if (syncLog.length === 0) {
-        box.innerHTML = `<div class="backup-empty-hint">暂无同步记录</div>`;
+        box.innerHTML = emptyStateHTML({ icon: '☁️', title: '暂无同步记录', desc: '完成一次同步后，这里会显示详细记录' });
         return;
     }
     box.innerHTML = syncLog.map(item => {
@@ -3327,10 +3625,22 @@ function renderSyncLogList() {
         const typeText = item.type === 'upload' ? '上传' : '下载';
         const resultText = item.ok ? '成功' : '失败';
         const cls = item.ok ? 'ok' : 'fail';
+        const hasChange = item.ok && diffHasChange(item.detail);
+        let statsLine = '';
+        if (item.ok && hasChange) {
+            const d = item.detail;
+            const checkinTotal = d.checkins.length + d.uncheckins.length;
+            statsLine = `<div class="sync-log-stats">打卡 ${checkinTotal} 新增 ${d.added.length} 修改 ${d.modified.length} 删除 ${d.removed.length}</div>`;
+        }
         return `
-        <div class="sync-log-item ${cls}">
-            <div class="sync-log-main">${arrow} ${typeText}${resultText}</div>
+        <div class="sync-log-item ${cls} ${item.ok ? 'expandable' : ''}">
+            <div class="sync-log-row-top">
+                <div class="sync-log-main">${arrow} ${typeText}${resultText}</div>
+                ${item.ok ? `<div class="sync-log-summary ${hasChange ? 'changed' : ''}">${hasChange ? '有数据更新' : '数据一致'}</div>` : ''}
+            </div>
             <div class="sync-log-sub">${item.t}${!item.ok && item.reason ? ' · 原因：' + item.reason : ''}</div>
+            ${statsLine}
+            ${item.ok ? `<div class="sync-log-detail">${renderSyncDetailHTML(item.detail)}</div>` : ''}
         </div>`;
     }).join('');
 }
@@ -3362,12 +3672,16 @@ function initWidgetStates() {
 function bindGlobalEvent() {
     el.todayListWrap.addEventListener('click', handleCardAction);
     el.allListWrap.addEventListener('click', handleCardAction);
+    el.todayEmpty.addEventListener('click', (e) => { if (e.target.closest('[data-empty-action]')) openAdd(); });
+    el.allEmpty.addEventListener('click', (e) => { if (e.target.closest('[data-empty-action]')) openAdd(); });
     
     el.syncBtn.addEventListener('click', () => {
         if (!syncPassword) {
             setSyncPassword();
         } else {
-            loadStorage();
+            if (syncInFlight) return;
+            syncInFlight = true;
+            Promise.resolve(loadStorage()).finally(() => { syncInFlight = false; });
         }
     });
     el.syncBtn.addEventListener('dblclick', setSyncPassword);
@@ -3449,10 +3763,14 @@ function bindGlobalEvent() {
     });
     el.backupManagePopWrap.addEventListener('click', (e) => {
         const restoreBtn = e.target.closest('[data-restore-snap]');
-        if (restoreBtn) restoreSnapshot(restoreBtn.dataset.restoreSnap);
+        if (restoreBtn) withBtnBusy(restoreBtn, '⏳ 恢复中...', () => restoreSnapshot(restoreBtn.dataset.restoreSnap));
+        const logItem = e.target.closest('.sync-log-item.expandable');
+        if (logItem && !restoreBtn) {
+            logItem.classList.toggle('expanded');
+        }
     });
-    el.bmExportBtn.onclick = exportBackup;
-    el.bmExportCsvBtn.onclick = exportCsv;
+    el.bmExportBtn.onclick = () => withBtnBusy(el.bmExportBtn, '⏳ 导出中...', exportBackup);
+    el.bmExportCsvBtn.onclick = () => withBtnBusy(el.bmExportCsvBtn, '⏳ 导出中...', exportCsv);
     el.bmImportBtn.onclick = () => el.fileInput.click();
     el.fileInput.onchange = triggerImport;
     el.clearAllBtn.onclick = clearAllData;
