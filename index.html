@@ -231,7 +231,7 @@ body {
 .confirm-pop{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:101;}
 .confirm-inner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;max-width:360px;background:var(--card-bg);border-radius:14px;padding:20px;}
 .confirm-title{font-size:16px;font-weight:bold;margin-bottom:10px;text-align:center;color:var(--text-main);}
-.confirm-desc{font-size:14px;color:var(--text-sub);text-align:center;margin-bottom:20px;line-height:1.5;}
+.confirm-desc{font-size:14px;color:var(--text-sub);text-align:center;margin-bottom:20px;line-height:1.5;white-space:pre-line;}
 .confirm-btns{display:flex;gap:10px;}
 .confirm-btns button{flex:1;padding:11px;border-radius:8px;border:none;font-size:14px;cursor:pointer;}
 html[data-theme="dark"] input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
@@ -1021,6 +1021,80 @@ html[data-theme="dark"] .calendar-header-bar{
     border:1px dashed var(--border-color);
     border-radius:14px;
 }
+.backup-manage-scroll{
+    max-height:calc(82vh - 90px);
+    overflow:auto;
+    padding-right:2px;
+}
+.backup-section{ margin-bottom:18px; }
+.backup-section:last-child{ margin-bottom:4px; }
+.backup-section-title{
+    font-size:13px;
+    font-weight:800;
+    color:var(--text-main);
+    margin-bottom:8px;
+    display:flex;
+    align-items:baseline;
+    gap:6px;
+}
+.backup-section-hint{
+    font-size:11px;
+    font-weight:400;
+    color:var(--text-light);
+}
+.backup-btn-row{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+.backup-action-btn{
+    padding:11px 12px;
+    border-radius:12px;
+    border:1px solid var(--border-color);
+    background:var(--bg-color);
+    color:var(--text-main);
+    font-size:13px;
+    font-weight:600;
+    text-align:left;
+}
+.backup-empty-hint{
+    padding:16px 12px;
+    text-align:center;
+    color:var(--text-light);
+    font-size:12px;
+    line-height:1.6;
+    background:var(--bg-color);
+    border:1px dashed var(--border-color);
+    border-radius:12px;
+}
+.snapshot-item, .sync-log-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:10px 12px;
+    border-radius:12px;
+    background:var(--bg-color);
+    border:1px solid var(--border-color);
+    margin-bottom:8px;
+}
+.snapshot-item:last-child, .sync-log-item:last-child{ margin-bottom:0; }
+.snapshot-item-label{ font-size:13px; font-weight:700; color:var(--text-main); }
+.snapshot-item-sub{ font-size:11px; color:var(--text-light); margin-top:2px; }
+.snapshot-restore-btn{
+    flex:0 0 auto;
+    padding:7px 14px;
+    border-radius:999px;
+    border:none;
+    background:var(--primary);
+    color:#fff;
+    font-size:12px;
+    font-weight:700;
+}
+.sync-log-item{ flex-direction:column; align-items:flex-start; gap:2px; }
+.sync-log-main{ font-size:13px; font-weight:700; color:var(--text-main); }
+.sync-log-item.fail .sync-log-main{ color:var(--danger); }
+.sync-log-sub{ font-size:11px; color:var(--text-light); font-family:monospace; }
 html[data-theme="dark"] .calendar-detail-pop{
     box-shadow:0 20px 50px rgba(0,0,0,.45);
 }
@@ -1075,9 +1149,7 @@ html[data-theme="dark"] .calendar-detail-stat{
             <div class="more-wrap">
                 <span class="tool-btn more-trigger" id="moreBtn" aria-label="更多操作">⋯</span>
                 <div class="more-menu" id="moreMenu">
-                    <button type="button" class="more-item" id="exportBtn">💾 备份</button>
-                    <button type="button" class="more-item" id="importBtn">📥 导入</button>
-                    <button type="button" class="more-item" id="exportCsvBtn">📊 导出报表</button>
+                    <button type="button" class="more-item" id="backupManageBtn">🗂 备份管理</button>
                     <button type="button" class="more-item" id="archiveBtn">📦 归档上月</button>
                     <div class="more-sep"></div>
                     <button type="button" class="more-item danger" id="clearAllBtn">🗑️ 清空所有本地数据</button>
@@ -1305,6 +1377,37 @@ html[data-theme="dark"] .calendar-detail-stat{
         </div>
     </div>
 
+    <!-- 备份管理：导出/导入数据、历史快照恢复、同步记录 -->
+    <div class="mask calendar-detail-mask" id="backupManagePopWrap">
+        <div class="calendar-detail-pop">
+            <div class="calendar-detail-head">
+                <div>
+                    <div class="calendar-detail-date">备份管理</div>
+                    <div class="calendar-detail-sub">数据备份 · 历史快照 · 同步记录</div>
+                </div>
+                <button type="button" class="calendar-detail-close" id="backupManageClose">×</button>
+            </div>
+            <div class="backup-manage-scroll">
+                <div class="backup-section">
+                    <div class="backup-section-title">数据备份</div>
+                    <div class="backup-btn-row">
+                        <button type="button" id="bmExportBtn" class="backup-action-btn">💾 导出数据（JSON）</button>
+                        <button type="button" id="bmImportBtn" class="backup-action-btn">📥 导入数据</button>
+                        <button type="button" id="bmExportCsvBtn" class="backup-action-btn">📊 导出报表（CSV）</button>
+                    </div>
+                </div>
+                <div class="backup-section">
+                    <div class="backup-section-title">历史快照 <span class="backup-section-hint">保留最近3天，可恢复</span></div>
+                    <div id="snapshotList"></div>
+                </div>
+                <div class="backup-section">
+                    <div class="backup-section-title">同步记录 <span class="backup-section-hint">最近50条</span></div>
+                    <div id="syncLogList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="mask calendar-detail-mask" id="calendarDetailPopWrap">
         <div class="calendar-detail-pop">
             <div class="calendar-detail-head">
@@ -1350,8 +1453,6 @@ const appSchemeRules = [
   {k:"微信",s:"weixin://"}
 ];
 
-
-
 const SYNC_ICON_SVG = {
   syncing: `<svg viewBox="0 0 24 24" class="sync-icon" aria-hidden="true"><path d="M20 12a8 8 0 0 1-13.9 5.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M5 12a7 7 0 0 1 11.8-5.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16.4 6.4H18V4.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.6 17.6H6v1.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   success: `<svg viewBox="0 0 24 24" class="sync-icon" aria-hidden="true"><path d="M20 11.8A7.5 7.5 0 0 0 6.3 7.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M6 7.6H8.8V4.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 12.2A7.5 7.5 0 0 1 7.7 17.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M17.6 17.4H15V20.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.2 13.1l2 2 3.6-4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
@@ -1368,8 +1469,14 @@ function getTaskAppScheme(item) {
 }
 
 const KEY = "daka_offline_data";
+const KEY_SYNC_LOG = "daka_sync_log";
+const KEY_SNAPSHOTS = "daka_snapshots";
+const SYNC_LOG_MAX = 50;
+const SNAPSHOT_KEEP_DAYS = 3;
 const SYNC_PASSWORD_KEY = 'sync_password';
 let taskList = [];
+let syncLog = [];
+let snapshots = [];
 let currentPage = "today";
 let filterType = "doing";
 let editId = null;
@@ -1438,9 +1545,12 @@ const el = {
     toastBox: document.getElementById("toastBox"),
     addTaskBtn: document.getElementById("addTaskBtn"),
     archiveBtn: document.getElementById("archiveBtn"),
-    exportBtn: document.getElementById("exportBtn"),
-    exportCsvBtn: document.getElementById("exportCsvBtn"),
-    importBtn: document.getElementById("importBtn"),
+    backupManageBtn: document.getElementById("backupManageBtn"),
+    backupManagePopWrap: document.getElementById("backupManagePopWrap"),
+    backupManageClose: document.getElementById("backupManageClose"),
+    bmExportBtn: document.getElementById("bmExportBtn"),
+    bmExportCsvBtn: document.getElementById("bmExportCsvBtn"),
+    bmImportBtn: document.getElementById("bmImportBtn"),
     clearAllBtn: document.getElementById("clearAllBtn"),
     fileInput: document.getElementById("fileInput"),
     confirmPopWrap: document.getElementById("confirmPopWrap"),
@@ -1499,7 +1609,7 @@ function updateSyncStatus(status, text) {
 
 function buildRemotePayload() {
     const announcement = document.getElementById('announcementContent').innerHTML;
-    return { tasks: taskList, announcement };
+    return { tasks: taskList, announcement, syncLog, snapshots };
 }
 
 function getRemotePayloadString() {
@@ -1576,7 +1686,8 @@ function debounce(func, wait) {
     };
 }
 
-function mergeTasks(localList, remoteList) {
+// 仅用于"导入备份文件"时的智能合并，与云端自动同步逻辑无关（云端同步已改为整体覆盖）
+function mergeImportedTasks(localList, remoteList) {
     if (!Array.isArray(localList) || localList.length === 0) return remoteList;
     if (!Array.isArray(remoteList) || remoteList.length === 0) return localList;
 
@@ -1713,10 +1824,6 @@ function escapeHTML(str) {
         '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
     }[tag] || tag));
 }
-const escapeHtml = escapeHTML;
-function updateTime() {
-    return;
-}
 function showToast(msg) {
     el.toastBox.innerText = msg;
     el.toastBox.style.display = "block";
@@ -1741,9 +1848,7 @@ function closeCalendarDetail() {
 
 function loadLocalStorage() {
     try {
-        let raw = localStorage.getItem(KEY);
-        if (!raw) raw = localStorage.getItem("daka_offline_data_v3");
-        if (!raw) raw = localStorage.getItem("daka_offline_data_v2");
+        const raw = localStorage.getItem(KEY);
         if (raw) {
             const parsed = JSON.parse(raw);
             if (Array.isArray(parsed)) {
@@ -1756,11 +1861,84 @@ function loadLocalStorage() {
             }
         }
     } catch (e) { console.error("本地数据加载失败", e); }
+    try {
+        const rawLog = localStorage.getItem(KEY_SYNC_LOG);
+        syncLog = rawLog ? JSON.parse(rawLog) : [];
+        if (!Array.isArray(syncLog)) syncLog = [];
+    } catch (e) { syncLog = []; }
+    try {
+        const rawSnap = localStorage.getItem(KEY_SNAPSHOTS);
+        snapshots = rawSnap ? JSON.parse(rawSnap) : [];
+        if (!Array.isArray(snapshots)) snapshots = [];
+    } catch (e) { snapshots = []; }
 }
 
 function saveLocalStorage() {
     const dataStr = JSON.stringify(taskList);
     localStorage.setItem(KEY, dataStr);
+    localStorage.setItem(KEY_SYNC_LOG, JSON.stringify(syncLog));
+    localStorage.setItem(KEY_SNAPSHOTS, JSON.stringify(snapshots));
+}
+
+// 记一条同步记录，最多保留 SYNC_LOG_MAX 条（超出的旧记录自动丢弃）
+function addSyncLog(type, ok, reason) {
+    syncLog.unshift({ t: getNowDateTimeStr(), type, ok, reason: reason || null });
+    if (syncLog.length > SYNC_LOG_MAX) syncLog = syncLog.slice(0, SYNC_LOG_MAX);
+}
+
+// 合并两端的同步记录：按时间去重后取最新的 SYNC_LOG_MAX 条
+function mergeSyncLog(localLog, remoteLog) {
+    const all = [...(Array.isArray(localLog) ? localLog : []), ...(Array.isArray(remoteLog) ? remoteLog : [])];
+    const seen = new Set();
+    const merged = [];
+    all.sort((a, b) => (b.t || '').localeCompare(a.t || ''));
+    all.forEach(item => {
+        const key = `${item.t}_${item.type}_${item.ok}_${item.reason || ''}`;
+        if (!seen.has(key)) { seen.add(key); merged.push(item); }
+    });
+    return merged.slice(0, SYNC_LOG_MAX);
+}
+
+// 如果今天还没有快照，就用当前数据生成一份"今日起点"快照，只保留最近 SNAPSHOT_KEEP_DAYS 天
+function maybeCreateDailySnapshot() {
+    const today = getTodayStr();
+    if (snapshots.length > 0 && snapshots[0].date === today) return;
+    snapshots.unshift({ date: today, ts: Date.now(), tasks: JSON.parse(JSON.stringify(taskList)) });
+    pruneSnapshots();
+}
+
+function pruneSnapshots() {
+    const seen = new Set();
+    snapshots = snapshots.filter(s => {
+        if (!s || !s.date || seen.has(s.date)) return false;
+        seen.add(s.date);
+        return true;
+    });
+    snapshots.sort((a, b) => b.date.localeCompare(a.date));
+    snapshots = snapshots.slice(0, SNAPSHOT_KEEP_DAYS);
+}
+
+// 合并两端快照：同一天存在两份时，保留较早生成的那份（更接近"当天起点"）
+function mergeSnapshots(localSnaps, remoteSnaps) {
+    const map = new Map();
+    (Array.isArray(localSnaps) ? localSnaps : []).forEach(s => { if (s && s.date) map.set(s.date, s); });
+    (Array.isArray(remoteSnaps) ? remoteSnaps : []).forEach(s => {
+        if (!s || !s.date) return;
+        const existing = map.get(s.date);
+        if (!existing || (s.ts || 0) < (existing.ts || 0)) map.set(s.date, s);
+    });
+    const merged = Array.from(map.values());
+    merged.sort((a, b) => b.date.localeCompare(a.date));
+    return merged.slice(0, SNAPSHOT_KEEP_DAYS);
+}
+
+// 把各种失败原因归一成用户能看懂的短文案
+function friendlySyncErrorReason(e) {
+    const msg = e && e.message ? e.message : '';
+    if (msg === '同步密码错误') return '密码错误';
+    if (msg === '云端保存失败' || msg === '云端请求失败') return '服务器错误';
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return '网络离线';
+    return '网络错误';
 }
 
 async function loadStorage() {
@@ -1778,24 +1956,37 @@ async function loadStorage() {
                     if (!Array.isArray(t.archives)) t.archives = [];
                     if (!t.updateAt) t.updateAt = getNowDateTimeStr();
                 });
-                taskList = mergeTasks(taskList, remoteData.tasks);
+                // 云端为准：直接用云端任务列表覆盖本地，不再逐条合并。
+                // 因为使用场景始终联网保存，云端数据始终是最新、最完整的一份，
+                // 这样可以从根本上避免"本地旧数据把云端已删除的任务合并回来"的问题。
+                taskList = remoteData.tasks;
+                syncLog = mergeSyncLog(syncLog, remoteData.syncLog);
+                snapshots = mergeSnapshots(snapshots, remoteData.snapshots);
                 if (remoteData.announcement !== undefined) {
                     initAnnouncement(remoteData.announcement);
                     localStorage.setItem('persistent_announcement_v3', remoteData.announcement);
                 }
+                addSyncLog('download', true);
+                maybeCreateDailySnapshot();
                 saveLocalStorage();
-                lastUploadedRemotePayload = getRemotePayloadString();
                 const now = new Date();
                 const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
                 updateSyncStatus('success', timeStr);
                 showToast('☁️ 云端数据同步成功');
+                // 把刚合并好的同步记录/快照顺带回传云端，让其他设备也能看到；静默执行，不重复记日志
+                saveRemoteData().catch(() => {});
             }
         } catch (e) {
             console.error('云端同步失败', e);
+            addSyncLog('download', false, friendlySyncErrorReason(e));
+            maybeCreateDailySnapshot();
+            saveLocalStorage();
             updateSyncStatus('error');
             showToast(`⚠️ ${e.message}，已使用本地数据`);
         }
     } else {
+        maybeCreateDailySnapshot();
+        saveLocalStorage();
         const now = new Date();
         const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         updateSyncStatus('success', timeStr);
@@ -1807,12 +1998,18 @@ function saveStorage() {
     saveLocalStorage();
     if (syncPassword) {
         updateSyncStatus('syncing');
-        saveRemoteData().then(() => {
+        saveRemoteData().then((result) => {
+            if (result && !result.skipped) {
+                addSyncLog('upload', true);
+                saveLocalStorage();
+            }
             const now = new Date();
             const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
             updateSyncStatus('success', timeStr);
         }).catch(e => {
             console.error('云端保存失败', e);
+            addSyncLog('upload', false, friendlySyncErrorReason(e));
+            saveLocalStorage();
             updateSyncStatus('error');
         });
     }
@@ -2192,7 +2389,6 @@ function renderTaskCard(item, isTodayPage = false) {
         ${historyHtml}
     </div>`;
 }
-
 
 function renderCalendar() {
     el.calendarTitleText.innerText = `${currentCalYear}年${currentCalMonth + 1}月`;
@@ -3040,17 +3236,23 @@ function triggerImport(e) {
 }
 
 el.importOverwriteBtn.onclick = () => {
-    if(tempImportData) {
-        taskList = tempImportData;
-        saveStorage(); renderPage();
-        showToast("✅ 已覆盖本地数据");
-    }
+    if (!tempImportData) { el.importPopWrap.style.display = "none"; return; }
     el.importPopWrap.style.display = "none";
-    tempImportData = null;
+    openConfirm(
+        "⚠️ 确认覆盖导入",
+        "此操作将：\n1. 覆盖本地数据\n2. 同步覆盖云端数据\n3. 不可撤销\n\n确定要继续吗？",
+        () => {
+            taskList = tempImportData;
+            saveStorage(); renderPage();
+            showToast("✅ 已覆盖本地数据");
+            tempImportData = null;
+        },
+        true
+    );
 };
 el.importMergeBtn.onclick = () => {
     if(tempImportData) {
-        taskList = mergeTasks(taskList, tempImportData);
+        taskList = mergeImportedTasks(taskList, tempImportData);
         saveStorage(); 
         renderPage();
         showToast(`✅ 合并完成，已智能融合本地与导入数据`);
@@ -3068,6 +3270,82 @@ function clearAllData() {
         saveStorage(); renderPage();
         showToast("已清空全部数据");
     }, true);
+}
+
+function formatSnapshotLabel(dateStr) {
+    if (dateStr === getTodayStr()) return '今天';
+    if (dateStr === getYesterdayStr()) return '昨天';
+    if (dateStr === getOffsetDateStr(-2)) return '前天';
+    const parts = dateStr.split('-');
+    return parts.length === 3 ? `${Number(parts[1])}月${Number(parts[2])}日` : dateStr;
+}
+
+function restoreSnapshot(dateStr) {
+    const snap = snapshots.find(s => s.date === dateStr);
+    if (!snap) return;
+    openConfirm(
+        `恢复到${formatSnapshotLabel(dateStr)}的快照`,
+        `此操作将：\n1. 恢复本地数据\n2. 同步恢复云端数据\n3. 当前数据将被覆盖，不可撤销\n\n确定要恢复吗？`,
+        () => {
+            taskList = JSON.parse(JSON.stringify(snap.tasks));
+            saveStorage();
+            renderPage();
+            renderBackupManagePanel();
+            showToast(`✅ 已恢复到${formatSnapshotLabel(dateStr)}的快照`);
+        },
+        true
+    );
+}
+
+function renderSnapshotList() {
+    const box = document.getElementById('snapshotList');
+    if (!box) return;
+    if (snapshots.length === 0) {
+        box.innerHTML = `<div class="backup-empty-hint">暂无历史快照，从明天开始会自动生成</div>`;
+        return;
+    }
+    box.innerHTML = snapshots.map(s => `
+        <div class="snapshot-item">
+            <div class="snapshot-item-info">
+                <div class="snapshot-item-label">${formatSnapshotLabel(s.date)}</div>
+                <div class="snapshot-item-sub">${s.date} · 共 ${Array.isArray(s.tasks) ? s.tasks.length : 0} 项任务</div>
+            </div>
+            <button type="button" class="snapshot-restore-btn" data-restore-snap="${s.date}">恢复</button>
+        </div>
+    `).join('');
+}
+
+function renderSyncLogList() {
+    const box = document.getElementById('syncLogList');
+    if (!box) return;
+    if (syncLog.length === 0) {
+        box.innerHTML = `<div class="backup-empty-hint">暂无同步记录</div>`;
+        return;
+    }
+    box.innerHTML = syncLog.map(item => {
+        const arrow = item.type === 'upload' ? '↑' : '↓';
+        const typeText = item.type === 'upload' ? '上传' : '下载';
+        const resultText = item.ok ? '成功' : '失败';
+        const cls = item.ok ? 'ok' : 'fail';
+        return `
+        <div class="sync-log-item ${cls}">
+            <div class="sync-log-main">${arrow} ${typeText}${resultText}</div>
+            <div class="sync-log-sub">${item.t}${!item.ok && item.reason ? ' · 原因：' + item.reason : ''}</div>
+        </div>`;
+    }).join('');
+}
+
+function renderBackupManagePanel() {
+    renderSnapshotList();
+    renderSyncLogList();
+}
+
+function openBackupManage() {
+    renderBackupManagePanel();
+    el.backupManagePopWrap.style.display = 'block';
+}
+function closeBackupManage() {
+    el.backupManagePopWrap.style.display = 'none';
 }
 
 function initWidgetStates() {
@@ -3164,9 +3442,18 @@ function bindGlobalEvent() {
     el.popSave.onclick = saveTask;
     el.addTaskBtn.onclick = openAdd;
     el.archiveBtn.onclick = () => archiveOldHistory(true);
-    el.exportBtn.onclick = exportBackup;
-    el.exportCsvBtn.onclick = exportCsv;
-    el.importBtn.onclick = () => el.fileInput.click();
+    el.backupManageBtn.onclick = () => { el.moreMenu.classList.remove('show'); openBackupManage(); };
+    el.backupManageClose.onclick = closeBackupManage;
+    el.backupManagePopWrap.addEventListener('click', (e) => {
+        if (e.target === el.backupManagePopWrap) closeBackupManage();
+    });
+    el.backupManagePopWrap.addEventListener('click', (e) => {
+        const restoreBtn = e.target.closest('[data-restore-snap]');
+        if (restoreBtn) restoreSnapshot(restoreBtn.dataset.restoreSnap);
+    });
+    el.bmExportBtn.onclick = exportBackup;
+    el.bmExportCsvBtn.onclick = exportCsv;
+    el.bmImportBtn.onclick = () => el.fileInput.click();
     el.fileInput.onchange = triggerImport;
     el.clearAllBtn.onclick = clearAllData;
     el.confirmCancel.onclick = closeConfirm;
