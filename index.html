@@ -1136,7 +1136,7 @@ html[data-theme="dark"] .calendar-header-bar{
     font-weight:600;
     text-align:left;
 }
-.backup-empty-hint{
+ .backup-empty-hint{
     padding:16px 12px;
     text-align:center;
     color:var(--text-light);
@@ -1146,7 +1146,124 @@ html[data-theme="dark"] .calendar-header-bar{
     border:1px dashed var(--border-color);
     border-radius:12px;
 }
-.snapshot-item, .sync-log-item{
+.device-panel{
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    padding:12px;
+    background:var(--bg-color);
+    border:1px solid var(--border-color);
+    border-radius:14px;
+}
+.device-panel-current{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+.device-form-item{
+    margin-bottom:0;
+}
+.device-id-text{
+    padding:11px 12px;
+    border:1px solid var(--border-color);
+    border-radius:12px;
+    background:var(--card-bg);
+    color:var(--text-sub);
+    font-size:12px;
+    word-break:break-all;
+    line-height:1.5;
+}
+.device-list-head{
+    font-size:13px;
+    font-weight:800;
+    color:var(--text-main);
+}
+.device-card{
+    padding:12px;
+    border-radius:14px;
+    border:1px solid var(--border-color);
+    background:var(--card-bg);
+    box-shadow:0 6px 16px rgba(0,0,0,.04);
+    margin-top:10px;
+}
+.device-card.active{
+    border-color:rgba(25,137,250,.35);
+    box-shadow:0 8px 18px rgba(25,137,250,.12);
+}
+.device-card-head{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    align-items:flex-start;
+    margin-bottom:10px;
+}
+.device-card-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    min-width:0;
+}
+.device-card-name{
+    font-size:14px;
+    font-weight:800;
+    color:var(--text-main);
+    word-break:break-all;
+}
+.device-card-active{
+    font-size:11px;
+    padding:2px 8px;
+    border-radius:999px;
+    background:rgba(25,137,250,.08);
+    color:var(--primary);
+    flex:0 0 auto;
+}
+.device-card-id{
+    font-size:11px;
+    color:var(--text-light);
+    font-family:monospace;
+    word-break:break-all;
+    text-align:right;
+}
+.device-card-row{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin-top:8px;
+}
+.device-card-label{
+    font-size:12px;
+    color:var(--text-sub);
+    font-weight:600;
+}
+.device-note-input{
+    width:100%;
+    height:42px;
+    padding:0 12px;
+    border:1px solid var(--border-color);
+    border-radius:12px;
+    background:var(--bg-color);
+    color:var(--text-main);
+    font-size:13px;
+    outline:none;
+}
+.device-note-input:focus{
+    border-color:var(--primary);
+}
+.device-card-meta{
+    flex-direction:row;
+    flex-wrap:wrap;
+    gap:8px 10px;
+    font-size:11px;
+    color:var(--text-light);
+}
+.device-card-actions{
+    margin-top:10px;
+}
+.device-save-current{
+    width:100%;
+    margin-top:2px;
+}
+.snapshot-item, .sync-log-item{.snapshot-item, .sync-log-item{
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -1478,7 +1595,7 @@ html[data-theme="dark"] .calendar-detail-stat{
             <div class="calendar-detail-head">
                 <div>
                     <div class="calendar-detail-date">备份管理</div>
-                    <div class="calendar-detail-sub">数据备份 · 历史快照 · 同步记录</div>
+                    <div class="calendar-detail-sub">数据备份 · 设备管理 · 历史快照 · 同步记录</div>
                 </div>
                 <button type="button" class="calendar-detail-close" id="backupManageClose">×</button>
             </div>
@@ -1489,6 +1606,24 @@ html[data-theme="dark"] .calendar-detail-stat{
                         <button type="button" id="bmExportBtn" class="backup-action-btn">💾 导出数据（JSON）</button>
                         <button type="button" id="bmImportBtn" class="backup-action-btn">📥 导入数据</button>
                         <button type="button" id="bmExportCsvBtn" class="backup-action-btn">📊 导出报表（CSV）</button>
+                    </div>
+                </div>
+                <div class="backup-section">
+                    <div class="backup-section-title">设备管理 <span class="backup-section-hint">DeviceId 本地生成，备注云端共享</span></div>
+                    <div class="device-panel">
+                        <div class="device-panel-current">
+                            <div class="form-item device-form-item">
+                                <label>当前设备 DeviceId</label>
+                                <div class="device-id-text" id="currentDeviceIdText"></div>
+                            </div>
+                            <div class="form-item device-form-item">
+                                <label>设备备注</label>
+                                <input type="text" id="currentDeviceNoteInput" placeholder="如：iPhone、备用机">
+                            </div>
+                            <button type="button" id="saveCurrentDeviceBtn" class="backup-action-btn device-save-current">保存当前设备备注并同步</button>
+                        </div>
+                        <div class="device-list-head">全部设备</div>
+                        <div id="deviceList"></div>
                     </div>
                 </div>
                 <div class="backup-section">
@@ -1665,6 +1800,9 @@ const KEY_RESTORE_TOAST_FLAG = "daka_show_restore_toast"; // 🛡️ V1.2 恢复
 const SYNC_LOG_MAX = 50;
 const SNAPSHOT_KEEP_DAYS = 3;
 const SYNC_PASSWORD_KEY = 'sync_password';
+const KEY_DEVICE_ID = 'daka_device_id';
+const KEY_DEVICE_NOTE = 'daka_device_note';
+const KEY_DEVICE_REGISTRY = 'daka_device_registry';
 let taskList = [];
 let syncLog = [];
 let snapshots = [];
@@ -1679,19 +1817,18 @@ let historyLimits = {};
 let currentCalYear = new Date().getFullYear();
 let currentCalMonth = new Date().getMonth();
 let syncPassword = localStorage.getItem(SYNC_PASSWORD_KEY) || '';
-
+let deviceId = '';
+let deviceNote = '';
+let deviceRegistry = {};
 let lastUploadedRemotePayload = '';
 let remoteSaveInFlightPromise = null;
 let remoteSaveInFlightPayload = '';
-
 let batchMode = false;
 let selectedTaskIds = new Set();
 let todayGroupOpenState = {};
 let lastSyncedSnapshot = null;
 let toastTimer = null;
-let syncInFlight = false;
-
-// 🛡️ V1.2 同步安全保护相关状态：恢复点仅保存在本机、不上传、不参与同步；风险确认弹窗的挂起回调
+let syncInFlight = false;  // 🛡️ V1.2 同步安全保护相关状态：恢复点仅保存在本机、不上传、不参与同步；风险确认弹窗的挂起回调
 let syncRecoveryPoint = null;
 let pendingSyncRisk = null;
 
@@ -1746,6 +1883,10 @@ const el = {
     backupManageBtn: document.getElementById("backupManageBtn"),
     backupManagePopWrap: document.getElementById("backupManagePopWrap"),
     backupManageClose: document.getElementById("backupManageClose"),
+    currentDeviceIdText: document.getElementById("currentDeviceIdText"),
+    currentDeviceNoteInput: document.getElementById("currentDeviceNoteInput"),
+    saveCurrentDeviceBtn: document.getElementById("saveCurrentDeviceBtn"),
+    deviceList: document.getElementById("deviceList"),
     bmExportBtn: document.getElementById("bmExportBtn"),
     bmExportCsvBtn: document.getElementById("bmExportCsvBtn"),
     bmImportBtn: document.getElementById("bmImportBtn"),
@@ -1823,7 +1964,20 @@ function buildRemotePayload() {
     const announcement = normalizeAnnouncementHTML(document.getElementById('announcementContent').innerHTML);
     // 🛡️ V1.2：高危同步日志（同步安全保护产生的风险提示记录）仅保存在本机，不上传云端
     const syncLogForUpload = syncLog.filter(item => !item.localOnly);
-    return { tasks: taskList, announcement, syncLog: syncLogForUpload, snapshots };
+    touchCurrentDeviceRegistry();
+    return {
+        tasks: taskList,
+        announcement,
+        syncLog: syncLogForUpload,
+        snapshots,
+        devices: deviceRegistry,
+        deviceMeta: {
+            deviceId,
+            deviceNote,
+            updatedAt: Date.now(),
+            label: getDeviceLabel(deviceId, deviceNote)
+        }
+    };
 }
 
 function getRemotePayloadString() {
@@ -1842,6 +1996,7 @@ async function fetchRemoteData() {
 }
 
 async function saveRemoteData() {
+    touchCurrentDeviceRegistry(true);
     const payloadStr = getRemotePayloadString();
     if (payloadStr === lastUploadedRemotePayload && !remoteSaveInFlightPromise && !remoteSaveInFlightPayload) {
         return { skipped: true, reason: 'unchanged' };
@@ -2238,6 +2393,15 @@ function loadLocalStorage() {
         const rawSnap = localStorage.getItem(KEY_SNAPSHOTS);
         snapshots = normalizeSnapshotList(rawSnap ? JSON.parse(rawSnap) : []);
     } catch (e) { snapshots = []; }
+    try {
+        const rawDeviceRegistry = localStorage.getItem(KEY_DEVICE_REGISTRY);
+        deviceRegistry = normalizeDeviceRegistry(rawDeviceRegistry ? JSON.parse(rawDeviceRegistry) : {});
+    } catch (e) { deviceRegistry = {}; }
+    const savedDeviceId = safeText(localStorage.getItem(KEY_DEVICE_ID)).trim();
+    const savedDeviceNote = safeText(localStorage.getItem(KEY_DEVICE_NOTE)).trim();
+    if (savedDeviceId) deviceId = savedDeviceId;
+    if (savedDeviceNote) deviceNote = savedDeviceNote;
+    ensureDeviceIdentity();
 }
 
 function saveLocalStorage() {
@@ -2245,12 +2409,255 @@ function saveLocalStorage() {
     localStorage.setItem(KEY, dataStr);
     localStorage.setItem(KEY_SYNC_LOG, JSON.stringify(syncLog));
     localStorage.setItem(KEY_SNAPSHOTS, JSON.stringify(snapshots));
+    localStorage.setItem(KEY_DEVICE_ID, deviceId);
+    localStorage.setItem(KEY_DEVICE_NOTE, deviceNote);
+    localStorage.setItem(KEY_DEVICE_REGISTRY, JSON.stringify(deviceRegistry));
 }
+
+function generateDeviceId() {
+    if (window.crypto && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    return `dev_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function normalizeDeviceEntry(raw, fallbackId) {
+    const source = raw && typeof raw === 'object' ? { ...raw } : {};
+    const id = safeText(source.deviceId || source.id || fallbackId).trim();
+    const now = Date.now();
+    const note = safeText(source.note || source.remark || '').trim();
+    const firstSeenAt = Number.isFinite(Number(source.firstSeenAt)) ? Number(source.firstSeenAt) : now;
+    const lastSeenAt = Number.isFinite(Number(source.lastSeenAt)) ? Number(source.lastSeenAt) : firstSeenAt;
+    const lastUploadAt = Number.isFinite(Number(source.lastUploadAt)) ? Number(source.lastUploadAt) : 0;
+    const noteUpdatedAt = Number.isFinite(Number(source.noteUpdatedAt)) ? Number(source.noteUpdatedAt) : (note ? firstSeenAt : 0);
+    return {
+        deviceId: id,
+        note,
+        firstSeenAt,
+        lastSeenAt,
+        lastUploadAt,
+        noteUpdatedAt
+    };
+}
+
+function normalizeDeviceRegistry(raw) {
+    const registry = {};
+    if (!raw) return registry;
+    if (Array.isArray(raw)) {
+        raw.forEach(item => {
+            const normalized = normalizeDeviceEntry(item, item && (item.deviceId || item.id));
+            if (normalized.deviceId) registry[normalized.deviceId] = normalized;
+        });
+        return registry;
+    }
+    if (typeof raw !== 'object') return registry;
+    Object.keys(raw).forEach(key => {
+        const normalized = normalizeDeviceEntry(raw[key], key);
+        if (normalized.deviceId) registry[normalized.deviceId] = normalized;
+    });
+    return registry;
+}
+
+function getDeviceShortId(id = deviceId) {
+    const text = safeText(id).trim();
+    if (!text) return 'UNKNOWN';
+    return text.slice(-6).toUpperCase();
+}
+
+function getDeviceLabel(id = deviceId, note = '') {
+    const normalizedNote = safeText(note).trim();
+    return normalizedNote || `设备 ${getDeviceShortId(id)}`;
+}
+
+function formatDateTime(value) {
+    if (value === undefined || value === null || value === '') return '—';
+    const num = Number(value);
+    const date = Number.isFinite(num) ? new Date(num) : new Date(value);
+    if (Number.isNaN(date.getTime())) return safeText(value).trim() || '—';
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    const hh = String(date.getHours()).padStart(2, '0');
+    const mm = String(date.getMinutes()).padStart(2, '0');
+    return `${y}-${m}-${d} ${hh}:${mm}`;
+}
+
+function ensureDeviceIdentity() {
+    const now = Date.now();
+    const savedId = safeText(localStorage.getItem(KEY_DEVICE_ID)).trim();
+    deviceId = savedId || deviceId || generateDeviceId();
+    localStorage.setItem(KEY_DEVICE_ID, deviceId);
+
+    const savedNote = safeText(localStorage.getItem(KEY_DEVICE_NOTE)).trim();
+    if (!deviceNote) deviceNote = savedNote || '';
+
+    if (!deviceRegistry || typeof deviceRegistry !== 'object') {
+        deviceRegistry = {};
+    }
+    if (!deviceRegistry[deviceId]) {
+        deviceRegistry[deviceId] = {
+            deviceId,
+            note: deviceNote,
+            firstSeenAt: now,
+            lastSeenAt: now,
+            lastUploadAt: 0,
+            noteUpdatedAt: deviceNote ? now : 0
+        };
+    }
+    if (deviceNote && !deviceRegistry[deviceId].note) {
+        deviceRegistry[deviceId].note = deviceNote;
+    }
+    if (!deviceRegistry[deviceId].firstSeenAt) deviceRegistry[deviceId].firstSeenAt = now;
+    deviceRegistry[deviceId].lastSeenAt = now;
+    if (!deviceRegistry[deviceId].noteUpdatedAt && deviceRegistry[deviceId].note) {
+        deviceRegistry[deviceId].noteUpdatedAt = now;
+    }
+    deviceNote = safeText(deviceNote || deviceRegistry[deviceId].note || '').trim();
+    deviceRegistry[deviceId].note = deviceNote;
+    localStorage.setItem(KEY_DEVICE_NOTE, deviceNote);
+    localStorage.setItem(KEY_DEVICE_REGISTRY, JSON.stringify(deviceRegistry));
+}
+
+function touchCurrentDeviceRegistry(markUpload = false) {
+    if (!deviceId) ensureDeviceIdentity();
+    const now = Date.now();
+    if (!deviceRegistry[deviceId]) {
+        deviceRegistry[deviceId] = {
+            deviceId,
+            note: deviceNote,
+            firstSeenAt: now,
+            lastSeenAt: now,
+            lastUploadAt: 0,
+            noteUpdatedAt: deviceNote ? now : 0
+        };
+    }
+    const entry = deviceRegistry[deviceId];
+    entry.deviceId = deviceId;
+    entry.note = safeText(deviceNote || entry.note || '').trim();
+    if (!entry.firstSeenAt) entry.firstSeenAt = now;
+    entry.lastSeenAt = now;
+    if (markUpload) entry.lastUploadAt = now;
+    if (entry.note && !entry.noteUpdatedAt) entry.noteUpdatedAt = now;
+    deviceRegistry[deviceId] = entry;
+    localStorage.setItem(KEY_DEVICE_ID, deviceId);
+    localStorage.setItem(KEY_DEVICE_NOTE, deviceNote);
+    localStorage.setItem(KEY_DEVICE_REGISTRY, JSON.stringify(deviceRegistry));
+}
+
+function mergeDeviceRegistry(localRegistry, remoteRegistry) {
+    const merged = normalizeDeviceRegistry(localRegistry);
+    const remote = normalizeDeviceRegistry(remoteRegistry);
+    Object.keys(remote).forEach(id => {
+        const remoteEntry = remote[id];
+        const localEntry = merged[id];
+        if (!localEntry) {
+            merged[id] = remoteEntry;
+            return;
+        }
+        const preferRemoteNote = Number(remoteEntry.noteUpdatedAt || 0) >= Number(localEntry.noteUpdatedAt || 0);
+        merged[id] = {
+            deviceId: id,
+            note: preferRemoteNote ? remoteEntry.note || localEntry.note || '' : localEntry.note || remoteEntry.note || '',
+            firstSeenAt: Math.min(Number(localEntry.firstSeenAt) || remoteEntry.firstSeenAt || Date.now(), Number(remoteEntry.firstSeenAt) || localEntry.firstSeenAt || Date.now()),
+            lastSeenAt: Math.max(Number(localEntry.lastSeenAt) || 0, Number(remoteEntry.lastSeenAt) || 0),
+            lastUploadAt: Math.max(Number(localEntry.lastUploadAt) || 0, Number(remoteEntry.lastUploadAt) || 0),
+            noteUpdatedAt: Math.max(Number(localEntry.noteUpdatedAt) || 0, Number(remoteEntry.noteUpdatedAt) || 0)
+        };
+    });
+    return merged;
+}
+
+function setCurrentDeviceNote(nextNote, { syncToCloud = true } = {}) {
+    deviceNote = safeText(nextNote).trim();
+    touchCurrentDeviceRegistry(true);
+    syncCurrentDeviceForm();
+    renderDeviceList();
+    renderSyncLogList();
+    saveLocalStorage();
+    if (syncToCloud && syncPassword) {
+        saveStorage(false);
+    }
+}
+
+function renderDeviceList() {
+    const box = document.getElementById('deviceList');
+    if (!box) return;
+    const entries = Object.values(deviceRegistry || {}).sort((a, b) => {
+        const bScore = Number(b.lastUploadAt || b.lastSeenAt || 0);
+        const aScore = Number(a.lastUploadAt || a.lastSeenAt || 0);
+        return bScore - aScore;
+    });
+    if (entries.length === 0) {
+        box.innerHTML = emptyStateHTML({
+            icon: '📱',
+            title: '暂无设备记录',
+            desc: '设备首次同步后，这里会自动显示所有出现过的设备'
+        });
+        return;
+    }
+    box.innerHTML = entries.map((item) => {
+        const label = getDeviceLabel(item.deviceId, item.note);
+        const active = item.deviceId === deviceId;
+        const firstSeen = item.firstSeenAt ? formatDateTime(item.firstSeenAt) : '—';
+        const lastSeen = item.lastSeenAt ? formatDateTime(item.lastSeenAt) : '—';
+        const lastUpload = item.lastUploadAt ? formatDateTime(item.lastUploadAt) : '—';
+        return `
+            <div class="device-card ${active ? 'active' : ''}" data-device-id="${escapeHTML(item.deviceId)}">
+                <div class="device-card-head">
+                    <div class="device-card-title">
+                        <span class="device-card-name">${escapeHTML(label)}</span>
+                        ${active ? '<span class="device-card-active">当前设备</span>' : ''}
+                    </div>
+                    <div class="device-card-id">${escapeHTML(item.deviceId)}</div>
+                </div>
+                <div class="device-card-row">
+                    <span class="device-card-label">设备备注</span>
+                    <input class="device-note-input" data-device-note-input="${escapeHTML(item.deviceId)}" value="${escapeHTML(item.note || '')}" placeholder="给这台设备起个名字">
+                </div>
+                <div class="device-card-row device-card-meta">
+                    <span>首次出现：${escapeHTML(firstSeen)}</span>
+                    <span>最近在线：${escapeHTML(lastSeen)}</span>
+                    <span>最近上传：${escapeHTML(lastUpload)}</span>
+                </div>
+                <div class="device-card-actions">
+                    <button type="button" class="backup-action-btn device-save-btn" data-device-save="${escapeHTML(item.deviceId)}">保存备注</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function syncCurrentDeviceForm() {
+    if (el.currentDeviceIdText) {
+        el.currentDeviceIdText.textContent = deviceId || '未生成';
+    }
+    if (el.currentDeviceNoteInput && document.activeElement !== el.currentDeviceNoteInput) {
+        el.currentDeviceNoteInput.value = deviceNote || '';
+    }
+}
+
+function saveDeviceNoteFromInput() {
+    if (!el.currentDeviceNoteInput) return;
+    setCurrentDeviceNote(el.currentDeviceNoteInput.value, { syncToCloud: true });
+}
+
 
 // 记一条同步记录，最多保留 SYNC_LOG_MAX 条（超出的旧记录自动丢弃）
 // localOnly：🛡️ V1.2 新增可选参数，标记"高危同步日志"，仅保存本机、不随 buildRemotePayload 上传云端；旧调用不传该参数，行为与旧版本完全一致
 function addSyncLog(type, ok, reason, detail, localOnly) {
-    syncLog.unshift({ t: getNowDateTimeStr(), type, ok, reason: reason || null, detail: detail || null, localOnly: !!localOnly });
+    touchCurrentDeviceRegistry();
+    syncLog.unshift({
+        t: getNowDateTimeStr(),
+        ts: Date.now(),
+        type,
+        ok,
+        reason: reason || null,
+        detail: detail || null,
+        localOnly: !!localOnly,
+        deviceId,
+        deviceNote,
+        deviceLabel: getDeviceLabel(deviceId, deviceNote)
+    });
     if (syncLog.length > SYNC_LOG_MAX) syncLog = syncLog.slice(0, SYNC_LOG_MAX);
 }
 
@@ -2259,9 +2666,9 @@ function mergeSyncLog(localLog, remoteLog) {
     const all = [...(Array.isArray(localLog) ? localLog : []), ...(Array.isArray(remoteLog) ? remoteLog : [])];
     const seen = new Set();
     const merged = [];
-    all.sort((a, b) => (b.t || '').localeCompare(a.t || ''));
+    all.sort((a, b) => (Number(b.ts) || 0) - (Number(a.ts) || 0) || (b.t || '').localeCompare(a.t || ''));
     all.forEach(item => {
-        const key = `${item.t}_${item.type}_${item.ok}_${item.reason || ''}`;
+        const key = `${item.t}_${item.type}_${item.ok}_${item.reason || ''}_${item.deviceId || ''}_${item.deviceNote || ''}`;
         if (!seen.has(key)) { seen.add(key); merged.push(item); }
     });
     return merged.slice(0, SYNC_LOG_MAX);
@@ -2421,7 +2828,9 @@ async function loadStorage() {
     loadSyncRecoveryPoint();
     const localAnnounce = localStorage.getItem('persistent_announcement_v3');
     initAnnouncement(localAnnounce);
-    
+    syncCurrentDeviceForm();
+    renderDeviceList();
+
     if (syncPassword) {
         updateSyncStatus('syncing');
         const localBeforeSync = cloneTasks(taskList);
@@ -2478,6 +2887,24 @@ function applyDownloadedRemoteData(remoteData, localBeforeSync, riskConfirmed) {
     taskList = normalizeTaskList(remoteData.tasks);
     syncLog = mergeSyncLog(syncLog, remoteData.syncLog);
     snapshots = mergeSnapshots(snapshots, remoteData.snapshots);
+    deviceRegistry = mergeDeviceRegistry(deviceRegistry, remoteData.devices);
+    if (remoteData.deviceMeta && remoteData.deviceMeta.deviceId && remoteData.deviceMeta.deviceNote !== undefined) {
+        const remoteCurrent = normalizeDeviceEntry({
+            deviceId: remoteData.deviceMeta.deviceId,
+            note: remoteData.deviceMeta.deviceNote,
+            firstSeenAt: remoteData.deviceMeta.updatedAt,
+            lastSeenAt: remoteData.deviceMeta.updatedAt,
+            noteUpdatedAt: remoteData.deviceMeta.updatedAt
+        }, remoteData.deviceMeta.deviceId);
+        deviceRegistry[remoteCurrent.deviceId] = mergeDeviceRegistry({ [remoteCurrent.deviceId]: deviceRegistry[remoteCurrent.deviceId] }, { [remoteCurrent.deviceId]: remoteCurrent })[remoteCurrent.deviceId];
+    }
+    if (deviceRegistry[deviceId] && deviceRegistry[deviceId].note !== undefined) {
+        deviceNote = safeText(deviceRegistry[deviceId].note).trim();
+        localStorage.setItem(KEY_DEVICE_NOTE, deviceNote);
+    }
+    touchCurrentDeviceRegistry();
+    renderDeviceList();
+    syncCurrentDeviceForm();
     if (remoteData.announcement !== undefined) {
         const announcement = normalizeAnnouncementHTML(remoteData.announcement);
         initAnnouncement(announcement);
@@ -2500,9 +2927,6 @@ function applyDownloadedRemoteData(remoteData, localBeforeSync, riskConfirmed) {
     renderPage();
 }
 
-// riskCheck：🛡️ V1.2 新增可选参数，默认 false，与旧版本行为完全一致（新增/编辑/打卡/删除/归档等日常操作零感知、零弹窗）。
-// 仅在"整段本地数据可能被批量替换"的场景（历史快照恢复、导入覆盖、清空数据）由调用方显式传 true，
-// 避免把这三类正常业务操作（如手动删除任务、按月归档 history）误判为"数据回退风险"。
 function saveStorage(riskCheck) {
     const beforeUploadSnapshot = lastSyncedSnapshot;
     saveLocalStorage();
@@ -3917,6 +4341,7 @@ function renderSyncLogList() {
         const resultText = item.ok ? '成功' : '失败';
         const cls = item.ok ? 'ok' : 'fail';
         const hasChange = item.ok && diffHasChange(item.detail);
+        const sourceLabel = getDeviceLabel(item.deviceId, item.deviceNote || item.deviceLabel || '');
         let statsLine = '';
         if (item.ok && hasChange) {
             const d = item.detail;
@@ -3929,7 +4354,7 @@ function renderSyncLogList() {
                 <div class="sync-log-main">${arrow} ${typeText}${resultText}</div>
                 ${item.ok ? `<div class="sync-log-summary ${hasChange ? 'changed' : ''}">${hasChange ? '有数据更新' : '数据一致'}</div>` : ''}
             </div>
-            <div class="sync-log-sub">${item.t}${!item.ok && item.reason ? ' · 原因：' + item.reason : ''}</div>
+            <div class="sync-log-sub">${escapeHTML(item.t)} · 来自：${escapeHTML(sourceLabel)}${!item.ok && item.reason ? ' · 原因：' + escapeHTML(item.reason) : ''}</div>
             ${statsLine}
             ${item.ok ? `<div class="sync-log-detail">${renderSyncDetailHTML(item.detail)}</div>` : ''}
         </div>`;
@@ -3937,6 +4362,8 @@ function renderSyncLogList() {
 }
 
 function renderBackupManagePanel() {
+    syncCurrentDeviceForm();
+    renderDeviceList();
     renderSnapshotList();
     renderSyncLogList();
     renderSyncUndoEntry();
@@ -4061,6 +4488,44 @@ function bindGlobalEvent() {
             logItem.classList.toggle('expanded');
         }
     });
+    if (el.currentDeviceNoteInput) {
+        el.currentDeviceNoteInput.addEventListener('change', saveDeviceNoteFromInput);
+        el.currentDeviceNoteInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveDeviceNoteFromInput();
+            }
+        });
+        el.currentDeviceNoteInput.addEventListener('blur', saveDeviceNoteFromInput);
+    }
+    if (el.saveCurrentDeviceBtn) {
+        el.saveCurrentDeviceBtn.onclick = saveDeviceNoteFromInput;
+    }
+    if (el.deviceList) {
+        el.deviceList.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-device-save]');
+            if (!btn) return;
+            const id = btn.getAttribute('data-device-save');
+            const wrap = e.target.closest('[data-device-id]');
+            if (!wrap) return;
+            const input = Array.from(wrap.querySelectorAll('[data-device-note-input]')).find(node => node.getAttribute('data-device-note-input') === id);
+            if (!input) return;
+            if (id === deviceId) {
+                setCurrentDeviceNote(input.value, { syncToCloud: true });
+            } else {
+                const nextNote = safeText(input.value).trim();
+                if (!deviceRegistry[id]) {
+                    deviceRegistry[id] = normalizeDeviceEntry({ deviceId: id, note: nextNote, firstSeenAt: Date.now(), lastSeenAt: Date.now() }, id);
+                }
+                deviceRegistry[id].note = nextNote;
+                deviceRegistry[id].noteUpdatedAt = Date.now();
+                touchCurrentDeviceRegistry();
+                renderDeviceList();
+                saveLocalStorage();
+                if (syncPassword) saveStorage(false);
+            }
+        });
+    }
     el.bmExportBtn.onclick = () => withBtnBusy(el.bmExportBtn, '⏳ 导出中...', exportBackup);
     el.bmExportCsvBtn.onclick = () => withBtnBusy(el.bmExportCsvBtn, '⏳ 导出中...', exportCsv);
     el.bmImportBtn.onclick = () => el.fileInput.click();
