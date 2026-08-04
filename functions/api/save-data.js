@@ -1,7 +1,6 @@
 export async function onRequestPost(context) {
   const { request, env } = context;
 
-  // 密码验证（设置了环境变量才启用）
   const clientPassword = request.headers.get('X-Sync-Password');
   const serverPassword = env.SYNC_PASSWORD;
   if (serverPassword && clientPassword !== serverPassword) {
@@ -22,12 +21,10 @@ export async function onRequestPost(context) {
 
   function parseJSON(raw, fallback) {
     if (!raw) return fallback;
-    try {
-      return JSON.parse(raw);
-    } catch {
-      return fallback;
-    }
+    try { return JSON.parse(raw); } catch { return fallback; }
   }
+
+  const DEVICE_STALE_MS = 3 * 24 * 60 * 60 * 1000;
 
   function normalizeHistory(list) {
     return Array.isArray(list) ? list.filter(v => typeof v === 'string') : [];
@@ -57,14 +54,13 @@ export async function onRequestPost(context) {
   function mergeArchives(a, b) {
     const map = new Map();
     [...normalizeArchives(a), ...normalizeArchives(b)].forEach(item => {
-      const key = item.month;
-      const existed = map.get(key);
+      const existed = map.get(item.month);
       if (!existed) {
-        map.set(key, item);
+        map.set(item.month, item);
       } else {
         const leftTs = toMs(existed.ts || existed.updateAt);
         const rightTs = toMs(item.ts || item.updateAt);
-        map.set(key, rightTs >= leftTs ? item : existed);
+        map.set(item.month, rightTs >= leftTs ? item : existed);
       }
     });
     return Array.from(map.values());
@@ -104,6 +100,66 @@ export async function onRequestPost(context) {
       map.set(item.id, mergeTask(existed, item));
     });
     return Array.from(map.values());
+  }
+
+  function normalizeTaskDeletionRecord(raw) {
+    const item = raw && typeof raw === 'object' ? { ...raw } : {};
+    const taskId = Number.isFinite(Number(item.taskId)) ? Number(item.taskId) : Number(item.id);
+    if (!Number.isFinite(taskId)) return null;
+    const deletedAt = toMs(item.deletedAt);
+    const restoredAt = toMs(item.restoredAt);
+    const updatedAt = Math.max(deletedAt, restoredAt, toMs(item.updatedAt));
+    return {
+      taskId,
+      deletedAt,
+      restoredAt,
+      updatedAt,
+      deviceId: safeText(item.deviceId).trim()
+    };
+  }
+
+  function normalizeTaskDeletionList(list) {
+    if (!Array.isArray(list)) return [];
+    const map = new Map();
+    list.forEach(item => {
+      const normalized = normalizeTaskDeletionRecord(item);
+      if (!normalized) return;
+      const existed = map.get(normalized.taskId);
+      if (!existed) {
+        map.set(normalized.taskId, normalized);
+        return;
+      }
+      map.set(normalized.taskId, {
+        taskId: normalized.taskId,
+        deletedAt: Math.max(toMs(existed.deletedAt), toMs(normalized.deletedAt)),
+        restoredAt: Math.max(toMs(existed.restoredAt), toMs(normalized.restoredAt)),
+        updatedAt: Math.max(toMs(existed.updatedAt), toMs(normalized.updatedAt)),
+        deviceId: normalized.updatedAt >= existed.updatedAt ? normalized.deviceId : existed.deviceId
+      });
+    });
+    return Array.from(map.values()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0) || (b.taskId || 0) - (a.taskId || 0));
+  }
+
+  function mergeTaskDeletionRecords(remoteList, incomingList) {
+    return normalizeTaskDeletionList([...(Array.isArray(remoteList) ? remoteList : []), ...(Array.isArray(incomingList) ? incomingList : [])]);
+  }
+
+  function getTaskDeletionRecordMap(records) {
+    const map = new Map();
+    normalizeTaskDeletionList(records).forEach(record => map.set(record.taskId, record));
+    return map;
+  }
+
+  function isTaskDeletedByLedger(task, recordMap) {
+    if (!task || !Number.isFinite(Number(task.id))) return false;
+    const record = recordMap.get(Number(task.id));
+    if (!record) return false;
+    return toMs(record.deletedAt) > toMs(record.restoredAt);
+  }
+
+  function applyTaskDeletionLedger(tasks, records) {
+    const map = getTaskDeletionRecordMap(records);
+    return Array.isArray(tasks) ? tasks.filter(task => !isTaskDeletedByLedger(task, map)) : [];
   }
 
   function normalizeDeviceEntry(raw, fallbackId) {
@@ -179,6 +235,21 @@ export async function onRequestPost(context) {
         : metaEntry;
     }
     return merged;
+  }
+
+  function pruneDeviceRegistry(registry, referenceTime = Date.now()) {
+    const now = toMs(referenceTime) || Date.now();
+    const cutoff = now - DEVICE_STALE_MS;
+    const normalized = normalizeDeviceRegistry(registry);
+    const pruned = {};
+    Object.keys(normalized).forEach(id => {
+      const entry = normalized[id];
+      const activityAt = Math.max(toMs(entry.lastUploadAt), toMs(entry.lastSeenAt), toMs(entry.firstSeenAt));
+      if (id && activityAt >= cutoff) {
+        pruned[id] = entry;
+      }
+    });
+    return pruned;
   }
 
   function normalizeSyncLogItem(item) {
@@ -269,17 +340,28 @@ export async function onRequestPost(context) {
       tasks: Array.isArray(body.tasks) ? body.tasks : [],
       syncLog: Array.isArray(body.syncLog) ? body.syncLog : [],
       snapshots: Array.isArray(body.snapshots) ? body.snapshots : [],
+      taskDeletionRecords: Array.isArray(body.taskDeletionRecords) ? body.taskDeletionRecords : [],
       devices: body.devices && typeof body.devices === 'object' ? body.devices : {},
       deviceMeta: body.deviceMeta && typeof body.deviceMeta === 'object' ? body.deviceMeta : {}
     };
 
+    const mergedTaskDeletionRecords = mergeTaskDeletionRecords(currentData.taskDeletionRecords, incomingData.taskDeletionRecords);
+    const mergedTasks = applyTaskDeletionLedger(
+      mergeTasks(currentData.tasks, incomingData.tasks),
+      mergedTaskDeletionRecords
+    );
+
     const merged = {
       ...currentData,
       ...incomingData,
-      tasks: mergeTasks(currentData.tasks, incomingData.tasks),
+      tasks: mergedTasks,
+      taskDeletionRecords: mergedTaskDeletionRecords,
       syncLog: mergeSyncLogs(currentData.syncLog, incomingData.syncLog),
       snapshots: mergeSnapshots(currentData.snapshots, incomingData.snapshots),
-      devices: mergeDevices(currentData.devices, incomingData.devices, incomingData.deviceMeta || incomingData.deviceMeta),
+      devices: pruneDeviceRegistry(
+        mergeDevices(currentData.devices, incomingData.devices, incomingData.deviceMeta || incomingData.deviceMeta),
+        Date.now()
+      ),
       deviceMeta: {
         ...(currentData.deviceMeta && typeof currentData.deviceMeta === 'object' ? currentData.deviceMeta : {}),
         ...(incomingData.deviceMeta || {})
