@@ -1178,6 +1178,13 @@ html[data-theme="dark"] .calendar-header-bar{
     font-weight:800;
     color:var(--text-main);
 }
+.device-cleanup-tip{
+    margin-top:6px;
+    margin-bottom:4px;
+    font-size:11px;
+    color:var(--text-light);
+    line-height:1.5;
+}
 .device-card{
     padding:12px;
     border-radius:14px;
@@ -1224,6 +1231,18 @@ html[data-theme="dark"] .calendar-header-bar{
     word-break:break-all;
     text-align:right;
 }
+.device-card-stale{
+    display:inline-flex;
+    align-self:flex-end;
+    margin-top:4px;
+    padding:2px 8px;
+    border-radius:999px;
+    font-size:10px;
+    color:var(--text-light);
+    background:var(--bg-color);
+    border:1px solid var(--border-color);
+    white-space:nowrap;
+}
 .device-card-row{
     display:flex;
     flex-direction:column;
@@ -1263,34 +1282,193 @@ html[data-theme="dark"] .calendar-header-bar{
     width:100%;
     margin-top:2px;
 }
-.snapshot-item, .sync-log-item{.snapshot-item, .sync-log-item{
+.snapshot-item, .sync-log-item{
     display:flex;
-    align-items:center;
+    align-items:flex-start;
     justify-content:space-between;
-    gap:10px;
-    padding:10px 12px;
-    border-radius:12px;
-    background:var(--bg-color);
+    gap:12px;
+    padding:12px 14px;
+    border-radius:16px;
+    background:linear-gradient(180deg, rgba(25,137,250,.03), transparent 55%), var(--bg-color);
     border:1px solid var(--border-color);
-    margin-bottom:8px;
+    margin-bottom:10px;
+    box-shadow:0 6px 16px rgba(0,0,0,.04);
 }
 .snapshot-item:last-child, .sync-log-item:last-child{ margin-bottom:0; }
-.snapshot-item-label{ font-size:13px; font-weight:700; color:var(--text-main); }
-.snapshot-item-sub{ font-size:11px; color:var(--text-light); margin-top:2px; }
+.snapshot-item-info{ min-width:0; flex:1; }
+.snapshot-item-label{
+    font-size:14px;
+    font-weight:800;
+    color:var(--text-main);
+    line-height:1.35;
+}
+.snapshot-item-sub{
+    font-size:11px;
+    color:var(--text-light);
+    margin-top:3px;
+    line-height:1.4;
+}
 .snapshot-restore-btn{
     flex:0 0 auto;
-    padding:7px 14px;
+    padding:8px 14px;
     border-radius:999px;
     border:none;
     background:var(--primary);
     color:#fff;
     font-size:12px;
     font-weight:700;
+    box-shadow:0 6px 14px rgba(25,137,250,.18);
 }
-.sync-log-item{ flex-direction:column; align-items:flex-start; gap:2px; }
-.sync-log-main{ font-size:13px; font-weight:700; color:var(--text-main); }
-.sync-log-item.fail .sync-log-main{ color:var(--danger); }
-.sync-log-sub{ font-size:11px; color:var(--text-light); font-family:monospace; }
+
+#syncLogList{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+.sync-log-item{
+    flex-direction:column;
+    align-items:stretch;
+    gap:0;
+}
+.sync-log-header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+}
+.sync-log-title{
+    min-width:0;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+}
+.sync-log-main{
+    font-size:14px;
+    font-weight:800;
+    color:var(--text-main);
+    line-height:1.3;
+}
+.sync-log-item.fail .sync-log-main{
+    color:var(--danger);
+}
+.sync-log-result{
+    flex:0 0 auto;
+    align-self:flex-start;
+    padding:4px 8px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:800;
+    white-space:nowrap;
+}
+.sync-log-result.ok{
+    background:rgba(7,193,96,.12);
+    color:var(--success);
+    border:1px solid rgba(7,193,96,.18);
+}
+.sync-log-result.fail{
+    background:rgba(238,10,36,.10);
+    color:var(--danger);
+    border:1px solid rgba(238,10,36,.18);
+}
+.sync-log-summary{
+    margin-top:8px;
+    font-size:11px;
+    color:var(--text-light);
+    flex:0 0 auto;
+}
+.sync-log-summary.changed{
+    color:var(--primary);
+    font-weight:700;
+}
+.sync-log-sub{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px 8px;
+    margin-top:8px;
+    font-size:11px;
+    color:var(--text-light);
+    line-height:1.5;
+    font-family:inherit;
+}
+.sync-log-chip{
+    display:inline-flex;
+    align-items:center;
+    max-width:100%;
+    padding:3px 8px;
+    border-radius:999px;
+    background:var(--card-bg);
+    border:1px solid var(--border-color);
+    color:var(--text-sub);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+.sync-log-stats{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:10px;
+}
+.sync-log-stat{
+    display:inline-flex;
+    align-items:center;
+    padding:4px 8px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:700;
+    background:rgba(25,137,250,.08);
+    color:var(--primary);
+    border:1px solid rgba(25,137,250,.14);
+}
+.sync-log-item.ok.expandable{
+    cursor:pointer;
+}
+.sync-log-item.ok.expandable:hover{
+    transform:translateY(-1px);
+    box-shadow:0 10px 22px rgba(0,0,0,.07);
+}
+.sync-log-detail{
+    width:100%;
+    margin-top:10px;
+    padding-top:10px;
+    border-top:1px dashed var(--border-color);
+}
+.sync-detail-block{
+    margin-bottom:10px;
+    padding:10px 12px;
+    border-radius:14px;
+    background:var(--card-bg);
+    border:1px solid var(--border-color);
+}
+.sync-detail-block:last-child{
+    margin-bottom:0;
+}
+.sync-detail-head{
+    font-weight:800;
+    color:var(--text-main);
+    margin-bottom:4px;
+    font-size:12px;
+}
+.sync-detail-row{
+    color:var(--text-sub);
+    display:flex;
+    gap:4px;
+    flex-wrap:wrap;
+    line-height:1.5;
+}
+.sync-detail-row span{
+    flex:0 0 auto;
+    color:var(--text-light);
+}
+.sync-detail-empty{
+    font-size:12px;
+    color:var(--text-light);
+    padding:14px 12px;
+    border-radius:12px;
+    background:var(--bg-color);
+    border:1px dashed var(--border-color);
+}
 html[data-theme="dark"] .calendar-detail-pop{
     box-shadow:0 20px 50px rgba(0,0,0,.45);
 }
@@ -1299,6 +1477,21 @@ html[data-theme="dark"] .calendar-detail-item{
 }
 html[data-theme="dark"] .calendar-detail-stat{
     background:rgba(255,255,255,.03);
+}
+
+html[data-theme="dark"] .sync-log-item{
+    background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
+    box-shadow:0 8px 22px rgba(0,0,0,.32);
+}
+html[data-theme="dark"] .sync-log-chip,
+html[data-theme="dark"] .sync-detail-block{
+    background:rgba(255,255,255,.03);
+}
+html[data-theme="dark"] .sync-log-result.ok{
+    background:rgba(7,193,96,.12);
+}
+html[data-theme="dark"] .sync-log-result.fail{
+    background:rgba(238,10,36,.12);
 }
 @media (max-width: 420px){
     .all-toolbar{
@@ -1609,7 +1802,7 @@ html[data-theme="dark"] .calendar-detail-stat{
                     </div>
                 </div>
                 <div class="backup-section">
-                    <div class="backup-section-title">设备管理 <span class="backup-section-hint">DeviceId 本地生成，备注云端共享</span></div>
+                    <div class="backup-section-title">设备管理 <span class="backup-section-hint">DeviceId 本地生成，备注云端共享，3天未活跃自动清理</span></div>
                     <div class="device-panel">
                         <div class="device-panel-current">
                             <div class="form-item device-form-item">
@@ -1623,6 +1816,7 @@ html[data-theme="dark"] .calendar-detail-stat{
                             <button type="button" id="saveCurrentDeviceBtn" class="backup-action-btn device-save-current">保存当前设备备注并同步</button>
                         </div>
                         <div class="device-list-head">全部设备</div>
+                        <div class="device-cleanup-tip">系统会自动清理 3 天内未出现的旧设备记录</div>
                         <div id="deviceList"></div>
                     </div>
                 </div>
@@ -1792,6 +1986,90 @@ function normalizeSnapshotList(list) {
     return Array.isArray(list) ? list.map(normalizeSnapshotRecord).filter(s => !!s.date) : [];
 }
 
+
+function normalizeTaskDeletionRecord(raw) {
+    const item = raw && typeof raw === 'object' ? { ...raw } : {};
+    const taskId = Number.isFinite(Number(item.taskId)) ? Number(item.taskId) : Number(item.id);
+    if (!Number.isFinite(taskId)) return null;
+    const deletedAt = Number.isFinite(Number(item.deletedAt)) ? Number(item.deletedAt) : 0;
+    const restoredAt = Number.isFinite(Number(item.restoredAt)) ? Number(item.restoredAt) : 0;
+    const updatedAt = Math.max(deletedAt, restoredAt, Number.isFinite(Number(item.updatedAt)) ? Number(item.updatedAt) : 0);
+    return { taskId, deletedAt, restoredAt, updatedAt, deviceId: safeText(item.deviceId).trim() };
+}
+
+function normalizeTaskDeletionList(list) {
+    if (!Array.isArray(list)) return [];
+    const map = new Map();
+    list.forEach(item => {
+        const normalized = normalizeTaskDeletionRecord(item);
+        if (!normalized) return;
+        const existed = map.get(normalized.taskId);
+        if (!existed) {
+            map.set(normalized.taskId, normalized);
+            return;
+        }
+        map.set(normalized.taskId, {
+            taskId: normalized.taskId,
+            deletedAt: Math.max(Number(existed.deletedAt) || 0, Number(normalized.deletedAt) || 0),
+            restoredAt: Math.max(Number(existed.restoredAt) || 0, Number(normalized.restoredAt) || 0),
+            updatedAt: Math.max(Number(existed.updatedAt) || 0, Number(normalized.updatedAt) || 0),
+            deviceId: normalized.updatedAt >= existed.updatedAt ? normalized.deviceId : existed.deviceId
+        });
+    });
+    return Array.from(map.values()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0) || (b.taskId || 0) - (a.taskId || 0));
+}
+
+function mergeTaskDeletionLists(localList, remoteList) {
+    return normalizeTaskDeletionList([...(Array.isArray(localList) ? localList : []), ...(Array.isArray(remoteList) ? remoteList : [])]);
+}
+
+function getTaskDeletionRecordMap(records = taskDeletionRecords) {
+    const map = new Map();
+    normalizeTaskDeletionList(records).forEach(record => map.set(record.taskId, record));
+    return map;
+}
+
+function isTaskDeletedByLedger(task, recordMap = getTaskDeletionRecordMap()) {
+    if (!task || !Number.isFinite(Number(task.id))) return false;
+    const record = recordMap.get(Number(task.id));
+    if (!record) return false;
+    const deletedAt = Number(record.deletedAt) || 0;
+    const restoredAt = Number(record.restoredAt) || 0;
+    return deletedAt > restoredAt;
+}
+
+function applyTaskDeletionLedger(tasks, records = taskDeletionRecords) {
+    const taskMap = getTaskDeletionRecordMap(records);
+    return normalizeTaskList(tasks).filter(task => !isTaskDeletedByLedger(task, taskMap));
+}
+
+function touchTaskDeletionRecord(taskId, action = 'delete') {
+    const id = Number(taskId);
+    if (!Number.isFinite(id)) return null;
+    const now = Date.now();
+    const existing = normalizeTaskDeletionList(taskDeletionRecords).find(item => item.taskId === id) || null;
+    const next = {
+        taskId: id,
+        deletedAt: action === 'delete' ? now : (existing ? Number(existing.deletedAt) || 0 : 0),
+        restoredAt: action === 'restore' ? now : (existing ? Number(existing.restoredAt) || 0 : 0),
+        updatedAt: now,
+        deviceId: deviceId || ''
+    };
+    if (action === 'restore') next.deletedAt = existing ? Number(existing.deletedAt) || 0 : 0;
+    const map = new Map(normalizeTaskDeletionList(taskDeletionRecords).map(item => [item.taskId, item]));
+    map.set(id, next);
+    taskDeletionRecords = Array.from(map.values()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    localStorage.setItem(KEY_TASK_DELETIONS, JSON.stringify(taskDeletionRecords));
+    return next;
+}
+
+function removeTaskDeletionRecord(taskId) {
+    const id = Number(taskId);
+    if (!Number.isFinite(id)) return;
+    taskDeletionRecords = normalizeTaskDeletionList(taskDeletionRecords).filter(item => item.taskId !== id);
+    localStorage.setItem(KEY_TASK_DELETIONS, JSON.stringify(taskDeletionRecords));
+}
+
 const KEY = "daka_offline_data";
 const KEY_SYNC_LOG = "daka_sync_log";
 const KEY_SNAPSHOTS = "daka_snapshots";
@@ -1803,9 +2081,13 @@ const SYNC_PASSWORD_KEY = 'sync_password';
 const KEY_DEVICE_ID = 'daka_device_id';
 const KEY_DEVICE_NOTE = 'daka_device_note';
 const KEY_DEVICE_REGISTRY = 'daka_device_registry';
+const DEVICE_STALE_DAYS = 3;
+const DEVICE_STALE_MS = DEVICE_STALE_DAYS * 24 * 60 * 60 * 1000;
+const KEY_TASK_DELETIONS = 'daka_task_deletions';
 let taskList = [];
 let syncLog = [];
 let snapshots = [];
+let taskDeletionRecords = [];
 let currentPage = "today";
 let filterType = "doing";
 let editId = null;
@@ -1965,11 +2247,13 @@ function buildRemotePayload() {
     // 🛡️ V1.2：高危同步日志（同步安全保护产生的风险提示记录）仅保存在本机，不上传云端
     const syncLogForUpload = syncLog.filter(item => !item.localOnly);
     touchCurrentDeviceRegistry();
+    pruneStaleDevices(Date.now(), { keepCurrent: true, persist: false });
     return {
         tasks: taskList,
         announcement,
         syncLog: syncLogForUpload,
         snapshots,
+        taskDeletionRecords,
         devices: deviceRegistry,
         deviceMeta: {
             deviceId,
@@ -2431,6 +2715,10 @@ function loadLocalStorage() {
         }
     } catch (e) { console.error("本地数据加载失败", e); taskList = []; }
     try {
+        const rawDeletion = localStorage.getItem(KEY_TASK_DELETIONS);
+        taskDeletionRecords = normalizeTaskDeletionList(rawDeletion ? JSON.parse(rawDeletion) : []);
+    } catch (e) { taskDeletionRecords = []; }
+    try {
         const rawLog = localStorage.getItem(KEY_SYNC_LOG);
         syncLog = rawLog ? JSON.parse(rawLog) : [];
         if (!Array.isArray(syncLog)) syncLog = [];
@@ -2447,14 +2735,19 @@ function loadLocalStorage() {
     const savedDeviceNote = safeText(localStorage.getItem(KEY_DEVICE_NOTE)).trim();
     if (savedDeviceId) deviceId = savedDeviceId;
     if (savedDeviceNote) deviceNote = savedDeviceNote;
+    taskList = applyTaskDeletionLedger(taskList, taskDeletionRecords);
+    pruneStaleDevices(Date.now(), { keepCurrent: true, persist: true });
     ensureDeviceIdentity();
 }
 
 function saveLocalStorage() {
+    pruneStaleDevices(Date.now(), { keepCurrent: true, persist: false });
     const dataStr = JSON.stringify(taskList);
     localStorage.setItem(KEY, dataStr);
+    localStorage.setItem(KEY_TASK_DELETIONS, JSON.stringify(taskDeletionRecords));
     localStorage.setItem(KEY_SYNC_LOG, JSON.stringify(syncLog));
     localStorage.setItem(KEY_SNAPSHOTS, JSON.stringify(snapshots));
+    pruneStaleDevices(now, { keepCurrent: true, persist: false });
     localStorage.setItem(KEY_DEVICE_ID, deviceId);
     localStorage.setItem(KEY_DEVICE_NOTE, deviceNote);
     localStorage.setItem(KEY_DEVICE_REGISTRY, JSON.stringify(deviceRegistry));
@@ -2502,6 +2795,28 @@ function normalizeDeviceRegistry(raw) {
         if (normalized.deviceId) registry[normalized.deviceId] = normalized;
     });
     return registry;
+}
+
+function pruneStaleDevices(referenceTime = Date.now(), { keepCurrent = true, persist = true } = {}) {
+    if (!deviceRegistry || typeof deviceRegistry !== 'object') deviceRegistry = {};
+    const cutoff = Number(referenceTime) - DEVICE_STALE_MS;
+    let changed = false;
+    Object.keys(deviceRegistry).forEach(id => {
+        if (!id) return;
+        if (keepCurrent && id === deviceId) return;
+        const entry = normalizeDeviceEntry(deviceRegistry[id], id);
+        const activityAt = Math.max(Number(entry.lastUploadAt) || 0, Number(entry.lastSeenAt) || 0, Number(entry.firstSeenAt) || 0);
+        if (activityAt && activityAt >= cutoff) {
+            deviceRegistry[id] = entry;
+            return;
+        }
+        delete deviceRegistry[id];
+        changed = true;
+    });
+    if (persist && changed) {
+        localStorage.setItem(KEY_DEVICE_REGISTRY, JSON.stringify(deviceRegistry));
+    }
+    return changed;
 }
 
 function getDeviceShortId(id = deviceId) {
@@ -2560,6 +2875,7 @@ function ensureDeviceIdentity() {
     }
     deviceNote = safeText(deviceNote || deviceRegistry[deviceId].note || '').trim();
     deviceRegistry[deviceId].note = deviceNote;
+    pruneStaleDevices(now, { keepCurrent: true, persist: false });
     localStorage.setItem(KEY_DEVICE_NOTE, deviceNote);
     localStorage.setItem(KEY_DEVICE_REGISTRY, JSON.stringify(deviceRegistry));
 }
@@ -2628,6 +2944,7 @@ function setCurrentDeviceNote(nextNote, { syncToCloud = true } = {}) {
 function renderDeviceList() {
     const box = document.getElementById('deviceList');
     if (!box) return;
+    pruneStaleDevices(Date.now(), { keepCurrent: true, persist: true });
     const entries = Object.values(deviceRegistry || {}).sort((a, b) => {
         const bScore = Number(b.lastUploadAt || b.lastSeenAt || 0);
         const aScore = Number(a.lastUploadAt || a.lastSeenAt || 0);
@@ -2647,6 +2964,8 @@ function renderDeviceList() {
         const firstSeen = item.firstSeenAt ? formatDateTime(item.firstSeenAt) : '—';
         const lastSeen = item.lastSeenAt ? formatDateTime(item.lastSeenAt) : '—';
         const lastUpload = item.lastUploadAt ? formatDateTime(item.lastUploadAt) : '—';
+        const inactiveDays = Math.max(0, Math.floor((Date.now() - Math.max(Number(item.lastSeenAt) || 0, Number(item.lastUploadAt) || 0, Number(item.firstSeenAt) || 0)) / (24 * 60 * 60 * 1000)));
+        const staleTip = active ? '' : `<span class="device-card-stale">${inactiveDays >= DEVICE_STALE_DAYS ? '将自动清理' : `${inactiveDays}天未活跃`}</span>`;
         return `
             <div class="device-card ${active ? 'active' : ''}" data-device-id="${escapeHTML(item.deviceId)}">
                 <div class="device-card-head">
@@ -2655,6 +2974,7 @@ function renderDeviceList() {
                         ${active ? '<span class="device-card-active">当前设备</span>' : ''}
                     </div>
                     <div class="device-card-id">${escapeHTML(item.deviceId)}</div>
+                    ${staleTip}
                 </div>
                 <div class="device-card-row">
                     <span class="device-card-label">设备备注</span>
@@ -2886,7 +3206,8 @@ async function loadStorage() {
             const remoteData = await fetchRemoteData();
             if (remoteData && remoteData.tasks && Array.isArray(remoteData.tasks)) {
                 const normalizedRemoteTasks = normalizeTaskList(remoteData.tasks);
-                remoteData.tasks = normalizedRemoteTasks;
+                remoteData.tasks = applyTaskDeletionLedger(normalizedRemoteTasks, normalizeTaskDeletionList(remoteData.taskDeletionRecords || []));
+                remoteData.taskDeletionRecords = normalizeTaskDeletionList(remoteData.taskDeletionRecords || []);
                 // 云端为准：直接用云端任务列表覆盖本地，不再逐条合并（同步架构本身不变）。
                 // 🛡️ 在真正覆盖本地之前，先对"模拟合并完成后的最终数据"（即 remoteData.tasks）
                 // 与"同步开始前本地完整数据"做一次高危风险检测；无风险时完全静默、自动完成。
@@ -2930,10 +3251,12 @@ async function loadStorage() {
 
 // 下载合并结果的落盘流程：与旧版本完全一致的业务逻辑，仅额外支持"风险确认后继续"时打上本机专属的高危日志标记
 function applyDownloadedRemoteData(remoteData, localBeforeSync, riskConfirmed) {
-    taskList = normalizeTaskList(remoteData.tasks);
+    taskDeletionRecords = mergeTaskDeletionLists(taskDeletionRecords, remoteData.taskDeletionRecords);
+    taskList = applyTaskDeletionLedger(remoteData.tasks, taskDeletionRecords);
     syncLog = mergeSyncLog(syncLog, remoteData.syncLog);
     snapshots = mergeSnapshots(snapshots, remoteData.snapshots);
     deviceRegistry = mergeDeviceRegistry(deviceRegistry, remoteData.devices);
+    pruneStaleDevices(Date.now(), { keepCurrent: true, persist: false });
     if (remoteData.deviceMeta && remoteData.deviceMeta.deviceId && remoteData.deviceMeta.deviceNote !== undefined) {
         const remoteCurrent = normalizeDeviceEntry({
             deviceId: remoteData.deviceMeta.deviceId,
@@ -2943,6 +3266,7 @@ function applyDownloadedRemoteData(remoteData, localBeforeSync, riskConfirmed) {
             noteUpdatedAt: remoteData.deviceMeta.updatedAt
         }, remoteData.deviceMeta.deviceId);
         deviceRegistry[remoteCurrent.deviceId] = mergeDeviceRegistry({ [remoteCurrent.deviceId]: deviceRegistry[remoteCurrent.deviceId] }, { [remoteCurrent.deviceId]: remoteCurrent })[remoteCurrent.deviceId];
+    pruneStaleDevices(Date.now(), { keepCurrent: true, persist: false });
     }
     if (deviceRegistry[deviceId] && deviceRegistry[deviceId].note !== undefined) {
         deviceNote = safeText(deviceRegistry[deviceId].note).trim();
@@ -3670,6 +3994,7 @@ function batchArchiveHistory() {
 function batchDeleteTasks() {
     if (selectedTaskIds.size === 0) return showToast('请先选择任务');
     openConfirm('批量删除', `确定删除选中的 ${selectedTaskIds.size} 个任务吗？记录无法恢复`, () => {
+        [...selectedTaskIds].forEach(id => touchTaskDeletionRecord(id, 'delete'));
         taskList = taskList.filter(t => !selectedTaskIds.has(t.id));
         selectedTaskIds.clear();
         saveStorage();
@@ -3926,8 +4251,12 @@ function handleCardAction(e) {
     }
     const delBtn = e.target.closest('[data-del]');
     if (delBtn) {
-        openConfirm("删除任务", "确定删除该任务？打卡记录无法恢复", () => {
-            taskList = taskList.filter(t => t.id !== Number(delBtn.dataset.del));
+        openConfirm("删除任务", "确定删除该任务？删除后会同步到其他设备，不再被旧设备数据复活", () => {
+            const targetId = Number(delBtn.dataset.del);
+            if (Number.isFinite(targetId)) {
+                touchTaskDeletionRecord(targetId, 'delete');
+            }
+            taskList = taskList.filter(t => t.id !== targetId);
             saveStorage(); renderPage();
             showToast("已删除");
         }, true);
@@ -4239,7 +4568,12 @@ function exportBackup() {
     if (dev === null) return;
     dev = dev.trim() || '手机';
     localStorage.setItem('daka_device_name', dev);
-    const str = JSON.stringify(taskList, null, 2);
+    const str = JSON.stringify({
+        schemaVersion: 3,
+        exportedAt: Date.now(),
+        tasks: taskList,
+        taskDeletionRecords: taskDeletionRecords
+    }, null, 2);
     const blob = new Blob([str], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -4278,6 +4612,28 @@ function exportCsv() {
     showToast("📊 CSV 报表导出成功");
 }
 
+
+function normalizeImportedBackupPackage(raw) {
+    if (Array.isArray(raw)) {
+        return {
+            tasks: normalizeTaskList(raw),
+            taskDeletionRecords: []
+        };
+    }
+    const source = raw && typeof raw === 'object' ? raw : {};
+    return {
+        tasks: normalizeTaskList(source.tasks || source.taskList || source.data || []),
+        taskDeletionRecords: normalizeTaskDeletionList(
+            source.taskDeletionRecords
+            || source.deletedTasks
+            || source.deletedIds
+            || source.tombstones
+            || source.taskDeletions
+            || []
+        )
+    };
+}
+
 function triggerImport(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -4285,10 +4641,11 @@ function triggerImport(e) {
     reader.onload = ev => {
         try {
             const parsed = JSON.parse(ev.target.result);
-            if (!Array.isArray(parsed)) {
-                throw new Error("Invalid Schema: expected array");
+            const normalized = normalizeImportedBackupPackage(parsed);
+            if (!normalized.tasks || !Array.isArray(normalized.tasks)) {
+                throw new Error("Invalid Schema");
             }
-            tempImportData = normalizeTaskList(parsed);
+            tempImportData = normalized;
             el.importPopWrap.style.display = "block";
         } catch (err) {
             showToast("⚠️ 备份文件格式错误");
@@ -4305,7 +4662,8 @@ el.importOverwriteBtn.onclick = () => {
         "⚠️ 确认覆盖导入",
         "此操作将：\n1. 覆盖本地数据\n2. 同步覆盖云端数据\n3. 不可撤销\n\n确定要继续吗？",
         () => {
-            taskList = normalizeTaskList(tempImportData);
+            taskList = normalizeTaskList(tempImportData.tasks || []);
+            taskDeletionRecords = normalizeTaskDeletionList(tempImportData.taskDeletionRecords || []);
             saveStorage(true); renderPage();
             showToast("✅ 已覆盖本地数据");
             tempImportData = null;
@@ -4315,7 +4673,9 @@ el.importOverwriteBtn.onclick = () => {
 };
 el.importMergeBtn.onclick = () => {
     if(tempImportData) {
-        taskList = mergeImportedTasks(taskList, tempImportData);
+        taskList = mergeImportedTasks(taskList, tempImportData.tasks || []);
+        taskDeletionRecords = mergeTaskDeletionLists(taskDeletionRecords, tempImportData.taskDeletionRecords || []);
+        taskList = applyTaskDeletionLedger(taskList, taskDeletionRecords);
         saveStorage(); 
         renderPage();
         showToast(`✅ 合并完成，已智能融合本地与导入数据`);
@@ -4392,24 +4752,41 @@ function renderSyncLogList() {
         const cls = item.ok ? 'ok' : 'fail';
         const hasChange = item.ok && diffHasChange(item.detail);
         const sourceLabel = getDeviceLabel(item.deviceId, item.deviceNote || item.deviceLabel || '');
+        const timeText = escapeHTML(item.t);
+        const sourceText = escapeHTML(sourceLabel);
+        const reasonText = !item.ok && item.reason ? `<span class="sync-log-chip">原因：${escapeHTML(item.reason)}</span>` : '';
         let statsLine = '';
         if (item.ok && hasChange) {
             const d = item.detail;
             const checkinTotal = d.checkins.length + d.uncheckins.length;
-            statsLine = `<div class="sync-log-stats">打卡 ${checkinTotal} 新增 ${d.added.length} 修改 ${d.modified.length} 删除 ${d.removed.length}</div>`;
+            statsLine = `
+                <div class="sync-log-stats">
+                    <span class="sync-log-stat">打卡 ${checkinTotal}</span>
+                    <span class="sync-log-stat">新增 ${d.added.length}</span>
+                    <span class="sync-log-stat">修改 ${d.modified.length}</span>
+                    <span class="sync-log-stat">删除 ${d.removed.length}</span>
+                </div>`;
         }
         return `
         <div class="sync-log-item ${cls} ${item.ok ? 'expandable' : ''}">
-            <div class="sync-log-row-top">
-                <div class="sync-log-main">${arrow} ${typeText}${resultText}</div>
-                ${item.ok ? `<div class="sync-log-summary ${hasChange ? 'changed' : ''}">${hasChange ? '有数据更新' : '数据一致'}</div>` : ''}
+            <div class="sync-log-header">
+                <div class="sync-log-title">
+                    <div class="sync-log-main">${arrow} ${typeText}</div>
+                    <div class="sync-log-sub">
+                        <span class="sync-log-chip">${timeText}</span>
+                        <span class="sync-log-chip">来自：${sourceText}</span>
+                        ${reasonText}
+                    </div>
+                </div>
+                <div class="sync-log-result ${cls}">${resultText}</div>
             </div>
-            <div class="sync-log-sub">${escapeHTML(item.t)} · 来自：${escapeHTML(sourceLabel)}${!item.ok && item.reason ? ' · 原因：' + escapeHTML(item.reason) : ''}</div>
+            ${item.ok ? `<div class="sync-log-summary ${hasChange ? 'changed' : ''}">${hasChange ? '有数据更新' : '数据一致'}</div>` : ''}
             ${statsLine}
             ${item.ok ? `<div class="sync-log-detail">${renderSyncDetailHTML(item.detail)}</div>` : ''}
         </div>`;
     }).join('');
 }
+
 
 function renderBackupManagePanel() {
     syncCurrentDeviceForm();
