@@ -2084,6 +2084,8 @@ const KEY_DEVICE_REGISTRY = 'daka_device_registry';
 const DEVICE_STALE_DAYS = 3;
 const DEVICE_STALE_MS = DEVICE_STALE_DAYS * 24 * 60 * 60 * 1000;
 const KEY_TASK_DELETIONS = 'daka_task_deletions';
+const SYNC_REQUEST_TIMEOUT_MS = 12000;
+const SYNC_HEALTHCHECK_LABEL = '同步接口';
 let taskList = [];
 let syncLog = [];
 let snapshots = [];
@@ -2315,14 +2317,9 @@ async function protectHistoryBeforeUpload() {
 
 
 async function fetchRemoteData() {
-    const res = await fetch('/api/get-data', {
+    return fetchJsonWithTimeout('/api/get-data', {
         headers: { 'X-Sync-Password': syncPassword }
-    });
-    if (!res.ok) {
-        if (res.status === 401) throw new Error('同步密码错误');
-        throw new Error('云端请求失败');
-    }
-    return res.json();
+    }, '拉取云端数据');
 }
 
 async function saveRemoteData() {
@@ -2347,17 +2344,18 @@ async function saveRemoteData() {
                 continue;
             }
 
-            const res = await fetch('/api/save-data', {
+            const result = await fetchJsonWithTimeout('/api/save-data', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Sync-Password': syncPassword
                 },
                 body: currentPayload
-            });
-            if (!res.ok) {
-                if (res.status === 401) throw new Error('同步密码错误');
-                throw new Error('云端保存失败');
+            }, '上传云端数据');
+            if (result && result.error) {
+                const err = new Error(String(result.error));
+                err.syncReason = String(result.error);
+                throw err;
             }
             lastUploadedRemotePayload = currentPayload;
             sentAny = true;
@@ -2741,16 +2739,22 @@ function loadLocalStorage() {
 }
 
 function saveLocalStorage() {
-    pruneStaleDevices(Date.now(), { keepCurrent: true, persist: false });
-    const dataStr = JSON.stringify(taskList);
-    localStorage.setItem(KEY, dataStr);
-    localStorage.setItem(KEY_TASK_DELETIONS, JSON.stringify(taskDeletionRecords));
-    localStorage.setItem(KEY_SYNC_LOG, JSON.stringify(syncLog));
-    localStorage.setItem(KEY_SNAPSHOTS, JSON.stringify(snapshots));
-    pruneStaleDevices(now, { keepCurrent: true, persist: false });
-    localStorage.setItem(KEY_DEVICE_ID, deviceId);
-    localStorage.setItem(KEY_DEVICE_NOTE, deviceNote);
-    localStorage.setItem(KEY_DEVICE_REGISTRY, JSON.stringify(deviceRegistry));
+    const now = Date.now();
+    try {
+        pruneStaleDevices(now, { keepCurrent: true, persist: false });
+        localStorage.setItem(KEY, JSON.stringify(taskList));
+        localStorage.setItem(KEY_TASK_DELETIONS, JSON.stringify(taskDeletionRecords));
+        localStorage.setItem(KEY_SYNC_LOG, JSON.stringify(syncLog));
+        localStorage.setItem(KEY_SNAPSHOTS, JSON.stringify(snapshots));
+        pruneStaleDevices(now, { keepCurrent: true, persist: false });
+        localStorage.setItem(KEY_DEVICE_ID, deviceId);
+        localStorage.setItem(KEY_DEVICE_NOTE, deviceNote);
+        localStorage.setItem(KEY_DEVICE_REGISTRY, JSON.stringify(deviceRegistry));
+        return true;
+    } catch (e) {
+        console.error('本地保存失败', e);
+        throw e;
+    }
 }
 
 function generateDeviceId() {
@@ -3075,11 +3079,101 @@ function mergeSnapshots(localSnaps, remoteSnaps) {
 
 // 把各种失败原因归一成用户能看懂的短文案
 function friendlySyncErrorReason(e) {
+    if (!e) return '网络错误';
+    if (e.syncReason) return e.syncReason;
     const msg = e && e.message ? e.message : '';
     if (msg === '同步密码错误') return '密码错误';
     if (msg === '云端保存失败' || msg === '云端请求失败') return '服务器错误';
+    if (e.status === 401) return '密码错误';
+    if (e.status === 404) return '接口未找到';
+    if (e.status >= 500) return '服务器错误';
+    if (e.name === 'AbortError') return '请求超时';
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return '网络离线';
     return '网络错误';
+}
+
+function formatSyncLogDetail(detail) {
+    if (detail === undefined || detail === null || detail === '') return '';
+    if (typeof detail === 'string') return detail;
+    if (typeof detail === 'object') {
+        try {
+            return Object.entries(detail).map(([k, v]) => `${k}: ${typeof v === 'string' ? v : JSON.stringify(v)}`).join(' | ');
+        } catch (e) {
+            return '[detail unavailable]';
+        }
+    }
+    return String(detail);
+}
+
+function buildSyncErrorDetail(e) {
+    if (!e) return '';
+    const parts = [];
+    if (e.name) parts.push(`类型: ${e.name}`);
+    if (e.status !== undefined && e.status !== null) parts.push(`HTTP: ${e.status}`);
+    if (e.url) parts.push(`接口: ${e.url}`);
+    if (e.syncReason) parts.push(`原因: ${e.syncReason}`);
+    if (e.message && e.message !== e.syncReason) parts.push(`信息: ${e.message}`);
+    if (e.responseText) {
+        const text = String(e.responseText).replace(/\s+/g, ' ').trim();
+        if (text) parts.push(`返回: ${text.slice(0, 160)}`);
+    }
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        parts.push('浏览器: 离线');
+    }
+    return parts.join('\n');
+}
+
+async function fetchJsonWithTimeout(url, options = {}, label = SYNC_HEALTHCHECK_LABEL) {
+    const hasAbortController = typeof AbortController !== 'undefined';
+    const controller = hasAbortController ? new AbortController() : null;
+    const timeoutId = controller ? setTimeout(() => controller.abort(), SYNC_REQUEST_TIMEOUT_MS) : null;
+    try {
+        const finalOptions = controller ? { ...options, signal: controller.signal } : { ...options };
+        const response = await fetch(url, finalOptions);
+        const responseText = await response.text();
+        const trimmedText = (responseText || '').trim();
+        let parsed = {};
+        if (trimmedText) {
+            try {
+                parsed = JSON.parse(trimmedText);
+            } catch (parseErr) {
+                parsed = { rawText: trimmedText };
+            }
+        }
+        if (!response.ok) {
+            const err = new Error(`${label}失败（HTTP ${response.status}）`);
+            err.status = response.status;
+            err.url = url;
+            err.responseText = trimmedText;
+            err.syncReason = response.status === 401 ? '同步密码错误'
+                : response.status === 404 ? '接口未找到'
+                : response.status >= 500 ? '服务器错误'
+                : `HTTP ${response.status}`;
+            throw err;
+        }
+        if (parsed && typeof parsed === 'object' && parsed.error) {
+            const err = new Error(String(parsed.error));
+            err.url = url;
+            err.syncReason = String(parsed.error);
+            throw err;
+        }
+        return parsed;
+    } catch (e) {
+        if (e && e.name === 'AbortError') {
+            const err = new Error(`${label}超时（${Math.round(SYNC_REQUEST_TIMEOUT_MS / 1000)}秒）`);
+            err.name = 'AbortError';
+            err.url = url;
+            err.syncReason = '请求超时';
+            throw err;
+        }
+        if (!e.syncReason) {
+            e.syncReason = (typeof navigator !== 'undefined' && navigator.onLine === false) ? '网络离线' : '网络错误';
+        }
+        if (!e.url) e.url = url;
+        throw e;
+    } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+    }
 }
 
 /* ============================================================
@@ -3232,11 +3326,15 @@ async function loadStorage() {
             }
         } catch (e) {
             console.error('云端同步失败', e);
-            addSyncLog('download', false, friendlySyncErrorReason(e));
+            addSyncLog('download', false, friendlySyncErrorReason(e), buildSyncErrorDetail(e));
             maybeCreateDailySnapshot();
-            saveLocalStorage();
+            try {
+                saveLocalStorage();
+            } catch (saveErr) {
+                console.error('本地保存失败', saveErr);
+            }
             updateSyncStatus('error');
-            showToast(`⚠️ ${e.message}，已使用本地数据`);
+            showToast(`⚠️ ${e.message || '同步失败'}，已使用本地数据`);
         }
     } else {
         maybeCreateDailySnapshot();
@@ -3328,11 +3426,11 @@ function saveStorage(riskCheck) {
 
 async function doUploadRemoteData(beforeUploadSnapshot) {
     updateSyncStatus('syncing');
+    try {
+        // 🛡️ 上传前保护 history，避免旧设备残缺缓存覆盖云端完整记录
+        await protectHistoryBeforeUpload();
 
-    // 🛡️ 上传前保护 history，避免旧设备残缺缓存覆盖云端完整记录
-    await protectHistoryBeforeUpload();
-
-    saveRemoteData().then((result) => {
+        const result = await saveRemoteData();
         if (result && !result.skipped) {
             addSyncLog('upload', true, null, diffTaskLists(beforeUploadSnapshot, taskList));
             lastSyncedSnapshot = cloneTasks(taskList);
@@ -3341,12 +3439,13 @@ async function doUploadRemoteData(beforeUploadSnapshot) {
         const now = new Date();
         const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         updateSyncStatus('success', timeStr);
-    }).catch(e => {
+    } catch (e) {
         console.error('云端保存失败', e);
-        addSyncLog('upload', false, friendlySyncErrorReason(e));
-        saveLocalStorage();
+        addSyncLog('upload', false, friendlySyncErrorReason(e), buildSyncErrorDetail(e));
+        try { saveLocalStorage(); } catch (saveErr) { console.error('本地保存失败', saveErr); }
         updateSyncStatus('error');
-    });
+        showToast(`⚠️ ${e.message || '同步失败'}`);
+    }
 }
 
 function archiveOldHistory(isManual = false) {
@@ -3994,12 +4093,18 @@ function batchArchiveHistory() {
 function batchDeleteTasks() {
     if (selectedTaskIds.size === 0) return showToast('请先选择任务');
     openConfirm('批量删除', `确定删除选中的 ${selectedTaskIds.size} 个任务吗？记录无法恢复`, () => {
-        [...selectedTaskIds].forEach(id => touchTaskDeletionRecord(id, 'delete'));
-        taskList = taskList.filter(t => !selectedTaskIds.has(t.id));
-        selectedTaskIds.clear();
-        saveStorage();
-        toggleBatchMode();
-        showToast('批量删除成功');
+        try {
+            [...selectedTaskIds].forEach(id => touchTaskDeletionRecord(id, 'delete'));
+            taskList = taskList.filter(t => !selectedTaskIds.has(t.id));
+            selectedTaskIds.clear();
+            saveStorage();
+            toggleBatchMode();
+            showToast('批量删除成功');
+        } catch (e) {
+            console.error('批量删除失败', e);
+            showToast(`批量删除失败：${friendlySyncErrorReason(e)}`);
+            updateSyncStatus('error');
+        }
     }, true);
 }
 
@@ -4222,9 +4327,15 @@ function handleCardAction(e) {
                         item.updateAt = getNowDateTimeStr();
                     }
                 }
-                saveStorage();
-                renderPage();
-                showToast(`已删除打卡记录`);
+                try {
+                    saveStorage();
+                    renderPage();
+                    showToast(`已删除打卡记录`);
+                } catch (e) {
+                    console.error('删除打卡记录失败', e);
+                    showToast(`删除失败：${friendlySyncErrorReason(e)}`);
+                    updateSyncStatus('error');
+                }
             }, true);
         }
         return;
@@ -4252,13 +4363,20 @@ function handleCardAction(e) {
     const delBtn = e.target.closest('[data-del]');
     if (delBtn) {
         openConfirm("删除任务", "确定删除该任务？删除后会同步到其他设备，不再被旧设备数据复活", () => {
-            const targetId = Number(delBtn.dataset.del);
-            if (Number.isFinite(targetId)) {
-                touchTaskDeletionRecord(targetId, 'delete');
+            try {
+                const targetId = Number(delBtn.dataset.del);
+                if (Number.isFinite(targetId)) {
+                    touchTaskDeletionRecord(targetId, 'delete');
+                }
+                taskList = taskList.filter(t => t.id !== targetId);
+                saveStorage();
+                renderPage();
+                showToast("已删除");
+            } catch (e) {
+                console.error('删除任务失败', e);
+                showToast(`删除失败：${friendlySyncErrorReason(e)}`);
+                updateSyncStatus('error');
             }
-            taskList = taskList.filter(t => t.id !== targetId);
-            saveStorage(); renderPage();
-            showToast("已删除");
         }, true);
         return;
     }
@@ -4504,62 +4622,70 @@ function openEdit(id) {
 }
 
 function saveTask() {
-    const name = el.inpName.value.trim();
-    if (!name) return showToast("请填写任务名称");
+    try {
+        const name = el.inpName.value.trim();
+        if (!name) return showToast("请填写任务名称");
 
-    const category = el.inpCategory.value.trim() || "默认分组";
-    const repeat = taskList.some(t => getTaskNameText(t) === name && getTaskCategoryText(t) === category && t.id !== editId);
-    if(repeat) return showToast("相同分类下已存在同名任务");
+        const category = el.inpCategory.value.trim() || "默认分组";
+        const repeat = taskList.some(t => getTaskNameText(t) === name && getTaskCategoryText(t) === category && t.id !== editId);
+        if(repeat) return showToast("相同分类下已存在同名任务");
 
-    let savedAppScheme = el.inpAppScheme.value;
-    if (savedAppScheme === "custom") {
-        savedAppScheme = el.inpCustomScheme.value.trim();
-    }
+        let savedAppScheme = el.inpAppScheme.value;
+        if (savedAppScheme === "custom") {
+            savedAppScheme = el.inpCustomScheme.value.trim();
+        }
 
-    const selectedType = document.querySelector('input[name="rewardType"]:checked').value;
-    let finalRewardValue = "";
-    if (selectedType === "money") {
-        finalRewardValue = formatMoney(el.inpMoney.value);
-    } else {
-        finalRewardValue = el.inpCustom.value.trim() || "未填写奖品";
-    }
-    const existingTask = editId ? taskList.find(i => i.id === editId) : null;
-    const nowStr = getNowDateTimeStr();
-    const data = {
-        id: editId || Date.now(),
-        name,
-        appScheme: savedAppScheme,
-        category: category,
-        remark: el.inpRemark.value.trim(),
-        totalDay: Number(el.inpDay.value) || 30,
-        timesPerDay: Number(el.inpTimesPerDay.value) || 1,
-        rewardType: selectedType,
-        rewardValue: finalRewardValue,
-        money: selectedType === "money" ? Number(finalRewardValue) : 0,
-        startDate: el.inpStart.value || getTodayStr(),
-        isContinuous: el.inpContinuous.checked,
-        isPinned: existingTask ? !!existingTask.isPinned : false,
-        history: existingTask && Array.isArray(existingTask.history) ? [...existingTask.history] : [],
-        archives: existingTask && Array.isArray(existingTask.archives) ? JSON.parse(JSON.stringify(existingTask.archives)) : [],
-        updateAt: nowStr
-    };
-    const normalizedData = normalizeTaskRecord(data);
+        const selectedType = document.querySelector('input[name="rewardType"]:checked');
+        if (!selectedType) return showToast("请选择奖励类型");
+        const rewardType = selectedType.value;
+        let finalRewardValue = "";
+        if (rewardType === "money") {
+            finalRewardValue = formatMoney(el.inpMoney.value);
+        } else {
+            finalRewardValue = el.inpCustom.value.trim() || "未填写奖品";
+        }
+        const existingTask = editId ? taskList.find(i => i.id === editId) : null;
+        const nowStr = getNowDateTimeStr();
+        const data = {
+            id: editId || Date.now(),
+            name,
+            appScheme: savedAppScheme,
+            category: category,
+            remark: el.inpRemark.value.trim(),
+            totalDay: Number(el.inpDay.value) || 30,
+            timesPerDay: Number(el.inpTimesPerDay.value) || 1,
+            rewardType,
+            rewardValue: finalRewardValue,
+            money: rewardType === "money" ? Number(finalRewardValue) : 0,
+            startDate: el.inpStart.value || getTodayStr(),
+            isContinuous: el.inpContinuous.checked,
+            isPinned: existingTask ? !!existingTask.isPinned : false,
+            history: existingTask && Array.isArray(existingTask.history) ? [...existingTask.history] : [],
+            archives: existingTask && Array.isArray(existingTask.archives) ? JSON.parse(JSON.stringify(existingTask.archives)) : [],
+            updateAt: nowStr
+        };
+        const normalizedData = normalizeTaskRecord(data);
 
-    if (editId) {
-        const idx = taskList.findIndex(i => i.id === editId);
-        if (idx >= 0) {
-            taskList[idx] = normalizedData;
+        if (editId) {
+            const idx = taskList.findIndex(i => i.id === editId);
+            if (idx >= 0) {
+                taskList[idx] = normalizedData;
+            } else {
+                taskList.push(normalizedData);
+            }
         } else {
             taskList.push(normalizedData);
         }
-    } else {
-        taskList.push(normalizedData);
-    }
 
-    saveStorage();
-    el.maskWrap.style.display = "none";
-    renderPage();
-    showToast("保存成功");
+        saveStorage();
+        el.maskWrap.style.display = "none";
+        renderPage();
+        showToast("保存成功");
+    } catch (e) {
+        console.error('保存任务失败', e);
+        showToast(`保存失败：${friendlySyncErrorReason(e)}`);
+        updateSyncStatus('error');
+    }
 }
 
 function exportBackup() {
@@ -4755,6 +4881,7 @@ function renderSyncLogList() {
         const timeText = escapeHTML(item.t);
         const sourceText = escapeHTML(sourceLabel);
         const reasonText = !item.ok && item.reason ? `<span class="sync-log-chip">原因：${escapeHTML(item.reason)}</span>` : '';
+        const detailText = !item.ok && item.detail ? `<span class="sync-log-chip sync-log-chip-detail">详情：${escapeHTML(formatSyncLogDetail(item.detail)).slice(0, 200)}</span>` : '';
         let statsLine = '';
         if (item.ok && hasChange) {
             const d = item.detail;
@@ -4776,6 +4903,7 @@ function renderSyncLogList() {
                         <span class="sync-log-chip">${timeText}</span>
                         <span class="sync-log-chip">来自：${sourceText}</span>
                         ${reasonText}
+                        ${detailText}
                     </div>
                 </div>
                 <div class="sync-log-result ${cls}">${resultText}</div>
@@ -4827,7 +4955,13 @@ function bindGlobalEvent() {
         } else {
             if (syncInFlight) return;
             syncInFlight = true;
-            Promise.resolve(loadStorage()).finally(() => { syncInFlight = false; });
+            Promise.resolve(loadStorage())
+                .catch((e) => {
+                    console.error('手动同步失败', e);
+                    updateSyncStatus('error');
+                    showToast(`⚠️ ${e && e.message ? e.message : '同步失败'}`);
+                })
+                .finally(() => { syncInFlight = false; });
         }
     });
     el.syncBtn.addEventListener('dblclick', setSyncPassword);
@@ -5034,13 +5168,26 @@ function bindGlobalEvent() {
     if (el.syncUndoBtn) {
         el.syncUndoBtn.onclick = () => restoreSyncRecoveryPoint();
     }
+
+    window.addEventListener('error', (event) => {
+        console.error('全局脚本错误', event.error || event.message);
+    });
+    window.addEventListener('unhandledrejection', (event) => {
+        console.error('未处理的 Promise 错误', event.reason);
+    });
 }
 
 window.onload = async function() {
     initThemeUI();
     initWidgetStates();
     bindGlobalEvent();
-    await loadStorage();
+    try {
+        await loadStorage();
+    } catch (e) {
+        console.error('启动同步失败', e);
+        updateSyncStatus('error');
+        showToast(`⚠️ ${e && e.message ? e.message : '启动同步失败'}`);
+    }
     archiveOldHistory(false);
     renderPage();
     // 🛡️ V1.2：撤销本次同步后刷新页面，展示一次性的成功提示
