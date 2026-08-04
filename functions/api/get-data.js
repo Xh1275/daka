@@ -1,7 +1,6 @@
 export async function onRequestGet(context) {
   const { request, env } = context;
 
-  // 密码验证（设置了环境变量才启用）
   const clientPassword = request.headers.get('X-Sync-Password');
   const serverPassword = env.SYNC_PASSWORD;
   if (serverPassword && clientPassword !== serverPassword) {
@@ -18,6 +17,7 @@ export async function onRequestGet(context) {
       announcement: '',
       syncLog: [],
       snapshots: [],
+      taskDeletionRecords: [],
       devices: {},
       deviceMeta: {}
     }), {
