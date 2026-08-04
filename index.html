@@ -12,6 +12,32 @@
     }
 })();
 </script>
+<script>
+(function(){
+  function safeCall(fn, arg) {
+    try { if (typeof fn === 'function') fn(arg); } catch (e) { console.error(e); }
+  }
+  document.addEventListener('click', function(e) {
+    const t = e.target && e.target.closest ? e.target.closest('#moreBtn, #backupManageBtn, #recycleBinBtn, #archiveBtn, #clearAllBtn, #backupManageClose') : null;
+    if (!t) return;
+    e.stopPropagation();
+    e.preventDefault();
+    const id = t.id;
+    if (id === 'moreBtn') {
+      const menu = document.getElementById('moreMenu');
+      if (menu) menu.classList.toggle('show');
+      return;
+    }
+    const menu = document.getElementById('moreMenu');
+    if (menu) menu.classList.remove('show');
+    if (id === 'backupManageBtn') safeCall(window.openBackupManage);
+    else if (id === 'recycleBinBtn') safeCall(window.openBackupManage, 'recycle');
+    else if (id === 'archiveBtn') safeCall(window.archiveOldHistory, true);
+    else if (id === 'clearAllBtn') safeCall(window.clearAllData);
+    else if (id === 'backupManageClose') safeCall(window.closeBackupManage);
+  }, true);
+})();
+</script>
 <style>
 :root {
     --primary: #1989fa;
@@ -212,7 +238,10 @@ body {
     transition:max-height .25s ease, opacity .2s ease, margin-top .25s ease;
 }
 .sync-log-item.expanded .sync-log-detail{
-    max-height:600px;
+    max-height:320px;
+    overflow:auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     opacity:1;
     margin-top:8px;
     padding-top:8px;
@@ -1041,6 +1070,9 @@ html[data-theme="dark"] .calendar-header-bar{
     gap:8px;
     max-height:calc(82vh - 170px);
     overflow:auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
     padding-right:2px;
 }
 .calendar-detail-item{
@@ -1103,6 +1135,9 @@ html[data-theme="dark"] .calendar-header-bar{
 .backup-manage-scroll{
     max-height:calc(82vh - 90px);
     overflow:auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
     padding-right:2px;
 }
 .backup-section{ margin-bottom:18px; }
@@ -1215,6 +1250,146 @@ html[data-theme="dark"] .calendar-detail-stat{
         grid-template-columns:repeat(2,minmax(0,1fr));
     }
 }
+
+/* === 安全文本公告 / 回收站 / 滚动容器优化 === */
+.announcement-text {
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    min-height: 22px;
+}
+.announcement-text[contenteditable="true"],
+.announcement-text[contenteditable="plaintext-only"] {
+    background: var(--bg-color);
+    border: 1px dashed var(--primary);
+    border-radius: 8px;
+}
+.announcement-text.is-editing {
+    cursor: text;
+}
+.announcement-date,
+.announcement-time,
+.announcement-date-time {
+    color: var(--danger);
+    font-weight: 800;
+    background: rgba(238, 10, 36, .08);
+    border-radius: 6px;
+    padding: 0 4px;
+}
+.recycle-section-title {
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:8px;
+}
+.recycle-section-count {
+    font-size:11px;
+    color:var(--text-light);
+    font-weight:400;
+}
+.recycle-list {
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    max-height: 320px;
+    overflow: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+}
+.recycle-item {
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    padding:10px 12px;
+    border-radius:12px;
+    background:var(--bg-color);
+    border:1px solid var(--border-color);
+}
+.recycle-item-top {
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:10px;
+}
+.recycle-item-title {
+    font-size:13px;
+    font-weight:800;
+    color:var(--text-main);
+    word-break:break-all;
+}
+.recycle-item-sub {
+    font-size:11px;
+    color:var(--text-light);
+    line-height:1.5;
+    word-break:break-word;
+}
+.recycle-item-actions {
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+}
+.recycle-restore-btn,
+.recycle-remove-btn {
+    padding:7px 12px;
+    border-radius:999px;
+    border:1px solid var(--border-color);
+    background:var(--card-bg);
+    color:var(--text-main);
+    font-size:12px;
+    font-weight:700;
+}
+.recycle-restore-btn {
+    border-color:var(--primary);
+    color:var(--primary);
+}
+.recycle-remove-btn {
+    border-color:var(--danger);
+    color:var(--danger);
+}
+.sync-log-detail {
+    max-height: 260px;
+    overflow: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding-right: 2px;
+}
+.sync-log-detail::-webkit-scrollbar,
+.calendar-detail-list::-webkit-scrollbar,
+.backup-manage-scroll::-webkit-scrollbar,
+.recycle-list::-webkit-scrollbar {
+    width: 4px;
+}
+.sync-log-detail::-webkit-scrollbar-thumb,
+.calendar-detail-list::-webkit-scrollbar-thumb,
+.backup-manage-scroll::-webkit-scrollbar-thumb,
+.recycle-list::-webkit-scrollbar-thumb {
+    background: rgba(128,128,128,.25);
+    border-radius: 99px;
+}
+.calendar-detail-pop {
+    display:flex;
+    flex-direction:column;
+}
+.calendar-detail-list {
+    flex:1;
+    min-height:0;
+    max-height:none;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+.backup-manage-scroll {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+.sync-log-item.expanded {
+    align-items: stretch;
+}
+.sync-log-item.expanded .sync-log-main,
+.sync-log-item.expanded .sync-log-sub,
+.sync-log-item.expanded .sync-log-stats {
+    width: 100%;
+}
 </style>
 
 </head>
@@ -1229,6 +1404,7 @@ html[data-theme="dark"] .calendar-detail-stat{
                 <span class="tool-btn more-trigger" id="moreBtn" aria-label="更多操作">⋯</span>
                 <div class="more-menu" id="moreMenu">
                     <button type="button" class="more-item" id="backupManageBtn">🗂 备份管理</button>
+                    <button type="button" class="more-item" id="recycleBinBtn">♻️ 回收站</button>
                     <button type="button" class="more-item" id="archiveBtn">📦 归档上月</button>
                     <div class="more-sep"></div>
                     <button type="button" class="more-item danger" id="clearAllBtn">🗑️ 清空所有本地数据</button>
@@ -1456,13 +1632,13 @@ html[data-theme="dark"] .calendar-detail-stat{
         </div>
     </div>
 
-    <!-- 备份管理：导出/导入数据、历史快照恢复、同步记录 -->
+    <!-- 备份管理：导出/导入数据、历史快照恢复、同步记录、回收站 -->
     <div class="mask calendar-detail-mask" id="backupManagePopWrap">
         <div class="calendar-detail-pop">
             <div class="calendar-detail-head">
                 <div>
                     <div class="calendar-detail-date">备份管理</div>
-                    <div class="calendar-detail-sub">数据备份 · 历史快照 · 同步记录</div>
+                    <div class="calendar-detail-sub">数据备份 · 历史快照 · 同步记录 · 回收站</div>
                 </div>
                 <button type="button" class="calendar-detail-close" id="backupManageClose">×</button>
             </div>
@@ -1478,6 +1654,13 @@ html[data-theme="dark"] .calendar-detail-stat{
                 <div class="backup-section">
                     <div class="backup-section-title">历史快照 <span class="backup-section-hint">保留最近3天，可恢复</span></div>
                     <div id="snapshotList"></div>
+                </div>
+                <div class="backup-section" id="recycleSection">
+                    <div class="backup-section-title recycle-section-title">
+                        <span>回收站</span>
+                        <span class="recycle-section-count" id="recycleBinCount">0 条可恢复记录</span>
+                    </div>
+                    <div id="recycleBinList" class="recycle-list"></div>
                 </div>
                 <div class="backup-section">
                     <div class="backup-section-title">同步记录 <span class="backup-section-hint">最近50条</span></div>
@@ -1550,12 +1733,14 @@ function getTaskAppScheme(item) {
 const KEY = "daka_offline_data";
 const KEY_SYNC_LOG = "daka_sync_log";
 const KEY_SNAPSHOTS = "daka_snapshots";
+const KEY_RECYCLE_BIN = "daka_recycle_bin";
 const SYNC_LOG_MAX = 50;
 const SNAPSHOT_KEEP_DAYS = 3;
 const SYNC_PASSWORD_KEY = 'sync_password';
 let taskList = [];
 let syncLog = [];
 let snapshots = [];
+let recycleBin = [];
 let currentPage = "today";
 let filterType = "doing";
 let editId = null;
@@ -1626,6 +1811,7 @@ const el = {
     popSave: document.getElementById("popSave"),
     toastBox: document.getElementById("toastBox"),
     addTaskBtn: document.getElementById("addTaskBtn"),
+    recycleBinBtn: document.getElementById("recycleBinBtn"),
     archiveBtn: document.getElementById("archiveBtn"),
     backupManageBtn: document.getElementById("backupManageBtn"),
     backupManagePopWrap: document.getElementById("backupManagePopWrap"),
@@ -1690,8 +1876,8 @@ function updateSyncStatus(status, text) {
 }
 
 function buildRemotePayload() {
-    const announcement = document.getElementById('announcementContent').innerHTML;
-    return { tasks: taskList, announcement, syncLog, snapshots };
+    const announcement = getAnnouncementPlainText();
+    return { tasks: taskList, announcement, syncLog, snapshots, recycleBin };
 }
 
 function getRemotePayloadString() {
@@ -1833,15 +2019,14 @@ function toggleTheme() {
 }
 
 function initAnnouncement(defaultText) {
-    const contentDiv = document.getElementById('announcementContent');
-    if (defaultText && defaultText.trim() !== '') {
-        contentDiv.innerHTML = defaultText;
+    if (defaultText && String(defaultText).trim() !== '') {
+        setAnnouncementView(defaultText);
     } else {
         const savedAnnounce = localStorage.getItem('persistent_announcement_v3');
-        if (savedAnnounce !== null && savedAnnounce.trim() !== '') {
-            contentDiv.innerHTML = savedAnnounce;
+        if (savedAnnounce !== null && String(savedAnnounce).trim() !== '') {
+            setAnnouncementView(savedAnnounce);
         } else {
-            contentDiv.innerHTML = '妈妈露营椅 <span style="background-color: #ee0a24; color: #ffffff; padding: 2px 6px; border-radius: 4px; font-weight: bold;">⏰ 过期提醒</span>';
+            setAnnouncementView('妈妈露营椅 过期提醒');
         }
     }
 }
@@ -1849,28 +2034,24 @@ function initAnnouncement(defaultText) {
 function toggleAnnouncementEdit() {
     const contentDiv = document.getElementById('announcementContent');
     const btn = document.getElementById('editAnnounceBtn');
-    const isEditing = contentDiv.getAttribute('contenteditable') === 'true';
+    const isEditing = contentDiv.getAttribute('contenteditable') !== 'false';
     if (!isEditing) {
-        contentDiv.setAttribute('contenteditable', 'true');
-        contentDiv.focus();
+        setAnnouncementEditing(true);
         btn.textContent = '保存';
         btn.style.background = 'var(--primary)';
         btn.style.color = '#fff';
         btn.style.borderColor = 'var(--primary)';
     } else {
-        contentDiv.setAttribute('contenteditable', 'false');
+        setAnnouncementEditing(false);
+        const plainText = normalizeAnnouncementText(contentDiv.innerText);
+        localStorage.setItem('persistent_announcement_v3', plainText);
+        setAnnouncementView(plainText);
+        saveStorage();
+        showToast('公告修改成功！');
         btn.textContent = '编辑';
         btn.style.background = '';
         btn.style.color = '';
         btn.style.borderColor = '';
-        
-        if (contentDiv.innerText.includes('<') && contentDiv.innerText.includes('>')) {
-            contentDiv.innerHTML = contentDiv.innerText;
-        }
-        
-        localStorage.setItem('persistent_announcement_v3', contentDiv.innerHTML);
-        saveStorage();
-        showToast('公告修改成功！');
     }
 }
 
@@ -2064,16 +2245,20 @@ function openConfirm(title, desc, onConfirm, isDanger = false) {
     el.confirmOk.style.background = isDanger ? "var(--danger)" : "var(--primary)";
     el.confirmPopWrap.style.display = "block";
     confirmCallback = onConfirm;
+    lockViewportScroll();
 }
 function closeConfirm() {
     el.confirmPopWrap.style.display = "none";
     confirmCallback = null;
+    unlockViewportScroll();
 }
 
 function closeCalendarDetail() {
     if (!el.calendarDetailPopWrap) return;
     el.calendarDetailPopWrap.style.display = "none";
+    unlockViewportScroll();
 }
+
 
 function loadLocalStorage() {
     try {
@@ -2100,6 +2285,12 @@ function loadLocalStorage() {
         snapshots = rawSnap ? JSON.parse(rawSnap) : [];
         if (!Array.isArray(snapshots)) snapshots = [];
     } catch (e) { snapshots = []; }
+    try {
+        const rawRecycle = localStorage.getItem(KEY_RECYCLE_BIN);
+        recycleBin = rawRecycle ? JSON.parse(rawRecycle) : [];
+        if (!Array.isArray(recycleBin)) recycleBin = [];
+        pruneRecycleBin();
+    } catch (e) { recycleBin = []; }
 }
 
 function saveLocalStorage() {
@@ -2107,6 +2298,248 @@ function saveLocalStorage() {
     localStorage.setItem(KEY, dataStr);
     localStorage.setItem(KEY_SYNC_LOG, JSON.stringify(syncLog));
     localStorage.setItem(KEY_SNAPSHOTS, JSON.stringify(snapshots));
+    localStorage.setItem(KEY_RECYCLE_BIN, JSON.stringify(recycleBin));
+}
+
+function normalizeAnnouncementText(raw) {
+    return String(raw == null ? '' : raw)
+        .replace(/\r\n?/g, '\n')
+        .replace(/\u00a0/g, ' ')
+        .replace(/[ \t]+\n/g, '\n')
+        .trim();
+}
+
+function escapeAndHighlightAnnouncement(text) {
+    const safe = escapeHTML(text);
+    const tokenRe = /(\d{4}[-\/年]\d{1,2}[-\/月]\d{1,2}(?:日)?(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?|\b\d{1,2}:\d{2}(?::\d{2})?\b)/g;
+    const lines = safe.split('\n').map(line => {
+        if (!line) return '';
+        return line.replace(tokenRe, (match) => {
+            const hasDate = /(\d{4}[-\/年]\d{1,2}[-\/月]\d{1,2}(?:日)?)/.test(match);
+            const cls = hasDate ? 'announcement-date-time' : 'announcement-time';
+            return `<span class="${cls}">${match}</span>`;
+        });
+    });
+    return lines.join('<br>');
+}
+
+function renderAnnouncementContent(raw) {
+    const text = normalizeAnnouncementText(raw);
+    return text ? escapeAndHighlightAnnouncement(text) : '';
+}
+
+function getAnnouncementPlainText() {
+    const contentDiv = document.getElementById('announcementContent');
+    return normalizeAnnouncementText(contentDiv ? contentDiv.innerText : '');
+}
+
+function setAnnouncementView(text) {
+    const contentDiv = document.getElementById('announcementContent');
+    if (!contentDiv) return;
+    const plain = normalizeAnnouncementText(text);
+    contentDiv.setAttribute('contenteditable', 'false');
+    contentDiv.classList.remove('is-editing');
+    contentDiv.innerHTML = renderAnnouncementContent(plain) || '';
+    contentDiv.dataset.plainText = plain;
+}
+
+function setAnnouncementEditing(isEditing) {
+    const contentDiv = document.getElementById('announcementContent');
+    if (!contentDiv) return;
+    if (isEditing) {
+        const plain = normalizeAnnouncementText(contentDiv.innerText || contentDiv.dataset.plainText || '');
+        contentDiv.dataset.plainText = plain;
+        contentDiv.textContent = plain;
+        contentDiv.setAttribute('contenteditable', 'plaintext-only');
+        contentDiv.classList.add('is-editing');
+        requestAnimationFrame(() => {
+            contentDiv.focus();
+            const range = document.createRange();
+            range.selectNodeContents(contentDiv);
+            range.collapse(false);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        });
+    } else {
+        contentDiv.setAttribute('contenteditable', 'false');
+        contentDiv.classList.remove('is-editing');
+    }
+}
+
+function bindAnnouncementEditor() {
+    const contentDiv = document.getElementById('announcementContent');
+    if (!contentDiv || contentDiv.dataset.bound === '1') return;
+    contentDiv.dataset.bound = '1';
+    contentDiv.addEventListener('paste', (e) => {
+        if (contentDiv.getAttribute('contenteditable') === 'false') return;
+        e.preventDefault();
+        const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+        document.execCommand('insertText', false, text);
+    });
+    contentDiv.addEventListener('input', () => {
+        if (contentDiv.getAttribute('contenteditable') === 'false') return;
+        const plain = normalizeAnnouncementText(contentDiv.innerText);
+        if (contentDiv.innerText !== plain) {
+            contentDiv.textContent = plain;
+            const range = document.createRange();
+            range.selectNodeContents(contentDiv);
+            range.collapse(false);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+    });
+    contentDiv.addEventListener('keydown', (e) => {
+        if (contentDiv.getAttribute('contenteditable') === 'false') return;
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            document.execCommand('insertText', false, '    ');
+        }
+    });
+}
+
+function cloneRecyclePayload(value) {
+    return JSON.parse(JSON.stringify(value));
+}
+
+function pruneRecycleBin() {
+    recycleBin = Array.isArray(recycleBin) ? recycleBin.filter(Boolean) : [];
+    recycleBin.sort((a, b) => String(b.ts || '').localeCompare(String(a.ts || '')));
+    if (recycleBin.length > RECYCLE_BIN_MAX) recycleBin = recycleBin.slice(0, RECYCLE_BIN_MAX);
+}
+
+function pushRecycleBinEntry(entry) {
+    if (!entry || !entry.type) return;
+    const item = {
+        id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        type: entry.type,
+        title: entry.title || '未命名记录',
+        note: entry.note || '',
+        ts: entry.ts || getNowDateTimeStr(),
+        payload: cloneRecyclePayload(entry.payload)
+    };
+    recycleBin.unshift(item);
+    pruneRecycleBin();
+    saveLocalStorage();
+    if (el.recycleBinList || el.recycleBinCount) renderRecycleBinList();
+}
+
+function restoreRecycleBinEntry(entryId) {
+    const idx = recycleBin.findIndex(i => i.id === entryId);
+    if (idx < 0) return;
+    const entry = recycleBin[idx];
+    const payload = cloneRecyclePayload(entry.payload);
+    const applyTask = (taskSnapshot) => {
+        if (!taskSnapshot || typeof taskSnapshot !== 'object') return;
+        const restored = cloneTasks([taskSnapshot])[0];
+        const existingIdx = taskList.findIndex(t => t.id === restored.id);
+        if (existingIdx >= 0) {
+            taskList[existingIdx] = restored;
+        } else {
+            taskList.push(restored);
+        }
+    };
+
+    if (entry.type === 'delete-task') {
+        applyTask(payload.task);
+    } else if (entry.type === 'delete-tasks') {
+        (Array.isArray(payload.tasks) ? payload.tasks : []).forEach(t => applyTask(t));
+    } else if (entry.type === 'clear-all') {
+        taskList = Array.isArray(payload.state?.taskList) ? cloneTasks(payload.state.taskList) : [];
+        syncLog = Array.isArray(payload.state?.syncLog) ? cloneTasks(payload.state.syncLog) : syncLog;
+        snapshots = Array.isArray(payload.state?.snapshots) ? cloneTasks(payload.state.snapshots) : snapshots;
+        if (typeof payload.state?.announcement === 'string') {
+            localStorage.setItem('persistent_announcement_v3', payload.state.announcement);
+            setAnnouncementView(payload.state.announcement);
+        }
+    } else if (entry.type === 'task-history' || entry.type === 'delete-history-record' || entry.type === 'reset-history') {
+        applyTask(payload.before);
+    } else {
+        return;
+    }
+
+    recycleBin.splice(idx, 1);
+    saveStorage();
+    renderPage();
+    renderBackupManagePanel();
+    showToast('已从回收站恢复');
+}
+
+function renderRecycleBinList() {
+    const box = el.recycleBinList || document.getElementById('recycleBinList');
+    const countBox = el.recycleBinCount || document.getElementById('recycleBinCount');
+    if (!box) return;
+    pruneRecycleBin();
+    if (countBox) countBox.innerText = `${recycleBin.length} 条可恢复记录`;
+    if (recycleBin.length === 0) {
+        box.innerHTML = `<div class="backup-empty-hint">暂无可恢复记录。删除任务、撤销打卡、清空数据后会自动进入这里。</div>`;
+        return;
+    }
+    box.innerHTML = recycleBin.map(item => {
+        const title = escapeHTML(item.title || item.type || '记录');
+        const note = escapeHTML(item.note || '');
+        return `
+            <div class="recycle-item">
+                <div class="recycle-item-top">
+                    <div>
+                        <div class="recycle-item-title">${title}</div>
+                        <div class="recycle-item-sub">${escapeHTML(item.ts || '')}${note ? ` · ${note}` : ''}</div>
+                    </div>
+                    <div class="archive-tag">${escapeHTML(item.type)}</div>
+                </div>
+                <div class="recycle-item-actions">
+                    <button type="button" class="recycle-restore-btn" data-recycle-restore="${escapeHTML(item.id)}">撤销恢复</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function bindScrollGuards() {
+    const selectors = ['.calendar-detail-list', '.sync-log-detail', '.backup-manage-scroll', '.recycle-list'];
+    selectors.forEach(selector => {
+        document.querySelectorAll(selector).forEach(node => {
+            if (node.dataset.scrollGuardBound === '1') return;
+            node.dataset.scrollGuardBound = '1';
+            node.addEventListener('wheel', (e) => {
+                e.stopPropagation();
+            }, { passive: true });
+            node.addEventListener('touchmove', (e) => {
+                e.stopPropagation();
+            }, { passive: true });
+        });
+    });
+}
+
+let viewportScrollLockCount = 0;
+let viewportScrollTop = 0;
+
+function lockViewportScroll() {
+    if (viewportScrollLockCount === 0) {
+        viewportScrollTop = window.scrollY || window.pageYOffset || 0;
+        document.body.dataset.scrollY = String(viewportScrollTop);
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${viewportScrollTop}px`;
+        document.body.style.left = '0';
+        document.body.style.right = '0';
+        document.body.style.width = '100%';
+    }
+    viewportScrollLockCount += 1;
+}
+
+function unlockViewportScroll() {
+    if (viewportScrollLockCount > 0) viewportScrollLockCount -= 1;
+    if (viewportScrollLockCount === 0) {
+        const top = parseInt(document.body.dataset.scrollY || '0', 10) || 0;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+        delete document.body.dataset.scrollY;
+        window.scrollTo(0, top);
+    }
 }
 
 // 记一条同步记录，最多保留 SYNC_LOG_MAX 条（超出的旧记录自动丢弃）
@@ -2161,6 +2594,23 @@ function mergeSnapshots(localSnaps, remoteSnaps) {
     return merged.slice(0, SNAPSHOT_KEEP_DAYS);
 }
 
+function mergeRecycleBin(localBins, remoteBins) {
+    const map = new Map();
+    (Array.isArray(localBins) ? localBins : []).forEach(item => {
+        if (item && item.id) map.set(item.id, item);
+    });
+    (Array.isArray(remoteBins) ? remoteBins : []).forEach(item => {
+        if (!item || !item.id) return;
+        const existing = map.get(item.id);
+        if (!existing || String(item.ts || '') > String(existing.ts || '')) {
+            map.set(item.id, item);
+        }
+    });
+    const merged = Array.from(map.values());
+    merged.sort((a, b) => String(b.ts || '').localeCompare(String(a.ts || '')));
+    return merged.slice(0, RECYCLE_BIN_MAX);
+}
+
 // 把各种失败原因归一成用户能看懂的短文案
 function friendlySyncErrorReason(e) {
     const msg = e && e.message ? e.message : '';
@@ -2192,9 +2642,10 @@ async function loadStorage() {
                 taskList = remoteData.tasks;
                 syncLog = mergeSyncLog(syncLog, remoteData.syncLog);
                 snapshots = mergeSnapshots(snapshots, remoteData.snapshots);
+                recycleBin = mergeRecycleBin(recycleBin, remoteData.recycleBin);
                 if (remoteData.announcement !== undefined) {
-                    initAnnouncement(remoteData.announcement);
-                    localStorage.setItem('persistent_announcement_v3', remoteData.announcement);
+                    setAnnouncementView(remoteData.announcement);
+                    localStorage.setItem('persistent_announcement_v3', normalizeAnnouncementText(remoteData.announcement));
                 }
                 addSyncLog('download', true, null, diffTaskLists(localBeforeSync, taskList));
                 maybeCreateDailySnapshot();
@@ -2699,6 +3150,7 @@ function renderCalendar() {
 }
 
 function openCalendarDetail(dateString, taskEntries) {
+    lockViewportScroll();
     const cleanList = Array.isArray(taskEntries) ? taskEntries.filter(t => t && t.name) : [];
     cleanList.sort((a, b) => {
         if (a.time && b.time) return a.time.localeCompare(b.time);
@@ -2893,7 +3345,16 @@ function batchArchiveHistory() {
 }
 function batchDeleteTasks() {
     if (selectedTaskIds.size === 0) return showToast('请先选择任务');
-    openConfirm('批量删除', `确定删除选中的 ${selectedTaskIds.size} 个任务吗？记录无法恢复`, () => {
+    openConfirm('批量删除', `确定删除选中的 ${selectedTaskIds.size} 个任务吗？记录将进入回收站，可随时恢复`, () => {
+        const deletedTasks = taskList.filter(t => selectedTaskIds.has(t.id));
+        if (deletedTasks.length) {
+            pushRecycleBinEntry({
+                type: 'delete-tasks',
+                title: `批量删除 ${deletedTasks.length} 个任务`,
+                note: '任务将进入回收站，可恢复',
+                payload: { tasks: deletedTasks }
+            });
+        }
         taskList = taskList.filter(t => !selectedTaskIds.has(t.id));
         selectedTaskIds.clear();
         saveStorage();
@@ -3125,10 +3586,17 @@ function handleCardAction(e) {
         if (item) {
             openConfirm("删除打卡记录", `确定要删除这条打卡明细 (${recordStr}) 吗？`, () => {
                 if (Array.isArray(item.history)) {
+                    const before = cloneTasks([item])[0];
                     const idx = item.history.indexOf(recordStr);
                     if (idx > -1) {
                         item.history.splice(idx, 1);
                         item.updateAt = getNowDateTimeStr();
+                        pushRecycleBinEntry({
+                            type: 'delete-history-record',
+                            title: `删除打卡记录：${item.name}`,
+                            note: recordStr,
+                            payload: { before }
+                        });
                     }
                 }
                 saveStorage();
@@ -3160,8 +3628,18 @@ function handleCardAction(e) {
     }
     const delBtn = e.target.closest('[data-del]');
     if (delBtn) {
-        openConfirm("删除任务", "确定删除该任务？打卡记录无法恢复", () => {
-            taskList = taskList.filter(t => t.id !== Number(delBtn.dataset.del));
+        openConfirm("删除任务", "确定删除该任务？打卡记录将进入回收站，可随时恢复", () => {
+            const targetId = Number(delBtn.dataset.del);
+            const deletedTask = taskList.find(t => t.id === targetId);
+            if (deletedTask) {
+                pushRecycleBinEntry({
+                    type: 'delete-task',
+                    title: `删除任务：${deletedTask.name}`,
+                    note: deletedTask.category || '默认分组',
+                    payload: { task: deletedTask }
+                });
+            }
+            taskList = taskList.filter(t => t.id !== targetId);
             saveStorage(); renderPage();
             showToast("已删除");
         }, true);
@@ -3257,6 +3735,7 @@ function toggleCheck(id) {
     if (todayCount >= tPerDay) {
         openConfirm("撤销打卡", "今日打卡次数已满，是否撤销最后一次打卡记录？", () => {
             if (!Array.isArray(item.history)) item.history = [];
+            const before = cloneTasks([item])[0];
             const todayRecords = item.history.filter(h => typeof h === 'string' && h.startsWith(today)).sort();
             if (todayRecords.length > 0) {
                 const lastRec = todayRecords[todayRecords.length - 1];
@@ -3264,6 +3743,12 @@ function toggleCheck(id) {
                 if (idx > -1) {
                     item.history.splice(idx, 1);
                     item.updateAt = getNowDateTimeStr();
+                    pushRecycleBinEntry({
+                        type: 'task-history',
+                        title: `撤销打卡：${item.name}`,
+                        note: lastRec,
+                        payload: { before }
+                    });
                 }
                 saveStorage();
                 renderPage();
@@ -3274,9 +3759,16 @@ function toggleCheck(id) {
     }
     if (isStreakBroken(item)) {
         openConfirm("⚠️ 断签提示", "该任务要求连续打卡，您已断签！\n继续打卡将清空之前的进度并从今天重新计算，是否继续？", () => {
+            const before = cloneTasks([item])[0];
             item.history = [getNowDateTimeStr()];
             item.archives = [];
             item.updateAt = getNowDateTimeStr();
+            pushRecycleBinEntry({
+                type: 'reset-history',
+                title: `重置打卡：${item.name}`,
+                note: '断签后重新开始',
+                payload: { before }
+            });
             saveStorage(); 
             renderPage();
             showToast("👌 进度已重置并打卡");
@@ -3563,7 +4055,20 @@ el.importCancelBtn.onclick = () => {
     tempImportData = null;
 };
 function clearAllData() {
-    openConfirm("🗑️ 清空全部数据", "确定清空所有打卡任务？\n数据无法恢复，建议先在顶部进行【备份】！", () => {
+    openConfirm("🗑️ 清空全部数据", "确定清空所有打卡任务？\n数据将进入回收站并可恢复，建议先在顶部进行【备份】！", () => {
+        pushRecycleBinEntry({
+            type: 'clear-all',
+            title: '清空全部数据',
+            note: '已清空的数据可从回收站恢复',
+            payload: {
+                state: {
+                    taskList: cloneTasks(taskList),
+                    syncLog: cloneTasks(syncLog),
+                    snapshots: cloneTasks(snapshots),
+                    announcement: localStorage.getItem('persistent_announcement_v3') || ''
+                }
+            }
+        });
         taskList = [];
         saveStorage(); renderPage();
         showToast("已清空全部数据");
@@ -3647,15 +4152,24 @@ function renderSyncLogList() {
 
 function renderBackupManagePanel() {
     renderSnapshotList();
+    renderRecycleBinList();
     renderSyncLogList();
 }
 
-function openBackupManage() {
+function openBackupManage(focusSection = '') {
     renderBackupManagePanel();
     el.backupManagePopWrap.style.display = 'block';
+    lockViewportScroll();
+    if (focusSection === 'recycle') {
+        setTimeout(() => {
+            const target = document.getElementById('recycleSection');
+            if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 0);
+    }
 }
 function closeBackupManage() {
     el.backupManagePopWrap.style.display = 'none';
+    unlockViewportScroll();
 }
 
 function initWidgetStates() {
@@ -3670,11 +4184,14 @@ function initWidgetStates() {
 }
 
 function bindGlobalEvent() {
+    bindAnnouncementEditor();
+    bindScrollGuards();
+
     el.todayListWrap.addEventListener('click', handleCardAction);
     el.allListWrap.addEventListener('click', handleCardAction);
     el.todayEmpty.addEventListener('click', (e) => { if (e.target.closest('[data-empty-action]')) openAdd(); });
     el.allEmpty.addEventListener('click', (e) => { if (e.target.closest('[data-empty-action]')) openAdd(); });
-    
+
     el.syncBtn.addEventListener('click', () => {
         if (!syncPassword) {
             setSyncPassword();
@@ -3685,7 +4202,7 @@ function bindGlobalEvent() {
         }
     });
     el.syncBtn.addEventListener('dblclick', setSyncPassword);
-    
+
     el.themeBtn.addEventListener('click', toggleTheme);
     if (el.moreBtn && el.moreMenu) {
         const closeMoreMenu = () => el.moreMenu.classList.remove('show');
@@ -3706,7 +4223,7 @@ function bindGlobalEvent() {
             if (e.key === 'Escape') closeMoreMenu();
         });
     }
-    
+
     const debouncedRender = debounce(() => renderPage(), 300);
     el.searchTodayInput.addEventListener("input", debouncedRender);
     el.searchAllInput.addEventListener("input", debouncedRender);
@@ -3732,7 +4249,7 @@ function bindGlobalEvent() {
             renderPage();
         };
     });
-    
+
     document.querySelectorAll(".filter-item").forEach(item => {
         item.onclick = () => {
             filterType = item.dataset.filter;
@@ -3757,11 +4274,15 @@ function bindGlobalEvent() {
     el.addTaskBtn.onclick = openAdd;
     el.archiveBtn.onclick = () => archiveOldHistory(true);
     el.backupManageBtn.onclick = () => { el.moreMenu.classList.remove('show'); openBackupManage(); };
+    el.recycleBinBtn && (el.recycleBinBtn.onclick = () => { el.moreMenu.classList.remove('show'); openBackupManage('recycle'); });
     el.backupManageClose.onclick = closeBackupManage;
     el.backupManagePopWrap.addEventListener('click', (e) => {
         if (e.target === el.backupManagePopWrap) closeBackupManage();
-    });
-    el.backupManagePopWrap.addEventListener('click', (e) => {
+        const recycleBtn = e.target.closest('[data-recycle-restore]');
+        if (recycleBtn) {
+            withBtnBusy(recycleBtn, '⏳ 恢复中...', () => restoreRecycleBinEntry(recycleBtn.dataset.recycleRestore));
+            return;
+        }
         const restoreBtn = e.target.closest('[data-restore-snap]');
         if (restoreBtn) withBtnBusy(restoreBtn, '⏳ 恢复中...', () => restoreSnapshot(restoreBtn.dataset.restoreSnap));
         const logItem = e.target.closest('.sync-log-item.expandable');
@@ -3779,7 +4300,7 @@ function bindGlobalEvent() {
         if (confirmCallback) confirmCallback();
         closeConfirm();
     };
-    
+
     el.prevMonthBtn.onclick = () => {
         currentCalMonth--;
         if (currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; }
@@ -3790,7 +4311,7 @@ function bindGlobalEvent() {
         if (currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; }
         renderCalendar();
     };
-    
+
     el.toggleStatBtn.onclick = () => {
         const isHidden = el.statContentWrap.style.display === "none";
         el.statContentWrap.style.display = isHidden ? "block" : "none";
