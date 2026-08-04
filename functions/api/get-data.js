@@ -1,3 +1,4 @@
+// get-data.js
 export async function onRequestGet(context) {
   const { request, env } = context;
 
@@ -10,23 +11,33 @@ export async function onRequestGet(context) {
     });
   }
 
+  function jsonResponse(data, status = 200) {
+    return new Response(JSON.stringify(data), {
+      status,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
   try {
     const data = await env.dk.get('daka_main_data');
-    return new Response(data || JSON.stringify({
+    if (data) {
+      return new Response(data, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    return jsonResponse({
       tasks: [],
       announcement: '',
       syncLog: [],
       snapshots: [],
       taskDeletionRecords: [],
       devices: {},
-      deviceMeta: {}
-    }), {
-      headers: { 'Content-Type': 'application/json' }
+      deviceMeta: {},
+      schemaVersion: 2
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    console.error('get-data error:', e);
+    return jsonResponse({ error: '服务器处理失败' }, 500);
   }
 }
