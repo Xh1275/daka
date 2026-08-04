@@ -1,14 +1,19 @@
+// save-data.js
 export async function onRequestPost(context) {
   const { request, env } = context;
 
   const clientPassword = request.headers.get('X-Sync-Password');
   const serverPassword = env.SYNC_PASSWORD;
   if (serverPassword && clientPassword !== serverPassword) {
-    return new Response(JSON.stringify({ error: '密码错误' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return jsonResponse({ error: '密码错误' }, 401);
   }
+
+  const DEVICE_STALE_MS = 3 * 24 * 60 * 60 * 1000;
+  const MAX_SYNC_LOG = 50;
+  const MAX_TASKS = 800;
+  const MAX_DELETION_RECORDS = 300;
+  const MAX_SNAPSHOTS = 120;
+  const MAX_ARCHIVES_PER_TASK = 36;
 
   function safeText(value, fallback = '') {
     return typeof value === 'string' ? value : fallback;
@@ -21,10 +26,23 @@ export async function onRequestPost(context) {
 
   function parseJSON(raw, fallback) {
     if (!raw) return fallback;
-    try { return JSON.parse(raw); } catch { return fallback; }
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return fallback;
+    }
   }
 
-  const DEVICE_STALE_MS = 3 * 24 * 60 * 60 * 1000;
+  function jsonResponse(data, status = 200) {
+    return new Response(JSON.stringify(data), {
+      status,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  function generateTaskId() {
+    return Date.now() * 1000 + Math.floor(Math.random() * 1000);
+  }
 
   function normalizeHistory(list) {
     return Array.isArray(list) ? list.filter(v => typeof v === 'string') : [];
@@ -34,72 +52,18 @@ export async function onRequestPost(context) {
     if (!Array.isArray(list)) return [];
     return list
       .filter(item => item && typeof item === 'object' && item.month)
-      .map(item => ({ ...item, month: String(item.month) }));
+      .map(item => ({ ...item, month: String(item.month) }))
+      .slice(0, MAX_ARCHIVES_PER_TASK);
   }
 
   function normalizeTask(task) {
     const item = task && typeof task === 'object' ? { ...task } : {};
-    item.id = Number.isFinite(Number(item.id)) ? Number(item.id) : (Date.now() + Math.floor(Math.random() * 1000));
+    item.id = Number.isFinite(Number(item.id)) ? Number(item.id) : generateTaskId();
     item.name = safeText(item.name, '未命名任务').trim() || '未命名任务';
     item.history = normalizeHistory(item.history);
     item.archives = normalizeArchives(item.archives);
     item.updateAt = safeText(item.updateAt, '');
     return item;
-  }
-
-  function mergeUniqueStrings(a, b) {
-    return Array.from(new Set([...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])])).sort();
-  }
-
-  function mergeArchives(a, b) {
-    const map = new Map();
-    [...normalizeArchives(a), ...normalizeArchives(b)].forEach(item => {
-      const existed = map.get(item.month);
-      if (!existed) {
-        map.set(item.month, item);
-      } else {
-        const leftTs = toMs(existed.ts || existed.updateAt);
-        const rightTs = toMs(item.ts || item.updateAt);
-        map.set(item.month, rightTs >= leftTs ? item : existed);
-      }
-    });
-    return Array.from(map.values());
-  }
-
-  function mergeTask(remoteTask, incomingTask) {
-    if (!remoteTask) return incomingTask;
-    if (!incomingTask) return remoteTask;
-
-    const remoteTs = toMs(remoteTask.updateAt);
-    const incomingTs = toMs(incomingTask.updateAt);
-    const base = incomingTs >= remoteTs ? { ...incomingTask } : { ...remoteTask };
-
-    base.history = mergeUniqueStrings(remoteTask.history, incomingTask.history);
-    base.archives = mergeArchives(remoteTask.archives, incomingTask.archives);
-    base.updateAt = incomingTs >= remoteTs ? incomingTask.updateAt : remoteTask.updateAt;
-
-    const newer = incomingTs >= remoteTs ? incomingTask : remoteTask;
-    const older = incomingTs >= remoteTs ? remoteTask : incomingTask;
-    for (const key of Object.keys(older)) {
-      if (base[key] === undefined || base[key] === null || base[key] === '') {
-        base[key] = older[key];
-      }
-    }
-    base.id = Number.isFinite(Number(base.id)) ? Number(base.id) : Number(newer.id);
-    base.name = safeText(base.name, '未命名任务').trim() || '未命名任务';
-    return base;
-  }
-
-  function mergeTasks(remoteList, incomingList) {
-    const remote = Array.isArray(remoteList) ? remoteList.map(normalizeTask) : [];
-    const incoming = Array.isArray(incomingList) ? incomingList.map(normalizeTask) : [];
-    const map = new Map();
-    remote.forEach(item => map.set(item.id, item));
-    incoming.forEach(item => {
-      const existed = map.get(item.id);
-      map.set(item.id, mergeTask(existed, item));
-    });
-    return Array.from(map.values());
   }
 
   function normalizeTaskDeletionRecord(raw) {
@@ -137,29 +101,9 @@ export async function onRequestPost(context) {
         deviceId: normalized.updatedAt >= existed.updatedAt ? normalized.deviceId : existed.deviceId
       });
     });
-    return Array.from(map.values()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0) || (b.taskId || 0) - (a.taskId || 0));
-  }
-
-  function mergeTaskDeletionRecords(remoteList, incomingList) {
-    return normalizeTaskDeletionList([...(Array.isArray(remoteList) ? remoteList : []), ...(Array.isArray(incomingList) ? incomingList : [])]);
-  }
-
-  function getTaskDeletionRecordMap(records) {
-    const map = new Map();
-    normalizeTaskDeletionList(records).forEach(record => map.set(record.taskId, record));
-    return map;
-  }
-
-  function isTaskDeletedByLedger(task, recordMap) {
-    if (!task || !Number.isFinite(Number(task.id))) return false;
-    const record = recordMap.get(Number(task.id));
-    if (!record) return false;
-    return toMs(record.deletedAt) > toMs(record.restoredAt);
-  }
-
-  function applyTaskDeletionLedger(tasks, records) {
-    const map = getTaskDeletionRecordMap(records);
-    return Array.isArray(tasks) ? tasks.filter(task => !isTaskDeletedByLedger(task, map)) : [];
+    return Array.from(map.values())
+      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0) || (b.taskId || 0) - (a.taskId || 0))
+      .slice(0, MAX_DELETION_RECORDS);
   }
 
   function normalizeDeviceEntry(raw, fallbackId) {
@@ -192,10 +136,120 @@ export async function onRequestPost(context) {
     return registry;
   }
 
+  function normalizeSyncLogItem(item) {
+    const source = item && typeof item === 'object' ? { ...item } : {};
+    return {
+      ...source,
+      t: safeText(source.t).trim(),
+      ts: toMs(source.ts),
+      type: source.type === 'download' ? 'download' : 'upload',
+      ok: !!source.ok,
+      reason: source.reason === undefined || source.reason === null ? null : safeText(source.reason),
+      detail: source.detail ?? null,
+      localOnly: !!source.localOnly,
+      deviceId: safeText(source.deviceId).trim(),
+      deviceNote: safeText(source.deviceNote).trim(),
+      deviceLabel: safeText(source.deviceLabel).trim()
+    };
+  }
+
+  function normalizeSnapshot(item) {
+    const source = item && typeof item === 'object' ? { ...item } : {};
+    return {
+      ...source,
+      date: safeText(source.date).trim(),
+      ts: toMs(source.ts) || Date.now(),
+      tasks: Array.isArray(source.tasks) ? source.tasks : []
+    };
+  }
+
+  function mergeUniqueStrings(a, b) {
+    return Array.from(new Set([...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])])).sort();
+  }
+
+  function mergeArchives(a, b) {
+    const map = new Map();
+    [...normalizeArchives(a), ...normalizeArchives(b)].forEach(item => {
+      const existed = map.get(item.month);
+      if (!existed) {
+        map.set(item.month, item);
+      } else {
+        const leftTs = toMs(existed.ts || existed.updateAt);
+        const rightTs = toMs(item.ts || item.updateAt);
+        map.set(item.month, rightTs >= leftTs ? item : existed);
+      }
+    });
+    return Array.from(map.values()).slice(0, MAX_ARCHIVES_PER_TASK);
+  }
+
+  function mergeTask(remoteTask, incomingTask) {
+    if (!remoteTask) return incomingTask;
+    if (!incomingTask) return remoteTask;
+
+    const remoteTs = toMs(remoteTask.updateAt);
+    const incomingTs = toMs(incomingTask.updateAt);
+    const base = incomingTs >= remoteTs ? { ...incomingTask } : { ...remoteTask };
+
+    base.history = mergeUniqueStrings(remoteTask.history, incomingTask.history);
+    base.archives = mergeArchives(remoteTask.archives, incomingTask.archives);
+    base.updateAt = incomingTs >= remoteTs ? incomingTask.updateAt : remoteTask.updateAt;
+
+    const newer = incomingTs >= remoteTs ? incomingTask : remoteTask;
+    const older = incomingTs >= remoteTs ? remoteTask : incomingTask;
+    for (const key of Object.keys(older)) {
+      if (base[key] === undefined || base[key] === null || base[key] === '') {
+        base[key] = older[key];
+      }
+    }
+    base.id = Number.isFinite(Number(base.id)) ? Number(base.id) : Number(newer.id);
+    base.name = safeText(base.name, '未命名任务').trim() || '未命名任务';
+    return base;
+  }
+
+  function mergeTasks(remoteList, incomingList) {
+    const remote = Array.isArray(remoteList) ? remoteList.map(normalizeTask) : [];
+    const incoming = Array.isArray(incomingList) ? incomingList.map(normalizeTask) : [];
+    const map = new Map();
+    remote.forEach(item => map.set(item.id, item));
+    incoming.forEach(item => {
+      const existed = map.get(item.id);
+      map.set(item.id, mergeTask(existed, item));
+    });
+    return Array.from(map.values())
+      .sort((a, b) => toMs(b.updateAt) - toMs(a.updateAt))
+      .slice(0, MAX_TASKS);
+  }
+
+  function mergeTaskDeletionRecords(remoteList, incomingList) {
+    return normalizeTaskDeletionList([
+      ...(Array.isArray(remoteList) ? remoteList : []),
+      ...(Array.isArray(incomingList) ? incomingList : [])
+    ]);
+  }
+
+  function getTaskDeletionRecordMap(records) {
+    const map = new Map();
+    normalizeTaskDeletionList(records).forEach(record => map.set(record.taskId, record));
+    return map;
+  }
+
+  function isTaskDeletedByLedger(task, recordMap) {
+    if (!task || !Number.isFinite(Number(task.id))) return false;
+    const record = recordMap.get(Number(task.id));
+    if (!record) return false;
+    return toMs(record.deletedAt) > toMs(record.restoredAt);
+  }
+
+  function applyTaskDeletionLedger(tasks, records) {
+    const map = getTaskDeletionRecordMap(records);
+    return Array.isArray(tasks) ? tasks.filter(task => !isTaskDeletedByLedger(task, map)) : [];
+  }
+
   function mergeDevices(remoteRegistry, incomingRegistry, incomingMeta) {
     const remote = normalizeDeviceRegistry(remoteRegistry);
     const incoming = normalizeDeviceRegistry(incomingRegistry);
     const merged = { ...remote };
+
     Object.keys(incoming).forEach(id => {
       const a = merged[id];
       const b = incoming[id];
@@ -213,6 +267,7 @@ export async function onRequestPost(context) {
         noteUpdatedAt: Math.max(toMs(a.noteUpdatedAt), toMs(b.noteUpdatedAt))
       };
     });
+
     if (incomingMeta && incomingMeta.deviceId) {
       const metaEntry = normalizeDeviceEntry({
         deviceId: incomingMeta.deviceId,
@@ -222,6 +277,7 @@ export async function onRequestPost(context) {
         lastUploadAt: incomingMeta.updatedAt,
         noteUpdatedAt: incomingMeta.updatedAt
       }, incomingMeta.deviceId);
+
       const current = merged[metaEntry.deviceId];
       merged[metaEntry.deviceId] = current
         ? {
@@ -252,23 +308,6 @@ export async function onRequestPost(context) {
     return pruned;
   }
 
-  function normalizeSyncLogItem(item) {
-    const source = item && typeof item === 'object' ? { ...item } : {};
-    return {
-      ...source,
-      t: safeText(source.t).trim(),
-      ts: toMs(source.ts),
-      type: source.type === 'download' ? 'download' : 'upload',
-      ok: !!source.ok,
-      reason: source.reason === undefined || source.reason === null ? null : safeText(source.reason),
-      detail: source.detail ?? null,
-      localOnly: !!source.localOnly,
-      deviceId: safeText(source.deviceId).trim(),
-      deviceNote: safeText(source.deviceNote).trim(),
-      deviceLabel: safeText(source.deviceLabel).trim()
-    };
-  }
-
   function mergeSyncLogs(remoteLog, incomingLog) {
     const all = [
       ...(Array.isArray(remoteLog) ? remoteLog : []).map(normalizeSyncLogItem),
@@ -284,17 +323,7 @@ export async function onRequestPost(context) {
         merged.push(item);
       }
     }
-    return merged.slice(0, 50);
-  }
-
-  function normalizeSnapshot(item) {
-    const source = item && typeof item === 'object' ? { ...item } : {};
-    return {
-      ...source,
-      date: safeText(source.date).trim(),
-      ts: toMs(source.ts) || Date.now(),
-      tasks: Array.isArray(source.tasks) ? source.tasks : []
-    };
+    return merged.slice(0, MAX_SYNC_LOG);
   }
 
   function mergeSnapshots(remoteSnapshots, incomingSnapshots) {
@@ -310,26 +339,25 @@ export async function onRequestPost(context) {
         map.set(snap.date, snap);
       }
     }
-    return Array.from(map.values()).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    return Array.from(map.values())
+      .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+      .slice(0, MAX_SNAPSHOTS);
   }
 
-  function chooseAnnouncement(remoteData, existingData) {
-    const incomingUpdatedAt = toMs(remoteData?.deviceMeta?.updatedAt);
+  function chooseAnnouncement(incomingData, existingData) {
+    const incomingUpdatedAt = toMs(incomingData?.deviceMeta?.updatedAt);
     const existingUpdatedAt = toMs(existingData?.deviceMeta?.updatedAt);
     if (incomingUpdatedAt >= existingUpdatedAt) {
-      return remoteData?.announcement !== undefined ? remoteData.announcement : existingData?.announcement;
+      return incomingData?.announcement !== undefined ? incomingData.announcement : existingData?.announcement;
     }
-    return existingData?.announcement !== undefined ? existingData.announcement : remoteData?.announcement;
+    return existingData?.announcement !== undefined ? existingData.announcement : incomingData?.announcement;
   }
 
   try {
     const body = await request.json();
 
     if (!body.tasks || !Array.isArray(body.tasks)) {
-      return new Response(JSON.stringify({ error: '数据格式错误' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return jsonResponse({ error: '数据格式错误' }, 400);
     }
 
     const currentRaw = await env.dk.get('daka_main_data');
@@ -345,39 +373,41 @@ export async function onRequestPost(context) {
       deviceMeta: body.deviceMeta && typeof body.deviceMeta === 'object' ? body.deviceMeta : {}
     };
 
-    const mergedTaskDeletionRecords = mergeTaskDeletionRecords(currentData.taskDeletionRecords, incomingData.taskDeletionRecords);
-    const mergedTasks = applyTaskDeletionLedger(
-      mergeTasks(currentData.tasks, incomingData.tasks),
-      mergedTaskDeletionRecords
+    const mergedTaskDeletionRecords = mergeTaskDeletionRecords(
+      currentData.taskDeletionRecords,
+      incomingData.taskDeletionRecords
     );
 
     const merged = {
       ...currentData,
       ...incomingData,
-      tasks: mergedTasks,
+      tasks: applyTaskDeletionLedger(
+        mergeTasks(currentData.tasks, incomingData.tasks),
+        mergedTaskDeletionRecords
+      ),
       taskDeletionRecords: mergedTaskDeletionRecords,
       syncLog: mergeSyncLogs(currentData.syncLog, incomingData.syncLog),
       snapshots: mergeSnapshots(currentData.snapshots, incomingData.snapshots),
       devices: pruneDeviceRegistry(
-        mergeDevices(currentData.devices, incomingData.devices, incomingData.deviceMeta || incomingData.deviceMeta),
+        mergeDevices(currentData.devices, incomingData.devices, incomingData.deviceMeta),
         Date.now()
       ),
       deviceMeta: {
         ...(currentData.deviceMeta && typeof currentData.deviceMeta === 'object' ? currentData.deviceMeta : {}),
         ...(incomingData.deviceMeta || {})
-      }
+      },
+      schemaVersion: Math.max(
+        Number(currentData.schemaVersion) || 2,
+        Number(incomingData.schemaVersion) || 2
+      )
     };
 
     merged.announcement = chooseAnnouncement(incomingData, currentData);
 
     await env.dk.put('daka_main_data', JSON.stringify(merged));
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return jsonResponse({ success: true });
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    console.error('save-data error:', e);
+    return jsonResponse({ error: '服务器处理失败' }, 500);
   }
 }
