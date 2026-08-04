@@ -1984,6 +1984,52 @@ function getRemotePayloadString() {
     return JSON.stringify(buildRemotePayload());
 }
 
+/*
+ * 🛡️ history 上传保护 V2
+ * 普通同步上传时：
+ * 1. 不允许本地残缺 history 删除云端已有记录；
+ * 2. 云端 history 与本地 history 取并集去重；
+ * 3. 仅允许新增记录进入云端；
+ * 4. 下载同步逻辑保持不变。
+ */
+function mergeHistorySafeForUpload(localTasks, remoteTasks) {
+    if (!Array.isArray(localTasks) || !Array.isArray(remoteTasks)) return;
+
+    const remoteMap = {};
+    remoteTasks.forEach(t => {
+        if (t && t.id !== undefined) {
+            remoteMap[String(t.id)] = t;
+        }
+    });
+
+    localTasks.forEach(localTask => {
+        if (!localTask || !Array.isArray(localTask.history)) return;
+
+        const remoteTask = remoteMap[String(localTask.id)];
+        if (!remoteTask || !Array.isArray(remoteTask.history)) return;
+
+        const mergedHistory = Array.from(new Set([
+            ...remoteTask.history.filter(v => typeof v === 'string'),
+            ...localTask.history.filter(v => typeof v === 'string')
+        ])).sort();
+
+        localTask.history = mergedHistory;
+    });
+}
+
+async function protectHistoryBeforeUpload() {
+    try {
+        const remoteData = await fetchRemoteData();
+        if (remoteData && Array.isArray(remoteData.tasks)) {
+            mergeHistorySafeForUpload(taskList, remoteData.tasks);
+            saveLocalStorage();
+        }
+    } catch (e) {
+        console.warn('history 上传保护跳过:', e);
+    }
+}
+
+
 async function fetchRemoteData() {
     const res = await fetch('/api/get-data', {
         headers: { 'X-Sync-Password': syncPassword }
@@ -2956,8 +3002,12 @@ function saveStorage(riskCheck) {
     doUploadRemoteData(beforeUploadSnapshot);
 }
 
-function doUploadRemoteData(beforeUploadSnapshot) {
+async function doUploadRemoteData(beforeUploadSnapshot) {
     updateSyncStatus('syncing');
+
+    // 🛡️ 上传前保护 history，避免旧设备残缺缓存覆盖云端完整记录
+    await protectHistoryBeforeUpload();
+
     saveRemoteData().then((result) => {
         if (result && !result.skipped) {
             addSyncLog('upload', true, null, diffTaskLists(beforeUploadSnapshot, taskList));
