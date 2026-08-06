@@ -68,11 +68,68 @@ body {
 .sync-btn-left.error{color:var(--danger);font-weight:bold;}
 .top-tool{display:flex;gap:6px;align-items:center;}
 .tool-btn{font-size:15px;color:var(--primary);cursor:pointer;font-weight:500;}
-.announcement-bar { background: var(--card-bg); color: var(--text-main); padding: 10px 16px; display: flex; align-items: center; font-size: 13px; border-bottom: 1px solid var(--border-color); gap: 8px; transition: background-color 0.3s ease; }
-.announcement-prefix { white-space: nowrap; color: var(--text-main); }
-.announcement-text { flex: 1; line-height: 1.4; outline: none; padding: 2px 4px; word-break: break-all; color: var(--text-main); min-height: 20px;}
-.announcement-text[contenteditable="true"] { background: var(--bg-color); border: 1px dashed var(--primary); border-radius: 4px; }
-.edit-btn { background: none; border: 1px solid var(--border-color); padding: 3px 10px; font-size: 11px; cursor: pointer; border-radius: 4px; color: var(--text-sub); flex-shrink: 0; white-space: nowrap; }
+.announcement-bar {
+    background: var(--card-bg);
+    color: var(--text-main);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.3s ease;
+}
+.announcement-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+.announcement-prefix {
+    white-space: nowrap;
+    color: var(--text-main);
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: .2px;
+}
+.announcement-text {
+    width: 100%;
+    line-height: 1.55;
+    outline: none;
+    padding: 10px 12px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    color: var(--text-main);
+    min-height: 44px;
+    max-height: 42vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-sizing: border-box;
+}
+.announcement-text[contenteditable="true"] {
+    background: var(--card-bg);
+    border: 1px dashed var(--primary);
+    box-shadow: inset 0 0 0 1px rgba(25,137,250,.12);
+}
+.announcement-text img,
+.announcement-text table {
+    max-width: 100% !important;
+}
+.edit-btn {
+    background: none;
+    border: 1px solid var(--border-color);
+    padding: 4px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 999px;
+    color: var(--text-sub);
+    flex-shrink: 0;
+    white-space: nowrap;
+}
 .edit-btn:hover { background: var(--border-color); }
 .search-wrap{padding:10px 16px 0;}
 .search-input{width:100%;padding:10px 14px;border-radius:20px;border:1px solid var(--border-color);outline:none;font-size:14px;background:var(--card-bg);color:var(--text-main);}
@@ -431,18 +488,18 @@ button:active, .tool-btn:active, .sync-btn-left:active, .tab-item:active, .filte
 .more-sep { height: 1px; background: var(--border-color); margin: 6px 4px; }
 .announcement-bar {
     margin: 10px 12px 0;
-    border-radius: 14px;
+    border-radius: 16px;
     border: 1px solid var(--border-color);
     box-shadow: 0 1px 3px rgba(0,0,0,.04);
 }
 .announcement-prefix {
     color: var(--primary);
-    font-weight: 700;
 }
 .announcement-text {
-    border-radius: 8px;
-    padding: 6px 8px;
-    background: transparent;
+    background: linear-gradient(180deg, rgba(25,137,250,.03), transparent 70%), var(--bg-color);
+}
+html[data-theme="dark"] .announcement-text {
+    background: rgba(255,255,255,.03);
 }
 .search-wrap {
     padding: 10px 12px 0;
@@ -921,13 +978,17 @@ html[data-theme="dark"] .calendar-header-bar{
     left:50%;
     transform:translate(-50%,-50%);
     width:min(92vw, 420px);
-    max-height:82vh;
+    max-height:min(82vh, 100dvh - 24px);
     overflow:hidden;
+    display:flex;
+    flex-direction:column;
     background:var(--card-bg);
     border:1px solid var(--border-color);
     border-radius:22px;
     box-shadow:0 20px 50px rgba(0,0,0,.22);
     padding:16px;
+    padding-bottom:max(16px, env(safe-area-inset-bottom));
+    box-sizing:border-box;
 }
 .calendar-detail-head{
     display:flex;
@@ -935,6 +996,7 @@ html[data-theme="dark"] .calendar-header-bar{
     align-items:flex-start;
     gap:12px;
     margin-bottom:14px;
+    flex:0 0 auto;
 }
 .calendar-detail-date{
     font-size:18px;
@@ -963,6 +1025,7 @@ html[data-theme="dark"] .calendar-header-bar{
     grid-template-columns:repeat(3,minmax(0,1fr));
     gap:8px;
     margin-bottom:12px;
+    flex:0 0 auto;
 }
 .calendar-detail-stat{
     padding:10px 8px;
@@ -987,9 +1050,16 @@ html[data-theme="dark"] .calendar-header-bar{
     display:flex;
     flex-direction:column;
     gap:8px;
-    max-height:calc(82vh - 170px);
-    overflow:auto;
+    flex:1 1 auto;
+    min-height:0;
+    max-height:none;
+    overflow-x:hidden;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
     padding-right:2px;
+    padding-bottom:14px;
+    margin-bottom:2px;
 }
 .calendar-detail-item{
     display:flex;
@@ -1106,6 +1176,53 @@ html[data-theme="dark"] .calendar-header-bar{
     font-weight:800;
     color:var(--text-main);
 }
+
+.device-all-fold{
+    margin-top:4px;
+    border:1px solid var(--border-color);
+    border-radius:14px;
+    background:var(--card-bg);
+    overflow:hidden;
+}
+.device-all-fold > summary{
+    list-style:none;
+}
+.device-all-fold > summary::-webkit-details-marker{ display:none; }
+.device-all-summary{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:12px 14px;
+    cursor:pointer;
+    user-select:none;
+    font-size:13px;
+    font-weight:800;
+    color:var(--text-main);
+}
+.device-all-summary::after{
+    content:'▾';
+    color:var(--text-light);
+    font-size:12px;
+    transition:transform .2s ease;
+}
+.device-all-fold[open] > .device-all-summary::after{
+    transform:rotate(180deg);
+}
+.device-all-hint{
+    margin-left:auto;
+    margin-right:8px;
+    font-size:11px;
+    font-weight:400;
+    color:var(--text-light);
+}
+.device-all-fold .device-cleanup-tip{
+    padding:0 14px 6px;
+}
+.device-all-fold #deviceList{
+    padding:0 10px 12px;
+}
+
 .device-cleanup-tip{
     margin-top:6px;
     margin-bottom:4px;
@@ -1472,9 +1589,11 @@ html[data-theme="dark"] .sync-log-result.fail{
         </div>
     </div>
     <div class="announcement-bar">
-        <span class="announcement-prefix">📢 <b>公告：</b></span>
+        <div class="announcement-head">
+            <span class="announcement-prefix">📢 公告</span>
+            <button type="button" id="editAnnounceBtn" class="edit-btn" onclick="toggleAnnouncementEdit()">编辑</button>
+        </div>
         <div id="announcementContent" class="announcement-text" contenteditable="false"></div>
-        <button id="editAnnounceBtn" class="edit-btn" onclick="toggleAnnouncementEdit()">编辑</button>
     </div>
     <!-- 1. 今日打卡视图 -->
     <div id="pageToday">
@@ -1713,11 +1832,18 @@ html[data-theme="dark"] .sync-log-result.fail{
             <div class="calendar-detail-head">
                 <div>
                     <div class="calendar-detail-date">备份管理</div>
-                    <div class="calendar-detail-sub">数据备份 · 设备管理 · 历史快照 · 同步记录</div>
+                    <div class="calendar-detail-sub">同步记录 · 数据备份 · 历史快照 · 设备管理</div>
                 </div>
                 <button type="button" class="calendar-detail-close" id="backupManageClose">×</button>
             </div>
             <div class="backup-manage-scroll">
+                <div class="backup-section">
+                    <div class="backup-section-title">同步记录 <span class="backup-section-hint">最近50条</span></div>
+                    <div id="syncUndoWrap" style="display:none; margin-bottom:10px;">
+                        <button type="button" id="syncUndoBtn" class="backup-action-btn" style="width:100%; color:var(--danger); border-color:var(--danger);">↩ 撤销本次同步</button>
+                    </div>
+                    <div id="syncLogList"></div>
+                </div>
                 <div class="backup-section">
                     <div class="backup-section-title">数据备份</div>
                     <div class="backup-btn-row">
@@ -1725,6 +1851,10 @@ html[data-theme="dark"] .sync-log-result.fail{
                         <button type="button" id="bmImportBtn" class="backup-action-btn">📥 导入数据</button>
                         <button type="button" id="bmExportCsvBtn" class="backup-action-btn">📊 导出报表（CSV）</button>
                     </div>
+                </div>
+                <div class="backup-section">
+                    <div class="backup-section-title">历史快照 <span class="backup-section-hint">保留最近3天，可恢复</span></div>
+                    <div id="snapshotList"></div>
                 </div>
                 <div class="backup-section">
                     <div class="backup-section-title">设备管理 <span class="backup-section-hint">DeviceId 本地生成，备注云端共享，3天未活跃自动清理</span></div>
@@ -1740,21 +1870,15 @@ html[data-theme="dark"] .sync-log-result.fail{
                             </div>
                             <button type="button" id="saveCurrentDeviceBtn" class="backup-action-btn device-save-current">保存当前设备备注并同步</button>
                         </div>
-                        <div class="device-list-head">全部设备</div>
-                        <div class="device-cleanup-tip">系统会自动清理 3 天内未出现的旧设备记录</div>
-                        <div id="deviceList"></div>
+                        <details class="device-all-fold">
+                            <summary class="device-all-summary">
+                                <span>全部设备</span>
+                                <span class="device-all-hint">默认收起，点击展开</span>
+                            </summary>
+                            <div class="device-cleanup-tip">系统会自动清理 3 天内未出现的旧设备记录</div>
+                            <div id="deviceList"></div>
+                        </details>
                     </div>
-                </div>
-                <div class="backup-section">
-                    <div class="backup-section-title">历史快照 <span class="backup-section-hint">保留最近3天，可恢复</span></div>
-                    <div id="snapshotList"></div>
-                </div>
-                <div class="backup-section">
-                    <div class="backup-section-title">同步记录 <span class="backup-section-hint">最近50条</span></div>
-                    <div id="syncUndoWrap" style="display:none; margin-bottom:10px;">
-                        <button type="button" id="syncUndoBtn" class="backup-action-btn" style="width:100%; color:var(--danger); border-color:var(--danger);">↩ 撤销本次同步</button>
-                    </div>
-                    <div id="syncLogList"></div>
                 </div>
             </div>
         </div>
@@ -1772,7 +1896,7 @@ html[data-theme="dark"] .sync-log-result.fail{
             <div class="calendar-detail-stats">
                 <div class="calendar-detail-stat">
                     <b id="calendarDetailCount">0</b>
-                    <span>项任务</span>
+                    <span>次打卡</span>
                 </div>
                 <div class="calendar-detail-stat">
                     <b id="calendarDetailDayType">有记录</b>
@@ -1892,6 +2016,9 @@ function normalizeTaskRecord(rawTask) {
     }).filter(a => a.month) : [];
     item.createAt = safeText(item.createAt).trim() || item.updateAt || getNowDateTimeStr();
     item.updateAt = safeText(item.updateAt).trim() || getNowDateTimeStr();
+    const createdBy = safeText(item.createdByDeviceId).trim();
+    if (createdBy) item.createdByDeviceId = createdBy;
+    else delete item.createdByDeviceId;
     return item;
 }
 
@@ -3245,27 +3372,48 @@ function clearSyncRecoveryPoint() {
     try { localStorage.removeItem(KEY_SYNC_RECOVERY); } catch (e) {}
 }
 
-function detectSyncRisk(oldList, newList) {
+function detectSyncRisk(oldList, newList, deletionRecords = taskDeletionRecords, histDeletionRecords = historyDeletionRecords) {
     oldList = Array.isArray(oldList) ? oldList : [];
     newList = Array.isArray(newList) ? newList : [];
     if (oldList.length === 0) return null;
     const newMap = new Map(newList.map(t => [t.id, t]));
+    const deletionMap = getTaskDeletionRecordMap(deletionRecords);
+    const histDeletedSet = getHistoryDeletionSet(histDeletionRecords);
     const todayStr = getTodayStr();
     const removedTasks = [];
     const historyShrunk = [];
     const checkinReverted = [];
     oldList.forEach(oldT => {
         const newT = newMap.get(oldT.id);
-        if (!newT) { removedTasks.push(oldT.name || '未命名任务'); return; }
+        if (!newT) {
+            // 其他设备通过删除账本明确删除：不弹窗
+            if (isTaskDeletedByLedger(oldT, deletionMap)) return;
+            // 本机无打卡/归档进度，且不是本机创建的任务：只是同步镜像，静默接受删除
+            const histLen = Array.isArray(oldT.history) ? oldT.history.length : 0;
+            const archLen = Array.isArray(oldT.archives) ? oldT.archives.length : 0;
+            const hasLocalProgress = histLen > 0 || archLen > 0;
+            const createdHere = !!oldT.createdByDeviceId && oldT.createdByDeviceId === deviceId;
+            if (!hasLocalProgress && !createdHere) return;
+            removedTasks.push(oldT.name || '未命名任务');
+            return;
+        }
         const oldHist = Array.isArray(oldT.history) ? oldT.history : [];
         const newHist = Array.isArray(newT.history) ? newT.history : [];
-        if (newHist.length < oldHist.length) {
-            historyShrunk.push({ name: oldT.name || '未命名任务', from: oldHist.length, to: newHist.length });
+        // 仅统计「非 tombstone」导致的 history 变少，主动删打卡不弹风险
+        const oldEffective = oldHist.filter(h => typeof h === 'string' && !histDeletedSet.has(historyDeletionKey(oldT.id, h)));
+        const newEffective = newHist.filter(h => typeof h === 'string' && !histDeletedSet.has(historyDeletionKey(oldT.id, h)));
+        if (newEffective.length < oldEffective.length) {
+            historyShrunk.push({ name: oldT.name || '未命名任务', from: oldEffective.length, to: newEffective.length });
         }
-        const oldHasToday = oldHist.some(h => typeof h === 'string' && h.startsWith(todayStr));
-        const newHasToday = newHist.some(h => typeof h === 'string' && h.startsWith(todayStr));
+        const oldHasToday = oldEffective.some(h => h.startsWith(todayStr));
+        const newHasToday = newEffective.some(h => h.startsWith(todayStr));
         if (oldHasToday && !newHasToday) {
-            checkinReverted.push(oldT.name || '未命名任务');
+            // 今日被撤销且对应记录在 history 删除账本中：intentional，不报警
+            const todayRemoved = oldEffective.filter(h => h.startsWith(todayStr) && !newEffective.includes(h));
+            const allIntentional = todayRemoved.length > 0 && todayRemoved.every(h => histDeletedSet.has(historyDeletionKey(oldT.id, h)));
+            if (!allIntentional) {
+                checkinReverted.push(oldT.name || '未命名任务');
+            }
         }
     });
     if (!removedTasks.length && !historyShrunk.length && !checkinReverted.length) return null;
@@ -3334,11 +3482,12 @@ async function loadStorage() {
                 const normalizedRemoteTasks = normalizeTaskList(remoteData.tasks);
                 remoteData.taskDeletionRecords = normalizeTaskDeletionList(remoteData.taskDeletionRecords || []);
                 remoteData.historyDeletionRecords = normalizeHistoryDeletionList(remoteData.historyDeletionRecords || []);
+                const mergedTaskDelForRisk = mergeTaskDeletionLists(taskDeletionRecords, remoteData.taskDeletionRecords);
                 const mergedHistDelForRisk = mergeHistoryDeletionLists(historyDeletionRecords, remoteData.historyDeletionRecords);
-                let remoteTasksForRisk = applyTaskDeletionLedger(normalizedRemoteTasks, remoteData.taskDeletionRecords);
+                let remoteTasksForRisk = applyTaskDeletionLedger(normalizedRemoteTasks, mergedTaskDelForRisk);
                 remoteTasksForRisk = applyHistoryDeletionLedger(remoteTasksForRisk, mergedHistDelForRisk);
                 remoteData.tasks = remoteTasksForRisk;
-                const risk = detectSyncRisk(localBeforeSync, remoteTasksForRisk);
+                const risk = detectSyncRisk(localBeforeSync, remoteTasksForRisk, mergedTaskDelForRisk, mergedHistDelForRisk);
                 if (risk) {
                     updateSyncStatus('paused');
                     renderPage();
@@ -3437,7 +3586,7 @@ function saveStorage(riskCheck) {
 
     if (riskCheck) {
         createSyncRecoveryPoint(cloneTasks(taskList));
-        const risk = detectSyncRisk(beforeUploadSnapshot, taskList);
+        const risk = detectSyncRisk(beforeUploadSnapshot, taskList, taskDeletionRecords, historyDeletionRecords);
         if (risk) {
             updateSyncStatus('paused');
             showSyncRiskModal(beforeUploadSnapshot, taskList, risk,
@@ -3867,33 +4016,52 @@ function renderCalendar() {
     const totalDaysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
     const todayStr = getTodayStr();
 
+    // 按日期收集「每一次」打卡记录（按任务 id，不按任务名合并）
+    // checkDateMap[date] = [{ taskId, name, time, source }]
     const checkDateMap = {};
+    const pushRecord = (dStr, record) => {
+        if (!dStr || !record) return;
+        if (!checkDateMap[dStr]) checkDateMap[dStr] = [];
+        checkDateMap[dStr].push(record);
+    };
+
     if (Array.isArray(taskList)) {
         taskList.forEach(task => {
+            const taskId = Number(task && task.id);
+            const taskName = getTaskNameText(task) || '未命名任务';
             if (Array.isArray(task.history)) {
                 task.history.forEach(hStr => {
-                    if (typeof hStr === 'string' && hStr.length >= 10) {
-                        const dStr = hStr.substring(0, 10);
-                        const timeFull = hStr.length >= 19 ? hStr : null;
-                        if (!checkDateMap[dStr]) checkDateMap[dStr] = new Map();
-                        const existing = checkDateMap[dStr].get(task.name);
-                        if (!existing || (timeFull && (!existing.time || timeFull < existing.time))) {
-                            checkDateMap[dStr].set(task.name, { time: timeFull });
-                        }
-                    }
+                    if (typeof hStr !== 'string' || hStr.length < 10) return;
+                    const dStr = hStr.substring(0, 10);
+                    const timeFull = hStr.length >= 19 ? hStr : (hStr.length >= 16 ? hStr : null);
+                    pushRecord(dStr, {
+                        taskId: Number.isFinite(taskId) ? taskId : taskName,
+                        name: taskName,
+                        time: timeFull,
+                        source: 'history'
+                    });
                 });
             }
             if (Array.isArray(task.archives)) {
                 task.archives.forEach(arc => {
-                    if (arc && Array.isArray(arc.dates)) {
-                        arc.dates.forEach(dStr => {
-                            const taskName = getTaskNameText(task) || '未命名任务';
-                            if (!checkDateMap[dStr]) checkDateMap[dStr] = new Map();
-                            if (!checkDateMap[dStr].has(taskName)) {
-                                checkDateMap[dStr].set(taskName, { time: null });
-                            }
+                    if (!arc || !Array.isArray(arc.dates)) return;
+                    // 归档一般只有日期没有精确时间；若 history 已覆盖该日该任务则不再重复
+                    arc.dates.forEach(dStr => {
+                        if (typeof dStr !== 'string' || dStr.length < 10) return;
+                        const dayKey = dStr.substring(0, 10);
+                        const list = checkDateMap[dayKey] || [];
+                        const alreadyFromHistory = list.some(r =>
+                            String(r.taskId) === String(Number.isFinite(taskId) ? taskId : taskName)
+                            && r.source === 'history'
+                        );
+                        if (alreadyFromHistory) return;
+                        pushRecord(dayKey, {
+                            taskId: Number.isFinite(taskId) ? taskId : taskName,
+                            name: taskName,
+                            time: null,
+                            source: 'archive'
                         });
-                    }
+                    });
                 });
             }
         });
@@ -3912,8 +4080,9 @@ function renderCalendar() {
         const cell = document.createElement("div");
         cell.className = "calendar-cell";
 
-        const hasCheck = checkDateMap[dateString] && checkDateMap[dateString].size > 0;
-        const count = hasCheck ? checkDateMap[dateString].size : 0;
+        const dayRecords = checkDateMap[dateString] || [];
+        const hasCheck = dayRecords.length > 0;
+        const count = dayRecords.length;
 
         if (dateString === todayStr) cell.classList.add("today");
         if (hasCheck) cell.classList.add("has-check");
@@ -3925,8 +4094,7 @@ function renderCalendar() {
 
         cell.onclick = () => {
             if (hasCheck) {
-                const entries = Array.from(checkDateMap[dateString].entries()).map(([name, info]) => ({ name, time: info.time }));
-                openCalendarDetail(dateString, entries);
+                openCalendarDetail(dateString, dayRecords);
             } else {
                 showToast(`${dateString} 暂无打卡记录`);
             }
@@ -3941,23 +4109,35 @@ function openCalendarDetail(dateString, taskEntries) {
         if (a.time && b.time) return a.time.localeCompare(b.time);
         if (a.time && !b.time) return -1;
         if (!a.time && b.time) return 1;
+        const idA = Number(a.taskId), idB = Number(b.taskId);
+        if (Number.isFinite(idA) && Number.isFinite(idB) && idA !== idB) return idA - idB;
         return String(a.name || '').localeCompare(String(b.name || ''), 'zh-CN');
     });
     const dayCount = cleanList.length;
+    const taskCount = new Set(cleanList.map(t => String(t.taskId))).size;
     el.calendarDetailDate.innerText = dateString;
-    el.calendarDetailTitle.innerText = dayCount ? '当天打卡明细' : '当天暂无记录';
+    el.calendarDetailTitle.innerText = dayCount
+        ? `当天打卡明细 · ${taskCount} 个任务 · ${dayCount} 次`
+        : '当天暂无记录';
     el.calendarDetailCount.innerText = String(dayCount);
     el.calendarDetailDayType.innerText = dayCount ? '有记录' : '空白';
     el.calendarDetailMonthText.innerText = `${dateString.slice(0, 7)}`;
     if (dayCount > 0) {
-        el.calendarDetailList.innerHTML = cleanList.map((item, idx) => `
+        el.calendarDetailList.innerHTML = cleanList.map((item, idx) => {
+            let timeText = '--:--';
+            if (item.time && item.time.length >= 16) {
+                timeText = item.time.slice(11, 16);
+            } else if (item.time && item.time.length >= 19) {
+                timeText = item.time.slice(11, 16);
+            }
+            return `
             <div class="calendar-detail-item">
                 <div class="calendar-detail-index">${idx + 1}</div>
                 <div class="calendar-detail-name">${escapeHTML(item.name)}</div>
-                <div class="calendar-detail-time">${item.time ? escapeHTML(item.time.slice(11, 16)) : '--:--'}</div>
+                <div class="calendar-detail-time">${escapeHTML(timeText)}</div>
                 <div class="calendar-detail-tag">已打卡</div>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
     } else {
         el.calendarDetailList.innerHTML = emptyStateHTML({ icon: '📅', title: '当天没有打卡记录', desc: '继续坚持保持习惯' });
     }
@@ -4446,6 +4626,7 @@ function restartTask(id) {
             isPinned: false,
             history: [],
             archives: [],
+            createdByDeviceId: deviceId || '',
             createAt: nowStr,
             updateAt: nowStr
         };
@@ -4697,6 +4878,9 @@ function saveTask() {
             isPinned: existingTask ? !!existingTask.isPinned : false,
             history: existingTask && Array.isArray(existingTask.history) ? [...existingTask.history] : [],
             archives: existingTask && Array.isArray(existingTask.archives) ? JSON.parse(JSON.stringify(existingTask.archives)) : [],
+            createdByDeviceId: existingTask && existingTask.createdByDeviceId
+                ? existingTask.createdByDeviceId
+                : (deviceId || ''),
             updateAt: nowStr
         };
         const normalizedData = normalizeTaskRecord(data);
