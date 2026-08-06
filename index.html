@@ -68,6 +68,25 @@ body {
 .sync-btn-left.error{color:var(--danger);font-weight:bold;}
 .top-tool{display:flex;gap:6px;align-items:center;}
 .tool-btn{font-size:15px;color:var(--primary);cursor:pointer;font-weight:500;}
+.github-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:28px;
+    height:28px;
+    border-radius:50%;
+    text-decoration:none;
+    color:var(--text-sub);
+    transition:color .15s ease, background .15s ease, transform .15s ease;
+}
+.github-btn:hover{
+    color:var(--text-main);
+    background:var(--border-color);
+}
+.github-btn:active{ transform:scale(.94); }
+.github-icon{ display:block; }
+html[data-theme="dark"] .github-btn{ color:var(--text-sub); }
+html[data-theme="dark"] .github-btn:hover{ color:var(--text-main); background:rgba(255,255,255,.08); }
 .announcement-bar {
     background: var(--card-bg);
     color: var(--text-main);
@@ -209,7 +228,53 @@ body {
     box-shadow:0 4px 16px rgba(0,0,0,.06);
     animation:emptyStateFadeIn .35s ease both;
 }
-.empty-state-icon{ font-size:44px; line-height:1; margin-bottom:10px; }
+.empty-state{
+    background:transparent;
+    border:none;
+    box-shadow:none;
+    padding:48px 20px 32px;
+}
+.empty-state-icon{
+    margin-bottom:16px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+.empty-state-icon .empty-soft{
+    width:64px;
+    height:64px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(25,137,250,.08);
+    color:#5b9fef;
+}
+html[data-theme="dark"] .empty-state-icon .empty-soft{
+    background:rgba(25,137,250,.15);
+    color:#7eb6ff;
+}
+.empty-state-icon .empty-soft svg{
+    width:28px;
+    height:28px;
+    display:block;
+}
+.empty-state-title{
+    font-size:16px;
+    font-weight:600;
+    letter-spacing:-.2px;
+}
+.empty-state-desc{
+    font-size:13px;
+    color:var(--text-light);
+    margin-top:6px;
+}
+.empty-state-btn{
+    margin-top:20px;
+    padding:10px 28px;
+    border-radius:12px;
+    font-weight:600;
+}
 .empty-state-title{ font-size:15px; font-weight:700; color:var(--text-main); margin-bottom:6px; }
 .empty-state-desc{ font-size:12.5px; color:var(--text-light); line-height:1.6; }
 .empty-state-btn{
@@ -711,6 +776,201 @@ html[data-theme="dark"] .announcement-text {
     flex-wrap: wrap;
     gap: 12px;
 }
+
+/* ===== 任务编辑弹窗（简洁版） ===== */
+#maskWrap{
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    background:rgba(15,23,42,.4);
+}
+#maskWrap[style*="block"],
+#maskWrap.show{
+    display:flex !important;
+}
+.task-pop.pop{
+    position:relative;
+    top:auto;
+    left:auto;
+    transform:none;
+    width:100%;
+    max-width:380px;
+    max-height:min(90vh, 640px);
+    margin:0;
+    padding:0;
+    border-radius:16px;
+    border:1px solid var(--border-color);
+    box-shadow:0 16px 48px rgba(0,0,0,.18);
+    display:flex;
+    flex-direction:column;
+    overflow:hidden;
+    background:var(--card-bg);
+}
+.task-pop .pop-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 18px 0;
+    flex:0 0 auto;
+}
+.task-pop .pop-title{
+    margin:0;
+    text-align:left;
+    font-size:17px;
+    font-weight:700;
+    letter-spacing:-.3px;
+}
+.task-pop .pop-close{
+    width:28px;
+    height:28px;
+    border:none;
+    border-radius:8px;
+    background:transparent;
+    color:var(--text-light);
+    font-size:22px;
+    line-height:1;
+    cursor:pointer;
+}
+.task-pop .pop-close:hover{ background:var(--bg-color); color:var(--text-main); }
+.task-pop .pop-body{
+    flex:1 1 auto;
+    min-height:0;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    padding:12px 18px 8px;
+}
+.task-pop .form-section{ margin:0 0 4px; padding:0; background:transparent; border:none; }
+.task-pop .form-section-title{
+    font-size:11px;
+    font-weight:600;
+    color:var(--text-light);
+    text-transform:none;
+    letter-spacing:.4px;
+    margin:14px 0 8px;
+    padding:0;
+}
+.task-pop .form-section:first-child .form-section-title{ margin-top:4px; }
+.task-pop .form-item{ margin-bottom:12px; }
+.task-pop .form-item:last-child{ margin-bottom:8px; }
+.task-pop .form-item label{
+    display:block;
+    font-size:12px;
+    font-weight:500;
+    color:var(--text-sub);
+    margin-bottom:6px;
+}
+.task-pop .form-item label .req{ color:var(--danger); font-weight:600; }
+.task-pop .form-row{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+}
+.task-pop .form-item input[type="text"],
+.task-pop .form-item input[type="number"],
+.task-pop .form-item input[type="date"],
+.task-pop .form-item select{
+    width:100%;
+    height:40px;
+    padding:0 12px;
+    border:1px solid var(--border-color);
+    border-radius:10px;
+    font-size:14px;
+    background:var(--bg-color);
+    color:var(--text-main);
+    outline:none;
+    transition:border-color .15s ease;
+}
+.task-pop .form-item input:focus,
+.task-pop .form-item select:focus{
+    border-color:var(--primary);
+    box-shadow:none;
+    background:var(--card-bg);
+}
+.task-pop .seg-group{
+    display:flex;
+    gap:0;
+    padding:3px;
+    border-radius:10px;
+    background:var(--bg-color);
+    border:1px solid var(--border-color);
+}
+.task-pop .seg-item{
+    flex:1;
+    position:relative;
+    margin:0 !important;
+    text-align:center;
+    font-size:13px !important;
+    font-weight:500 !important;
+    color:var(--text-sub) !important;
+    padding:8px 6px;
+    border-radius:8px;
+    cursor:pointer;
+}
+.task-pop .seg-item input{ position:absolute; opacity:0; pointer-events:none; }
+.task-pop .seg-item.active{
+    background:var(--card-bg);
+    color:var(--text-main) !important;
+    font-weight:600 !important;
+    box-shadow:0 1px 3px rgba(0,0,0,.08);
+}
+.task-pop .switch-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:0;
+    margin:4px 0 8px;
+    background:transparent;
+    border:none;
+    cursor:pointer;
+}
+.task-pop .switch-text{ display:flex; flex-direction:column; gap:2px; }
+.task-pop .switch-text b{ font-size:13px; font-weight:600; color:var(--text-main); }
+.task-pop .switch-text small{ font-size:11px; color:var(--text-light); }
+.task-pop .switch-input{ position:absolute; opacity:0; width:0; height:0; }
+.task-pop .switch-ui{
+    width:42px; height:24px; border-radius:999px;
+    background:#d1d5db; position:relative; flex:0 0 auto;
+    transition:background .2s ease;
+}
+html[data-theme="dark"] .task-pop .switch-ui{ background:#4b5563; }
+.task-pop .switch-ui::after{
+    content:''; position:absolute; top:2px; left:2px;
+    width:20px; height:20px; border-radius:50%;
+    background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.15);
+    transition:transform .2s ease;
+}
+.task-pop .switch-input:checked + .switch-ui{ background:var(--primary); }
+.task-pop .switch-input:checked + .switch-ui::after{ transform:translateX(18px); }
+.task-pop .pop-buttons{
+    flex:0 0 auto;
+    display:flex;
+    gap:10px;
+    margin:0;
+    padding:12px 18px 16px;
+    border-top:1px solid var(--border-color);
+    background:var(--card-bg);
+}
+.task-pop .pop-buttons button{
+    flex:1;
+    height:42px;
+    border:none;
+    border-radius:10px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+}
+.task-pop .pop-btn-cancel{
+    background:var(--bg-color);
+    color:var(--text-sub);
+}
+.task-pop .pop-btn-save{
+    background:var(--primary);
+    color:#fff;
+}
+
+
 .toast {
     border-radius: 999px;
     box-shadow: 0 10px 28px rgba(0,0,0,.18);
@@ -1576,6 +1836,9 @@ html[data-theme="dark"] .sync-log-result.fail{
         <div class="sync-btn-left" id="syncBtn" data-status="syncing"><svg viewBox="0 0 24 24" class="sync-icon" aria-hidden="true"><path d="M20 12a8 8 0 0 1-13.9 5.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M5 12a7 7 0 0 1 11.8-5.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16.4 6.4H18V4.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.6 17.6H6v1.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="sync-text">同步中...</span></div>
         <div class="nav-title"></div>
         <div class="top-tool">
+            <a class="tool-btn github-btn" id="githubBtn" href="https://github.com/Xh1275/daka" target="_blank" rel="noopener noreferrer" title="GitHub 开源地址" aria-label="GitHub 开源地址">
+                <svg class="github-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            </a>
             <span class="tool-btn" id="themeBtn">🌙</span>
             <div class="more-wrap">
                 <span class="tool-btn more-trigger" id="moreBtn" aria-label="更多操作">⋯</span>
@@ -1624,37 +1887,7 @@ html[data-theme="dark"] .sync-log-result.fail{
                 <input class="search-input" id="searchAllInput" placeholder="搜索全部任务名称、备注或大类...">
             </div>
             <div class="all-mini-actions">
-                <button type="button" class="mini-tool-btn" id="toggleStatBtn" title="展开统计" aria-label="数据统计">📊</button>
                 <button type="button" class="mini-tool-btn" id="toggleCalBtn" title="展开日历" aria-label="日历签到">📅</button>
-            </div>
-        </div>
-
-        <div class="stat-box compact-panel" id="statContentWrap" style="display:none;">
-            <div class="panel-topline">
-                <div class="panel-title">📊 数据统计看板</div>
-                <div class="panel-sub">快速总览</div>
-            </div>
-            <div class="stat-overview">
-                <div class="stat-pill">
-                    <span class="stat-pill-label">全部任务</span>
-                    <span class="stat-pill-value" id="statAll">0</span>
-                </div>
-                <div class="stat-pill">
-                    <span class="stat-pill-label">进行中任务</span>
-                    <span class="stat-pill-value text-main" id="statDoing">0</span>
-                </div>
-                <div class="stat-pill">
-                    <span class="stat-pill-label">已归档/完成</span>
-                    <span class="stat-pill-value text-main" id="statFinish">0</span>
-                </div>
-                <div class="stat-pill">
-                    <span class="stat-pill-label">最高连续签到</span>
-                    <span class="stat-pill-value text-main" id="statMaxStreak">0 天</span>
-                </div>
-                <div class="stat-pill" style="grid-column:1 / -1;">
-                    <span class="stat-pill-label">累计现金收益</span>
-                    <span class="stat-pill-value" id="statMoney">0.00</span>
-                </div>
             </div>
         </div>
 
@@ -1708,81 +1941,106 @@ html[data-theme="dark"] .sync-log-result.fail{
     </div>
     <!-- 任务编辑弹窗 -->
     <div class="mask" id="maskWrap">
-        <div class="pop">
-            <div class="pop-title" id="popTitle">新增羊毛任务</div>
-            <div class="form-item">
-                <label>任务名称</label>
-                <input id="inpName" type="text" placeholder="例：抖音极速版签到" autocomplete="off">
+        <div class="pop task-pop">
+            <div class="pop-head">
+                <div class="pop-title" id="popTitle">新增羊毛任务</div>
+                <button type="button" class="pop-close" id="popCloseBtn" aria-label="关闭">×</button>
             </div>
-            <div class="form-item">
-                <label>跳转 APP (手动选择优先)</label>
-                <select id="inpAppScheme">
-                    <option value="auto">🤖 自动匹配 (根据任务名称)</option>
-                    <option value="">🚫 不跳转</option>
-                    <option value="snssdk2329://">抖音极速版</option>
-                    <option value="snssdk1128://">抖音</option>
-                    <option value="ksnebula://">快手极速版</option>
-                    <option value="kwai://">快手</option>
-                    <option value="tbopen://m.taobao.com/tbopen/index.html?h5Url=https%3A%2F%2Fpages-fast.m.taobao.com%2Fwow%2Fz%2Fhdwk%2Ftmfarm%2Fbabanongchang%3FdisableNav%3DYES%26disableProgress%3DYES">淘宝芭芭农场</option>
-                    <option value="tbopen://m.taobao.com/tbopen/index.html?h5Url=https%3A%2F%2Fpages-fast.m.taobao.com%2Fwow%2Fz%2Ftblife%2Fachievement-i%2FJX4ezmspfN8txPMWyawe%3Fx-ssr%3Dtrue%26disableNav%3DYES%26tao_mini_h5%3Dtrue%26uniapp_id%3D1012454%26uniapp_page%3Dhome">淘宝成就中心</option>
-                    <option value="taobao://">淘宝</option>
-                    <option value="pinduoduo://">拼多多</option>
-                    <option value="jdmobile://">京东</option>
-                    <option value="meituan://">美团</option>
-                    <option value="alipay://">支付宝</option>
-                    <option value="weixin://">微信</option>
-                    <option value="custom">✏️ 自定义协议</option>
-                </select>
-            </div>
-            <div class="form-item" id="customSchemeWrap" style="display:none">
-                <label>自定义 Scheme 链接</label>
-                <input id="inpCustomScheme" type="text" placeholder="例：alipays:// 或 myapp://path" autocomplete="off">
-            </div>
-            <div class="form-item">
-                <label>任务大类 / 分组</label>
-                <input id="inpCategory" type="text" placeholder="例：日常签到、游戏挂机、生活羊毛" autocomplete="off" value="默认分组">
-            </div>
-            <div class="form-item">
-                <label>备注说明</label>
-                <input id="inpRemark" type="text" placeholder="例：14天得12元，满15提现" autocomplete="off">
-            </div>
-            
-            <div class="form-item">
-                <label style="display:flex; align-items:center; gap:8px;">
-                    <input type="checkbox" id="inpContinuous" style="transform: scale(1.1);"> 
-                    必须连续打卡 (若断签将重置进度)
-                </label>
-            </div>
-            <div class="form-item">
-                <label>目标打卡天数</label>
-                <input id="inpDay" type="number" value="30" min="1">
-            </div>
-            <div class="form-item">
-                <label>每天打卡次数 (次/天)</label>
-                <input id="inpTimesPerDay" type="number" value="1" min="1">
-            </div>
-            <div class="form-item">
-                <label>预期收益类型</label>
-                <div class="radio-group" id="rewardTypeGroup">
-                    <label><input type="radio" name="rewardType" value="money" checked> 现金(元)</label>
-                    <label><input type="radio" name="rewardType" value="custom"> 其它奖品</label>
+            <div class="pop-body">
+                <div class="form-section">
+                    <div class="form-section-title">基本信息</div>
+                    <div class="form-item">
+                        <label>任务名称 <span class="req">*</span></label>
+                        <input id="inpName" type="text" placeholder="例：抖音极速版签到" autocomplete="off">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-item">
+                            <label>分组</label>
+                            <input id="inpCategory" type="text" placeholder="可不填" autocomplete="off" value="">
+                        </div>
+                        <div class="form-item">
+                            <label>开始日期</label>
+                            <input id="inpStart" type="date">
+                        </div>
+                    </div>
+                    <div class="form-item">
+                        <label>备注</label>
+                        <input id="inpRemark" type="text" placeholder="例：14天得12元，满15提现" autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-title">打卡规则</div>
+                    <div class="form-row">
+                        <div class="form-item">
+                            <label>目标天数</label>
+                            <input id="inpDay" type="number" value="30" min="1" inputmode="numeric">
+                        </div>
+                        <div class="form-item">
+                            <label>每天次数</label>
+                            <input id="inpTimesPerDay" type="number" value="1" min="1" inputmode="numeric">
+                        </div>
+                    </div>
+                    <label class="switch-row" for="inpContinuous">
+                        <span class="switch-text">
+                            <b>必须连续打卡</b>
+                            <small>断签将重置进度</small>
+                        </span>
+                        <input type="checkbox" id="inpContinuous" class="switch-input">
+                        <span class="switch-ui" aria-hidden="true"></span>
+                    </label>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-title">收益</div>
+                    <div class="form-item">
+                        <div class="seg-group" id="rewardTypeGroup">
+                            <label class="seg-item"><input type="radio" name="rewardType" value="money" checked> 现金</label>
+                            <label class="seg-item"><input type="radio" name="rewardType" value="custom"> 其它奖品</label>
+                        </div>
+                    </div>
+                    <div class="form-item" id="moneyInputWrap">
+                        <label>总收益（元）</label>
+                        <input id="inpMoney" type="number" value="0" step="0.01" min="0" inputmode="decimal">
+                    </div>
+                    <div class="form-item" id="customInputWrap" style="display:none">
+                        <label>奖品内容</label>
+                        <input id="inpCustom" type="text" placeholder="例：保温杯、500京豆" autocomplete="off">
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <div class="form-section-title">打开应用</div>
+                    <div class="form-item">
+                        <label>跳转 APP</label>
+                        <select id="inpAppScheme">
+                            <option value="auto">🤖 自动匹配（根据任务名称）</option>
+                            <option value="">🚫 不跳转</option>
+                            <option value="snssdk2329://">抖音极速版</option>
+                            <option value="snssdk1128://">抖音</option>
+                            <option value="ksnebula://">快手极速版</option>
+                            <option value="kwai://">快手</option>
+                            <option value="tbopen://m.taobao.com/tbopen/index.html?h5Url=https%3A%2F%2Fpages-fast.m.taobao.com%2Fwow%2Fz%2Fhdwk%2Ftmfarm%2Fbabanongchang%3FdisableNav%3DYES%26disableProgress%3DYES">淘宝芭芭农场</option>
+                            <option value="tbopen://m.taobao.com/tbopen/index.html?h5Url=https%3A%2F%2Fpages-fast.m.taobao.com%2Fwow%2Fz%2Fhdwk%2Ffarm-ssr%2Fbargain-backflow%3FdisableNav%3DYES">淘宝超值领免单</option>
+                            <option value="tbopen://m.taobao.com/tbopen/index.html?h5Url=https%3A%2F%2Fpages-fast.m.taobao.com%2Fwow%2Fz%2Ftblife%2Fachievement-i%2FJX4ezmspfN8txPMWyawe%3Fx-ssr%3Dtrue%26disableNav%3DYES%26tao_mini_h5%3Dtrue%26uniapp_id%3D1012454%26uniapp_page%3Dhome">淘宝成就中心</option>
+                            <option value="taobao://">淘宝</option>
+                            <option value="pinduoduo://">拼多多</option>
+                            <option value="jdmobile://">京东</option>
+                            <option value="meituan://">美团</option>
+                            <option value="alipay://">支付宝</option>
+                            <option value="weixin://">微信</option>
+                            <option value="custom">✏️ 自定义协议</option>
+                        </select>
+                    </div>
+                    <div class="form-item" id="customSchemeWrap" style="display:none">
+                        <label>自定义 Scheme</label>
+                        <input id="inpCustomScheme" type="text" placeholder="例：alipays:// 或 myapp://path" autocomplete="off">
+                    </div>
                 </div>
             </div>
-            <div class="form-item" id="moneyInputWrap">
-                <label>总收益(元)</label>
-                <input id="inpMoney" type="number" value="0" step="0.01" min="0">
-            </div>
-            <div class="form-item" id="customInputWrap" style="display:none">
-                <label>奖品内容</label>
-                <input id="inpCustom" type="text" placeholder="例：保温杯、500京豆" autocomplete="off">
-            </div>
-            <div class="form-item">
-                <label>任务开始日期</label>
-                <input id="inpStart" type="date">
-            </div>
             <div class="pop-buttons">
-                <button id="popCancel" style="background:var(--border-color);color:var(--text-sub)">取消</button>
-                <button id="popSave" style="background:var(--primary);color:#fff">保存</button>
+                <button type="button" id="popCancel" class="pop-btn-cancel">取消</button>
+                <button type="button" id="popSave" class="pop-btn-save">保存</button>
             </div>
         </div>
     </div>
@@ -1921,6 +2179,8 @@ const appSchemeRules = [
   {k:"快手",s:"kwai://"},
   {k:"成就中心",s:"tbopen://m.taobao.com/tbopen/index.html?h5Url=https%3A%2F%2Fpages-fast.m.taobao.com%2Fwow%2Fz%2Ftblife%2Fachievement-i%2FJX4ezmspfN8txPMWyawe%3Fx-ssr%3Dtrue%26disableNav%3DYES%26tao_mini_h5%3Dtrue%26uniapp_id%3D1012454%26uniapp_page%3Dhome"},
   {k:"芭芭农场",s:"tbopen://m.taobao.com/tbopen/index.html?h5Url=https%3A%2F%2Fpages-fast.m.taobao.com%2Fwow%2Fz%2Fhdwk%2Ftmfarm%2Fbabanongchang%3FdisableNav%3DYES%26disableProgress%3DYES"},
+  {k:"超值领免单",s:"tbopen://m.taobao.com/tbopen/index.html?h5Url=https%3A%2F%2Fpages-fast.m.taobao.com%2Fwow%2Fz%2Fhdwk%2Ffarm-ssr%2Fbargain-backflow%3FdisableNav%3DYES"},
+  {k:"领免单",s:"tbopen://m.taobao.com/tbopen/index.html?h5Url=https%3A%2F%2Fpages-fast.m.taobao.com%2Fwow%2Fz%2Fhdwk%2Ffarm-ssr%2Fbargain-backflow%3FdisableNav%3DYES"},
   {k:"淘宝",s:"taobao://"},
   {k:"拼多多",s:"pinduoduo://"},
   {k:"京东",s:"jdmobile://"},
@@ -1962,8 +2222,8 @@ function getTaskRemarkText(item) {
 }
 
 function getTaskCategoryText(item) {
-    const category = safeText(item && item.category, '默认分组').trim();
-    return category || '默认分组';
+    // 空分类 = 未分组，不再强制「默认分组」
+    return safeText(item && item.category, '').trim();
 }
 
 function taskMatchesQuery(item, query) {
@@ -1981,7 +2241,7 @@ function normalizeTaskRecord(rawTask) {
     item.id = Number.isFinite(Number(item.id)) ? Number(item.id) : (Date.now() + Math.floor(Math.random() * 1000));
     item.name = safeText(item.name).trim() || '未命名任务';
     item.appScheme = safeText(item.appScheme).trim();
-    item.category = safeText(item.category, '默认分组').trim() || '默认分组';
+    item.category = safeText(item.category, '').trim();
     item.remark = safeText(item.remark).trim();
     item.totalDay = Math.max(1, Number(item.totalDay) || 30);
     item.timesPerDay = Math.max(1, Number(item.timesPerDay) || 1);
@@ -2649,7 +2909,7 @@ function initAnnouncement(defaultText) {
         if (savedAnnounce !== '' && savedAnnounce.trim() !== '') {
             contentDiv.innerHTML = savedAnnounce;
         } else {
-            contentDiv.innerHTML = '妈妈露营椅 <span style="background-color: #ee0a24; color: #ffffff; padding: 2px 6px; border-radius: 4px; font-weight: bold;">⏰ 过期提醒</span>';
+            contentDiv.innerHTML = '（✚v:1275176309）';
         }
     }
 }
@@ -3849,25 +4109,7 @@ function formatMoney(num) {
     return Number(num || 0).toFixed(2);
 }
 function renderStat() {
-    if (!Array.isArray(taskList)) taskList = [];
-    const all = taskList.length;
-    let doing = 0, finish = 0, totalMoney = 0, maxOverallStreak = 0;
-    
-    taskList.forEach(i => {
-        const s = getTaskStatus(i);
-        if (s === "doing") doing++;
-        if (s === "finish") finish++;
-        if (i.rewardType === "money") totalMoney += Number(i.rewardValue || i.money || 0);
-        
-        const taskMax = calculateMaxStreak(i);
-        if (taskMax > maxOverallStreak) maxOverallStreak = taskMax;
-    });
-    
-    el.statAll.innerText = all;
-    el.statDoing.innerText = doing;
-    el.statFinish.innerText = finish;
-    el.statMaxStreak.innerText = `${maxOverallStreak} 天`;
-    el.statMoney.innerText = formatMoney(totalMoney);
+    // 数据看板入口已移除（使用率低）；详细数据仍可通过 CSV 导出查看
 }
 
 function renderTaskCard(item, isTodayPage = false) {
@@ -4213,7 +4455,7 @@ function batchTogglePin() {
 }
 function batchUpdateCategory() {
     if (selectedTaskIds.size === 0) return showToast('请先选择任务');
-    const newCategory = prompt('请输入新的分类名称：', '默认分组');
+    const newCategory = prompt('请输入新的分类名称（留空=取消分组）：', '');
     if (newCategory === null || newCategory.trim() === '') return;
     
     const nowStr = getNowDateTimeStr();
@@ -4354,7 +4596,12 @@ function renderPage() {
     });
     let totalRemainingCount = 0;
     let todayCategoryHtml = "";
-    for (let cat in todayGroups) {
+    const todayCats = Object.keys(todayGroups).sort((a, b) => {
+        if (!a) return -1;
+        if (!b) return 1;
+        return a.localeCompare(b, 'zh-CN');
+    });
+    todayCats.forEach(cat => {
         let catTasks = todayGroups[cat];
         let uncheckedCount = catTasks.filter(t => !isCheckedToday(t)).length;
         totalRemainingCount += uncheckedCount;
@@ -4362,6 +4609,11 @@ function renderPage() {
         let badgeClass = uncheckedCount > 0 ? "category-badge has-unchecked" : "category-badge";
         let badgeText = uncheckedCount > 0 ? `${uncheckedCount} 个未打卡 / 共 ${totalC} 项` : `全部已完成 (${totalC}项)`;
         let tasksHtml = catTasks.map(item => renderTaskCard(item, true)).join("");
+        if (!cat) {
+            // 未填写分组：直接平铺，不套文件夹
+            todayCategoryHtml += tasksHtml;
+            return;
+        }
         const isOpen = todayGroupOpenState[cat] === true;
         todayCategoryHtml += `
         <details class="category-group-card" data-category="${escapeHTML(cat)}" ${isOpen ? 'open' : ''}>
@@ -4373,7 +4625,7 @@ function renderPage() {
                 ${tasksHtml}
             </div>
         </details>`;
-    }
+    });
     el.todayCount.innerText = totalRemainingCount;
     const todayTotal = todayList.length;
     const todayDone = todayList.filter(t => isCheckedToday(t)).length;
@@ -4385,11 +4637,11 @@ function renderPage() {
     if (todayList.length === 0) {
         el.todayEmpty.style.display = "block";
         if (taskList.length === 0) {
-            el.todayEmpty.innerHTML = emptyStateHTML({ icon: '👋', title: '还没有创建任务', desc: '点击添加第一个任务开始使用', actionText: '添加任务' });
+            el.todayEmpty.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"/><path d="M5 12h14"/></svg></span>`, title: '欢迎使用羊毛打卡管家', desc: '创建第一个任务，开始管理你的打卡计划', actionText: '添加任务' });
         } else if (queryToday && filterTodayAll.length === 0) {
-            el.todayEmpty.innerHTML = emptyStateHTML({ icon: '🔍', title: '没有找到相关任务', desc: '换个关键词试试看' });
+            el.todayEmpty.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg></span>`, title: '没有找到相关任务', desc: '换个关键词试试看' });
         } else {
-            el.todayEmpty.innerHTML = emptyStateHTML({ icon: '🎉', title: '今天没有需要打卡的任务', desc: '享受轻松的一天吧！' });
+            el.todayEmpty.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></span>`, title: '今天没有需要打卡的任务', desc: '享受轻松的一天吧！' });
         }
     } else {
         el.todayEmpty.style.display = "none";
@@ -4423,11 +4675,11 @@ function renderPage() {
     if (filterArr.length === 0) {
         el.allEmpty.style.display = "block";
         if (taskList.length === 0) {
-            el.allEmpty.innerHTML = emptyStateHTML({ icon: '👋', title: '欢迎使用羊毛打卡管家', desc: '创建第一个任务，开始管理你的打卡计划', actionText: '添加任务' });
+            el.allEmpty.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M5 6h.01M5 12h.01M5 18h.01"/></svg></span>`, title: '还没有创建任务', desc: '点击添加第一个任务开始使用', actionText: '添加任务' });
         } else if (queryAll && filterAllTaskList.length === 0) {
-            el.allEmpty.innerHTML = emptyStateHTML({ icon: '🔍', title: '没有找到相关任务', desc: '换个关键词试试看' });
+            el.allEmpty.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg></span>`, title: '没有找到相关任务', desc: '换个关键词试试看' });
         } else {
-            el.allEmpty.innerHTML = emptyStateHTML({ icon: '📭', title: '暂无任务', desc: '当前分类下还没有任务' });
+            el.allEmpty.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg></span>`, title: '暂无任务', desc: '当前分类下还没有任务' });
         }
     } else {
         el.allEmpty.style.display = "none";
@@ -4439,13 +4691,22 @@ function renderPage() {
         groups[cat].push(item);
     });
     let categoryHtml = "";
-    for (let cat in groups) {
+    const allCats = Object.keys(groups).sort((a, b) => {
+        if (!a) return -1;
+        if (!b) return 1;
+        return a.localeCompare(b, 'zh-CN');
+    });
+    allCats.forEach(cat => {
         let catTasks = groups[cat];
         let uncheckedCount = catTasks.filter(t => getTaskStatus(t) === "doing" && !isCheckedToday(t)).length;
         let totalC = catTasks.length;
         let badgeClass = uncheckedCount > 0 ? "category-badge has-unchecked" : "category-badge";
         let badgeText = uncheckedCount > 0 ? `${uncheckedCount} 个未打卡 / 共 ${totalC} 项` : `全部已完成 (${totalC}项)`;
         let tasksHtml = catTasks.map(item => renderTaskCard(item, false)).join("");
+        if (!cat) {
+            categoryHtml += tasksHtml;
+            return;
+        }
         categoryHtml += `
         <details class="category-group-card" open>
             <summary class="category-group-header">
@@ -4456,7 +4717,7 @@ function renderPage() {
                 ${tasksHtml}
             </div>
         </details>`;
-    }
+    });
     el.allListWrap.innerHTML = categoryHtml;
     renderCalendar();
     renderStat();
@@ -4605,7 +4866,7 @@ function restartTask(id) {
         const nextRound = roundMatch ? (Number(roundMatch[2]) + 1) : 2;
         let newName = `${baseName}（第${nextRound}轮）`;
                 let dedupeSuffix = 0;
-        while (taskList.some(t => t.name === newName && (t.category || "默认分组") === (item.category || "默认分组"))) {
+        while (taskList.some(t => t.name === newName && getTaskCategoryText(t) === getTaskCategoryText(item))) {
             dedupeSuffix++;
             newName = `${baseName}（第${nextRound}轮${dedupeSuffix > 0 ? '-' + (dedupeSuffix + 1) : ''}）`;
         }
@@ -4773,6 +5034,10 @@ function toggleRewardInputForm(type) {
         el.customInputWrap.style.display = 'block';
         document.querySelector('input[name="rewardType"][value="custom"]').checked = true;
     }
+    document.querySelectorAll('#rewardTypeGroup .seg-item').forEach(lab => {
+        const input = lab.querySelector('input[type="radio"]');
+        lab.classList.toggle('active', !!(input && input.checked));
+    });
 }
 
 function openAdd() {
@@ -4782,7 +5047,7 @@ function openAdd() {
     el.inpAppScheme.value = "auto";
     el.customSchemeWrap.style.display = "none";
     el.inpCustomScheme.value = "";
-    el.inpCategory.value = "默认分组";
+    el.inpCategory.value = "";
     el.inpRemark.value = "";
     el.inpDay.value = "30";
     el.inpTimesPerDay.value = "1";
@@ -4816,7 +5081,7 @@ function openEdit(id) {
         el.inpCustomScheme.value = schemeVal;
     }
 
-    el.inpCategory.value = item.category || "默认分组";
+    el.inpCategory.value = item.category || "";
     el.inpRemark.value = item.remark || "";
     el.inpDay.value = item.totalDay || 30;
     el.inpTimesPerDay.value = item.timesPerDay || 1;
@@ -4842,9 +5107,9 @@ function saveTask() {
         const name = el.inpName.value.trim();
         if (!name) return showToast("请填写任务名称");
 
-        const category = el.inpCategory.value.trim() || "默认分组";
+        const category = el.inpCategory.value.trim();
         const repeat = taskList.some(t => getTaskNameText(t) === name && getTaskCategoryText(t) === category && t.id !== editId);
-        if(repeat) return showToast("相同分类下已存在同名任务");
+        if(repeat) return showToast(category ? "相同分类下已存在同名任务" : "未分组中已存在同名任务");
 
         let savedAppScheme = el.inpAppScheme.value;
         if (savedAppScheme === "custom") {
@@ -4935,7 +5200,7 @@ function exportCsv() {
         const statusMap = { finish: "已完成/归档", wait: "未开始", doing: "进行中" };
         const status = statusMap[getTaskStatus(t)];
         const name = `"${(t.name || "").replace(/"/g, '""')}"`;
-        const category = `"${(t.category || "默认分组").replace(/"/g, '""')}"`;
+        const category = `"${(t.category || "").replace(/"/g, '""')}"`;
         const remark = `"${(t.remark || "").replace(/[\r\n]+/g, ' ').replace(/"/g, '""')}"`;
         
         let rawReward = "";
@@ -5164,14 +5429,12 @@ function closeBackupManage() {
 }
 
 function initWidgetStates() {
-    const statHidden = localStorage.getItem("daka_stat_hidden") !== "false";
     const calHidden = localStorage.getItem("daka_cal_hidden") !== "false";
-    el.statContentWrap.style.display = statHidden ? "none" : "block";
-    el.calContentWrap.style.display = calHidden ? "none" : "block";
-    el.toggleStatBtn.classList.toggle('active', !statHidden);
-    el.toggleCalBtn.classList.toggle('active', !calHidden);
-    el.toggleStatBtn.setAttribute('aria-expanded', String(!statHidden));
-    el.toggleCalBtn.setAttribute('aria-expanded', String(!calHidden));
+    if (el.calContentWrap) el.calContentWrap.style.display = calHidden ? "none" : "block";
+    if (el.toggleCalBtn) {
+        el.toggleCalBtn.classList.toggle('active', !calHidden);
+        el.toggleCalBtn.setAttribute('aria-expanded', String(!calHidden));
+    }
 }
 
 function bindGlobalEvent() {
@@ -5264,6 +5527,11 @@ function bindGlobalEvent() {
     el.batchCancelBtn.addEventListener('click', toggleBatchMode);
 
     el.popCancel.onclick = () => el.maskWrap.style.display = "none";
+    const popCloseBtn = document.getElementById('popCloseBtn');
+    if (popCloseBtn) popCloseBtn.onclick = () => el.maskWrap.style.display = "none";
+    el.maskWrap.addEventListener('click', (e) => {
+        if (e.target === el.maskWrap) el.maskWrap.style.display = "none";
+    });
     el.popSave.onclick = saveTask;
     el.addTaskBtn.onclick = openAdd;
     el.archiveBtn.onclick = () => archiveOldHistory(true);
@@ -5340,14 +5608,6 @@ function bindGlobalEvent() {
         renderCalendar();
     };
     
-    el.toggleStatBtn.onclick = () => {
-        const isHidden = el.statContentWrap.style.display === "none";
-        el.statContentWrap.style.display = isHidden ? "block" : "none";
-        el.toggleStatBtn.classList.toggle('active', isHidden);
-        el.toggleStatBtn.setAttribute('aria-expanded', String(isHidden));
-        localStorage.setItem("daka_stat_hidden", !isHidden);
-    };
-
     el.toggleCalBtn.onclick = () => {
         const isHidden = el.calContentWrap.style.display === "none";
         el.calContentWrap.style.display = isHidden ? "block" : "none";
