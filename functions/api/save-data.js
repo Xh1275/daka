@@ -21,8 +21,36 @@ export async function onRequestPost(context) {
   }
 
   function toMs(value) {
-    const n = Number(value);
-    return Number.isFinite(n) ? n : 0;
+    if (value === undefined || value === null || value === '') return 0;
+    if (typeof value === 'number') {
+      if (!Number.isFinite(value) || value <= 0) return 0;
+      // 秒级时间戳
+      if (value > 0 && value < 1e12) return Math.round(value * 1000);
+      return value;
+    }
+    const raw = String(value).trim();
+    if (!raw) return 0;
+    const asNum = Number(raw);
+    if (Number.isFinite(asNum) && asNum > 0) {
+      if (asNum < 1e12) return Math.round(asNum * 1000);
+      return asNum;
+    }
+    // 前端格式：YYYY-MM-DD HH:mm:ss 或 YYYY-MM-DDTHH:mm:ss
+    const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (m) {
+      const dt = new Date(
+        Number(m[1]),
+        Number(m[2]) - 1,
+        Number(m[3]),
+        Number(m[4]),
+        Number(m[5]),
+        Number(m[6] || 0)
+      );
+      const t = dt.getTime();
+      return Number.isFinite(t) ? t : 0;
+    }
+    const parsed = Date.parse(raw);
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 
   function parseJSON(raw, fallback) {
