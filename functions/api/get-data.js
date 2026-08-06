@@ -29,12 +29,14 @@ export async function onRequestGet(context) {
     return jsonResponse({
       tasks: [],
       announcement: '',
+      announcementMeta: { updatedAt: 0, deviceId: '' },
       syncLog: [],
       snapshots: [],
       taskDeletionRecords: [],
+      historyDeletionRecords: [],
       devices: {},
       deviceMeta: {},
-      schemaVersion: 2
+      schemaVersion: 3
     });
   } catch (e) {
     console.error('get-data error:', e);
