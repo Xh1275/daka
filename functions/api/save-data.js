@@ -12,6 +12,7 @@ export async function onRequestPost(context) {
   const MAX_SYNC_LOG = 50;
   const MAX_TASKS = 800;
   const MAX_DELETION_RECORDS = 300;
+  const MAX_HISTORY_DELETION_RECORDS = 800;
   const MAX_SNAPSHOTS = 120;
   const MAX_ARCHIVES_PER_TASK = 36;
 
@@ -63,22 +64,25 @@ export async function onRequestPost(context) {
     item.history = normalizeHistory(item.history);
     item.archives = normalizeArchives(item.archives);
     item.updateAt = safeText(item.updateAt, '');
+    const createdBy = safeText(item.createdByDeviceId).trim();
+    if (createdBy) item.createdByDeviceId = createdBy;
+    else delete item.createdByDeviceId;
     return item;
   }
 
   function normalizeTaskDeletionRecord(raw) {
-    const item = raw && typeof raw === 'object' ? { ...raw } : {};
-    const taskId = Number.isFinite(Number(item.taskId)) ? Number(item.taskId) : Number(item.id);
+    const source = raw && typeof raw === 'object' ? { ...raw } : {};
+    const taskId = Number.isFinite(Number(source.taskId)) ? Number(source.taskId) : Number(source.id);
     if (!Number.isFinite(taskId)) return null;
-    const deletedAt = toMs(item.deletedAt);
-    const restoredAt = toMs(item.restoredAt);
-    const updatedAt = Math.max(deletedAt, restoredAt, toMs(item.updatedAt));
+    const deletedAt = toMs(source.deletedAt);
+    const restoredAt = toMs(source.restoredAt);
+    const updatedAt = Math.max(deletedAt, restoredAt, toMs(source.updatedAt));
     return {
       taskId,
       deletedAt,
       restoredAt,
       updatedAt,
-      deviceId: safeText(item.deviceId).trim()
+      deviceId: safeText(source.deviceId).trim()
     };
   }
 
@@ -104,6 +108,91 @@ export async function onRequestPost(context) {
     return Array.from(map.values())
       .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0) || (b.taskId || 0) - (a.taskId || 0))
       .slice(0, MAX_DELETION_RECORDS);
+  }
+
+  function historyDeletionKey(taskId, record) {
+    return `${Number(taskId)}::${String(record || '')}`;
+  }
+
+  function normalizeHistoryDeletionRecord(raw) {
+    const source = raw && typeof raw === 'object' ? { ...raw } : {};
+    const taskId = Number.isFinite(Number(source.taskId)) ? Number(source.taskId) : NaN;
+    const record = safeText(source.record).trim();
+    if (!Number.isFinite(taskId) || !record) return null;
+    const deletedAt = toMs(source.deletedAt);
+    const updatedAt = Math.max(deletedAt, toMs(source.updatedAt));
+    return {
+      taskId,
+      record,
+      deletedAt: deletedAt || updatedAt,
+      updatedAt: updatedAt || deletedAt,
+      deviceId: safeText(source.deviceId).trim()
+    };
+  }
+
+  function normalizeHistoryDeletionList(list) {
+    if (!Array.isArray(list)) return [];
+    const map = new Map();
+    list.forEach(item => {
+      const normalized = normalizeHistoryDeletionRecord(item);
+      if (!normalized) return;
+      const key = historyDeletionKey(normalized.taskId, normalized.record);
+      const existed = map.get(key);
+      if (!existed) {
+        map.set(key, normalized);
+        return;
+      }
+      const preferNew = toMs(normalized.updatedAt) >= toMs(existed.updatedAt);
+      map.set(key, {
+        taskId: normalized.taskId,
+        record: normalized.record,
+        deletedAt: Math.max(toMs(existed.deletedAt), toMs(normalized.deletedAt)),
+        updatedAt: Math.max(toMs(existed.updatedAt), toMs(normalized.updatedAt)),
+        deviceId: preferNew ? normalized.deviceId : existed.deviceId
+      });
+    });
+    return Array.from(map.values())
+      .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0) || (b.taskId || 0) - (a.taskId || 0) || String(a.record).localeCompare(String(b.record)))
+      .slice(0, MAX_HISTORY_DELETION_RECORDS);
+  }
+
+  function mergeHistoryDeletionRecords(remoteList, incomingList) {
+    return normalizeHistoryDeletionList([
+      ...(Array.isArray(remoteList) ? remoteList : []),
+      ...(Array.isArray(incomingList) ? incomingList : [])
+    ]);
+  }
+
+  function getHistoryDeletionSet(records) {
+    const set = new Set();
+    normalizeHistoryDeletionList(records).forEach(item => {
+      set.add(historyDeletionKey(item.taskId, item.record));
+    });
+    return set;
+  }
+
+  function applyHistoryDeletionLedger(tasks, records) {
+    if (!Array.isArray(tasks)) return [];
+    const deletedSet = getHistoryDeletionSet(records);
+    if (deletedSet.size === 0) return tasks;
+    return tasks.map(task => {
+      if (!task || !Array.isArray(task.history) || task.history.length === 0) return task;
+      const taskId = Number(task.id);
+      const nextHistory = task.history.filter(h => {
+        if (typeof h !== 'string') return false;
+        return !deletedSet.has(historyDeletionKey(taskId, h));
+      });
+      if (nextHistory.length === task.history.length) return task;
+      return { ...task, history: nextHistory };
+    });
+  }
+
+  function normalizeAnnouncementMeta(raw) {
+    const source = raw && typeof raw === 'object' ? { ...raw } : {};
+    return {
+      updatedAt: toMs(source.updatedAt),
+      deviceId: safeText(source.deviceId).trim()
+    };
   }
 
   function normalizeDeviceEntry(raw, fallbackId) {
@@ -203,6 +292,9 @@ export async function onRequestPost(context) {
     }
     base.id = Number.isFinite(Number(base.id)) ? Number(base.id) : Number(newer.id);
     base.name = safeText(base.name, '未命名任务').trim() || '未命名任务';
+    const createdBy = safeText(base.createdByDeviceId || newer.createdByDeviceId || older.createdByDeviceId).trim();
+    if (createdBy) base.createdByDeviceId = createdBy;
+    else delete base.createdByDeviceId;
     return base;
   }
 
@@ -326,6 +418,7 @@ export async function onRequestPost(context) {
     return merged.slice(0, MAX_SYNC_LOG);
   }
 
+  // 与前端一致：同一天保留更早的 ts（更接近「当日起点」快照）
   function mergeSnapshots(remoteSnapshots, incomingSnapshots) {
     const all = [
       ...(Array.isArray(remoteSnapshots) ? remoteSnapshots : []).map(normalizeSnapshot),
@@ -335,7 +428,7 @@ export async function onRequestPost(context) {
     for (const snap of all) {
       if (!snap.date) continue;
       const existed = map.get(snap.date);
-      if (!existed || toMs(snap.ts) >= toMs(existed.ts)) {
+      if (!existed || toMs(snap.ts) <= toMs(existed.ts)) {
         map.set(snap.date, snap);
       }
     }
@@ -344,13 +437,69 @@ export async function onRequestPost(context) {
       .slice(0, MAX_SNAPSHOTS);
   }
 
+  // 按公告自身的 updatedAt 选择，不再误用 deviceMeta.updatedAt
   function chooseAnnouncement(incomingData, existingData) {
-    const incomingUpdatedAt = toMs(incomingData?.deviceMeta?.updatedAt);
-    const existingUpdatedAt = toMs(existingData?.deviceMeta?.updatedAt);
-    if (incomingUpdatedAt >= existingUpdatedAt) {
-      return incomingData?.announcement !== undefined ? incomingData.announcement : existingData?.announcement;
+    const incomingMeta = normalizeAnnouncementMeta(incomingData && incomingData.announcementMeta);
+    const existingMeta = normalizeAnnouncementMeta(existingData && existingData.announcementMeta);
+
+    let incomingAt = incomingMeta.updatedAt;
+    let existingAt = existingMeta.updatedAt;
+
+    // 兼容极老数据：没有 announcementMeta 时，不因 deviceMeta 误判，优先保留已有公告
+    if (!incomingAt && !existingAt) {
+      if (incomingData && incomingData.announcement !== undefined && incomingData.announcement !== null) {
+        return {
+          announcement: incomingData.announcement,
+          announcementMeta: incomingMeta
+        };
+      }
+      return {
+        announcement: existingData && existingData.announcement !== undefined ? existingData.announcement : '',
+        announcementMeta: existingMeta
+      };
     }
-    return existingData?.announcement !== undefined ? existingData.announcement : incomingData?.announcement;
+
+    if (incomingAt > existingAt) {
+      return {
+        announcement: incomingData && incomingData.announcement !== undefined
+          ? incomingData.announcement
+          : (existingData ? existingData.announcement : ''),
+        announcementMeta: {
+          updatedAt: incomingAt,
+          deviceId: incomingMeta.deviceId || existingMeta.deviceId || ''
+        }
+      };
+    }
+
+    if (existingAt > incomingAt) {
+      return {
+        announcement: existingData && existingData.announcement !== undefined
+          ? existingData.announcement
+          : (incomingData ? incomingData.announcement : ''),
+        announcementMeta: {
+          updatedAt: existingAt,
+          deviceId: existingMeta.deviceId || incomingMeta.deviceId || ''
+        }
+      };
+    }
+
+    // updatedAt 相同：优先 incoming（本次写入方）
+    if (incomingData && incomingData.announcement !== undefined) {
+      return {
+        announcement: incomingData.announcement,
+        announcementMeta: {
+          updatedAt: incomingAt || existingAt || Date.now(),
+          deviceId: incomingMeta.deviceId || existingMeta.deviceId || ''
+        }
+      };
+    }
+    return {
+      announcement: existingData && existingData.announcement !== undefined ? existingData.announcement : '',
+      announcementMeta: {
+        updatedAt: existingAt || incomingAt || 0,
+        deviceId: existingMeta.deviceId || incomingMeta.deviceId || ''
+      }
+    };
   }
 
   try {
@@ -369,8 +518,10 @@ export async function onRequestPost(context) {
       syncLog: Array.isArray(body.syncLog) ? body.syncLog : [],
       snapshots: Array.isArray(body.snapshots) ? body.snapshots : [],
       taskDeletionRecords: Array.isArray(body.taskDeletionRecords) ? body.taskDeletionRecords : [],
+      historyDeletionRecords: Array.isArray(body.historyDeletionRecords) ? body.historyDeletionRecords : [],
       devices: body.devices && typeof body.devices === 'object' ? body.devices : {},
-      deviceMeta: body.deviceMeta && typeof body.deviceMeta === 'object' ? body.deviceMeta : {}
+      deviceMeta: body.deviceMeta && typeof body.deviceMeta === 'object' ? body.deviceMeta : {},
+      announcementMeta: body.announcementMeta && typeof body.announcementMeta === 'object' ? body.announcementMeta : {}
     };
 
     const mergedTaskDeletionRecords = mergeTaskDeletionRecords(
@@ -378,14 +529,25 @@ export async function onRequestPost(context) {
       incomingData.taskDeletionRecords
     );
 
+    const mergedHistoryDeletionRecords = mergeHistoryDeletionRecords(
+      currentData.historyDeletionRecords,
+      incomingData.historyDeletionRecords
+    );
+
+    let mergedTasks = applyTaskDeletionLedger(
+      mergeTasks(currentData.tasks, incomingData.tasks),
+      mergedTaskDeletionRecords
+    );
+    mergedTasks = applyHistoryDeletionLedger(mergedTasks, mergedHistoryDeletionRecords);
+
+    const announcementResult = chooseAnnouncement(incomingData, currentData);
+
     const merged = {
       ...currentData,
       ...incomingData,
-      tasks: applyTaskDeletionLedger(
-        mergeTasks(currentData.tasks, incomingData.tasks),
-        mergedTaskDeletionRecords
-      ),
+      tasks: mergedTasks,
       taskDeletionRecords: mergedTaskDeletionRecords,
+      historyDeletionRecords: mergedHistoryDeletionRecords,
       syncLog: mergeSyncLogs(currentData.syncLog, incomingData.syncLog),
       snapshots: mergeSnapshots(currentData.snapshots, incomingData.snapshots),
       devices: pruneDeviceRegistry(
@@ -396,13 +558,14 @@ export async function onRequestPost(context) {
         ...(currentData.deviceMeta && typeof currentData.deviceMeta === 'object' ? currentData.deviceMeta : {}),
         ...(incomingData.deviceMeta || {})
       },
+      announcement: announcementResult.announcement,
+      announcementMeta: announcementResult.announcementMeta,
       schemaVersion: Math.max(
         Number(currentData.schemaVersion) || 2,
-        Number(incomingData.schemaVersion) || 2
+        Number(incomingData.schemaVersion) || 3,
+        3
       )
     };
-
-    merged.announcement = chooseAnnouncement(incomingData, currentData);
 
     await env.dk.put('daka_main_data', JSON.stringify(merged));
     return jsonResponse({ success: true });
