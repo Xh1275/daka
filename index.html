@@ -1995,7 +1995,7 @@ html[data-theme="dark"] .sync-log-result.fail{
                     <div class="form-section-title">收益</div>
                     <div class="form-item">
                         <div class="seg-group" id="rewardTypeGroup">
-                            <label class="seg-item"><input type="radio" name="rewardType" value="money" checked> 现金</label>
+                            <label class="seg-item active"><input type="radio" name="rewardType" value="money" checked> 现金</label>
                             <label class="seg-item"><input type="radio" name="rewardType" value="custom"> 其它奖品</label>
                         </div>
                     </div>
@@ -2554,11 +2554,6 @@ const el = {
     moreMenu: document.getElementById("moreMenu"),
     searchTodayInput: document.getElementById("searchTodayInput"),
     searchAllInput: document.getElementById("searchAllInput"),
-    statAll: document.getElementById("statAll"),
-    statDoing: document.getElementById("statDoing"),
-    statFinish: document.getElementById("statFinish"),
-    statMaxStreak: document.getElementById("statMaxStreak"),
-    statMoney: document.getElementById("statMoney"),
     pageToday: document.getElementById("pageToday"),
     pageAll: document.getElementById("pageAll"),
     todayTipWrap: document.getElementById("todayTipWrap"),
@@ -2621,8 +2616,6 @@ const el = {
     calendarTitleText: document.getElementById("calendarTitleText"),
     calendarGrid: document.getElementById("calendarGrid"),
     
-    toggleStatBtn: document.getElementById("toggleStatBtn"),
-    statContentWrap: document.getElementById("statContentWrap"),
     toggleCalBtn: document.getElementById("toggleCalBtn"),
     calContentWrap: document.getElementById("calContentWrap"),
 
@@ -4597,9 +4590,17 @@ function renderPage() {
     let totalRemainingCount = 0;
     let todayCategoryHtml = "";
     const todayCats = Object.keys(todayGroups).sort((a, b) => {
-        if (!a) return -1;
-        if (!b) return 1;
-        return a.localeCompare(b, 'zh-CN');
+        const aUnchecked = todayGroups[a].filter(t => !isCheckedToday(t)).length;
+        const bUnchecked = todayGroups[b].filter(t => !isCheckedToday(t)).length;
+        // 有未打卡的分组排在前面
+        if (aUnchecked > 0 && bUnchecked === 0) return -1;
+        if (aUnchecked === 0 && bUnchecked > 0) return 1;
+        // 未完成数量多的更靠前
+        if (aUnchecked !== bUnchecked) return bUnchecked - aUnchecked;
+        // 未分组其次优先于有名分组的「已完成」之间仍按名称
+        if (!a && b) return -1;
+        if (a && !b) return 1;
+        return String(a).localeCompare(String(b), 'zh-CN');
     });
     todayCats.forEach(cat => {
         let catTasks = todayGroups[cat];
