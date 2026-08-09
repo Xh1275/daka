@@ -13,7 +13,7 @@ export async function onRequestPost(context) {
   const MAX_TASKS = 800;
   const MAX_DELETION_RECORDS = 300;
   const MAX_HISTORY_DELETION_RECORDS = 800;
-  const MAX_SNAPSHOTS = 120;
+  const MAX_SNAPSHOTS = 3;  // 与前端 SNAPSHOT_KEEP_DAYS 一致，避免云端快照堆积
   const MAX_ARCHIVES_PER_TASK = 36;
 
   function safeText(value, fallback = '') {
