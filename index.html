@@ -345,7 +345,7 @@ button.btn-busy, .btn-busy{ opacity:0.65; pointer-events:none; }
 .history-list span:hover { background: var(--danger); color: #fff; }
 .archive-tag { background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-sub); padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
 .calendar-card { background: var(--card-bg); margin: 10px 16px; padding: 14px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-.calendar-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.calendar-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .calendar-title { font-size: 14px; font-weight: bold; color: var(--text-main); }
 .cal-nav-btn { background: var(--border-color); border: none; padding: 4px 10px; border-radius: 6px; cursor: pointer; color: var(--text-sub); font-weight: bold; font-size: 12px;}
 .calendar-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 12px; color: var(--text-light); margin-bottom: 6px; font-weight: 500; }
@@ -394,7 +394,31 @@ button.btn-busy, .btn-busy{ opacity:0.65; pointer-events:none; }
 .oper-btn-group button{padding:4px 12px;font-size:12px;border-radius:16px;border:1px solid var(--border-color);background:transparent;color:var(--text-sub);cursor:pointer;}
 .oper-btn-group .del{border-color:var(--danger);color:var(--danger);}
 .oper-btn-group .pin.active-pin{border-color:var(--primary);color:var(--primary);font-weight:bold;}
-.oper-btn-group .open-app{border-color:var(--primary);color:var(--primary);font-weight:bold;}
+.oper-btn-group .open-app{
+    border-color:var(--primary);
+    color:var(--primary);
+    font-weight:bold;
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+}
+.oper-btn-group .open-app svg{width:14px;height:14px;flex:0 0 auto;}
+.task-name-wrap{display:flex;align-items:flex-start;gap:6px;flex:1;min-width:0;}
+.task-name-wrap .task-name{flex:1;min-width:0;}
+.task-web-link{
+    flex:0 0 auto;width:28px;height:28px;margin-top:1px;border-radius:8px;
+    border:1px solid var(--border-color);background:var(--bg-color);color:var(--primary);
+    display:inline-flex;align-items:center;justify-content:center;cursor:pointer;text-decoration:none;padding:0;
+}
+.task-web-link svg{width:15px;height:15px;display:block;}
+.task-web-link:active{transform:scale(0.94);background:rgba(25,137,250,.1);}
+html[data-theme="dark"] .task-web-link{background:rgba(255,255,255,.04);}
+.calendar-month-summary{
+    text-align:center;font-size:12px;font-weight:600;color:var(--primary);
+    margin:0 0 10px;line-height:1.4;min-height:18px;
+}
+html[data-theme="dark"] .calendar-month-summary{color:#7eb6ff;}
+
 .hand-btn {display: inline-flex; align-items: center; justify-content: center;gap: 6px; padding: 6px 14px; border-radius: 20px;font-size: 13px; font-weight: bold; cursor: pointer;transition: all 0.2s; border: 1px solid transparent;}
 .hand-btn.todo {background: var(--primary); color: #fff;box-shadow: 0 2px 6px rgba(25, 137, 250, 0.3);}
 .hand-btn.done {background: #edfbf0; color: var(--success);border: 1px solid var(--success);}
@@ -1901,6 +1925,7 @@ html[data-theme="dark"] .sync-log-result.fail{
                 <div class="calendar-title" id="calendarTitleText">2026年7月</div>
                 <button class="cal-nav-btn" id="nextMonthBtn">下月 &gt;</button>
             </div>
+            <div class="calendar-month-summary" id="calendarMonthSummary">本月暂无完成入账</div>
             <div class="calendar-weekdays">
                 <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
             </div>
@@ -2035,6 +2060,10 @@ html[data-theme="dark"] .sync-log-result.fail{
                     <div class="form-item" id="customSchemeWrap" style="display:none">
                         <label>自定义 Scheme</label>
                         <input id="inpCustomScheme" type="text" placeholder="例：alipays:// 或 myapp://path" autocomplete="off">
+                    </div>
+                    <div class="form-item">
+                        <label>网页链接（选填）</label>
+                        <input id="inpWebLink" type="url" placeholder="https:// 活动页或说明链接" autocomplete="off">
                     </div>
                 </div>
             </div>
@@ -2172,6 +2201,9 @@ html[data-theme="dark"] .sync-log-result.fail{
     <input type="file" id="fileInput" style="display:none" accept=".json">
 </div>
 <script>
+const ICON_OPEN_APP = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="7" y="3.5" width="10" height="17" rx="2.2" stroke="currentColor" stroke-width="1.8"/><path d="M11 6.5h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="17.2" r="1" fill="currentColor"/></svg>`;
+const ICON_WEB_LINK = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l1.41-1.41a5 5 0 0 0-7.07-7.07L10 5.93" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 11a5 5 0 0 0-7.07 0L5.52 12.4a5 5 0 0 0 7.07 7.07L14 18.07" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+
 const appSchemeRules = [
   {k:"抖音极速版",s:"snssdk2329://"},
   {k:"抖音",s:"snssdk1128://"},
@@ -2236,11 +2268,24 @@ function normalizeAnnouncementHTML(value) {
     return typeof value === 'string' ? value : '';
 }
 
+function normalizeWebLink(raw) {
+    let s = safeText(raw).trim();
+    if (!s) return '';
+    if (/^https?:\/\//i.test(s)) return s;
+    if (/^\/\//.test(s)) return 'https:' + s;
+    if (/^[\w.-]+\.[a-z]{2,}([\/?#].*)?$/i.test(s)) return 'https://' + s;
+    return '';
+}
+function getTaskWebLink(item) {
+    return normalizeWebLink(item && item.webLink);
+}
+
 function normalizeTaskRecord(rawTask) {
     const item = rawTask && typeof rawTask === 'object' ? { ...rawTask } : {};
     item.id = Number.isFinite(Number(item.id)) ? Number(item.id) : (Date.now() + Math.floor(Math.random() * 1000));
     item.name = safeText(item.name).trim() || '未命名任务';
     item.appScheme = safeText(item.appScheme).trim();
+    item.webLink = normalizeWebLink(item.webLink);
     item.category = safeText(item.category, '').trim();
     item.remark = safeText(item.remark).trim();
     item.totalDay = Math.max(1, Number(item.totalDay) || 30);
@@ -2570,6 +2615,7 @@ const el = {
     popTitle: document.getElementById("popTitle"),
     inpName: document.getElementById("inpName"),
     inpAppScheme: document.getElementById("inpAppScheme"),
+    inpWebLink: document.getElementById("inpWebLink"),
     customSchemeWrap: document.getElementById("customSchemeWrap"),
     inpCustomScheme: document.getElementById("inpCustomScheme"),
     inpCategory: document.getElementById("inpCategory"),
@@ -2614,6 +2660,7 @@ const el = {
     prevMonthBtn: document.getElementById("prevMonthBtn"),
     nextMonthBtn: document.getElementById("nextMonthBtn"),
     calendarTitleText: document.getElementById("calendarTitleText"),
+    calendarMonthSummary: document.getElementById("calendarMonthSummary"),
     calendarGrid: document.getElementById("calendarGrid"),
     
     toggleCalBtn: document.getElementById("toggleCalBtn"),
@@ -4119,6 +4166,7 @@ function renderTaskCard(item, isTodayPage = false) {
     const isPinned = !!item.isPinned;
     const showBatch = batchMode && currentPage === 'all';
     const appScheme = getTaskAppScheme(item);
+    const webLink = getTaskWebLink(item);
     const displayName = getTaskNameText(item) || '未命名任务';
     const displayRemark = getTaskRemarkText(item);
     const displayCategory = getTaskCategoryText(item);
@@ -4215,7 +4263,10 @@ function renderTaskCard(item, isTodayPage = false) {
     <div class="task-card ${cardExtraClass}" data-id="${item.id}">
         <div class="task-head">
             ${showBatch ? `<input type="checkbox" class="batch-checkbox task-checkbox" data-task-id="${item.id}" ${selectedTaskIds.has(item.id) ? 'checked' : ''}>` : ''}
-            <div class="task-name">${escapeHTML(displayName)}</div>
+            <div class="task-name-wrap">
+                <div class="task-name">${escapeHTML(displayName)}</div>
+                ${webLink ? `<button type="button" class="task-web-link" data-web-link="${escapeHTML(webLink)}" title="打开网页" aria-label="打开网页">${ICON_WEB_LINK}</button>` : ''}
+            </div>
             <div class="task-tags-right">
                 ${extraTagsHtml}
                 <span class="tag ${tagClass}">${tagText}</span>
@@ -4234,7 +4285,7 @@ function renderTaskCard(item, isTodayPage = false) {
         <div class="action-row">
             <span class="date-small">起: ${item.startDate} ${tPerDay > 1 ? `| 每天需打卡${tPerDay}次` : ''} ${item.isContinuous ? '| 连续' : ''}</span>
             <div class="oper-btn-group">
-                ${appScheme ? `<button class="open-app" data-open-app="${appScheme}">🚀 打开APP</button>` : ''}
+                ${appScheme ? `<button type="button" class="open-app" data-open-app="${escapeHTML(appScheme)}" title="打开 APP">${ICON_OPEN_APP}<span>打开APP</span></button>` : ''}
                 <button class="${pinBtnClass}" data-pin="${item.id}">${pinBtnText}</button>
                 ${editDelBtnsHtml}
                 ${checkBtnHtml}
@@ -4244,9 +4295,111 @@ function renderTaskCard(item, isTodayPage = false) {
     </div>`;
 }
 
+
+function extractDateKey(raw) {
+    if (raw == null) return '';
+    const s = String(raw).trim();
+    const m = s.match(/(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
+    if (!m) return '';
+    return m[1] + '-' + m[2].padStart(2, '0') + '-' + m[3].padStart(2, '0');
+}
+function collectTaskCompletedDates(item) {
+    const set = new Set();
+    if (!item) return [];
+    const tPerDay = Math.max(1, Number(item.timesPerDay) || 1);
+    const counts = {};
+    if (Array.isArray(item.history)) {
+        item.history.forEach(h => {
+            const d = extractDateKey(h);
+            if (!d) return;
+            counts[d] = (counts[d] || 0) + 1;
+        });
+    }
+    Object.keys(counts).forEach(d => {
+        if (counts[d] >= tPerDay) set.add(d);
+    });
+    if (Array.isArray(item.archives)) {
+        item.archives.forEach(arc => {
+            if (!arc) return;
+            if (Array.isArray(arc.completedDates)) {
+                arc.completedDates.forEach(d => {
+                    const k = extractDateKey(d);
+                    if (k) set.add(k);
+                });
+            }
+            if (tPerDay === 1 && Array.isArray(arc.dates)) {
+                arc.dates.forEach(d => {
+                    const k = extractDateKey(d);
+                    if (k) set.add(k);
+                });
+            }
+        });
+    }
+    return Array.from(set).sort();
+}
+function getTaskFinishDate(item) {
+    if (!item) return null;
+    const total = Math.max(1, Number(item.totalDay) || 1);
+    const dates = collectTaskCompletedDates(item);
+    if (dates.length >= total) return dates[total - 1];
+    const progressDone = (typeof getCompletedDaysCount === 'function' && getCompletedDaysCount(item) >= total)
+        || (typeof getTaskStatus === 'function' && getTaskStatus(item) === 'finish');
+    if (progressDone && dates.length) return dates[dates.length - 1];
+    if (progressDone && Array.isArray(item.history) && item.history.length) {
+        const hs = item.history.map(extractDateKey).filter(Boolean).sort();
+        if (hs.length) return hs[hs.length - 1];
+    }
+    return null;
+}
+function getMonthCompletionStats(year, month0) {
+    const ym = year + '-' + String(month0 + 1).padStart(2, '0');
+    let money = 0, prizeCount = 0, finishCount = 0;
+    const list = Array.isArray(taskList) ? taskList : [];
+    for (let i = 0; i < list.length; i++) {
+        const task = list[i];
+        const finishDate = getTaskFinishDate(task);
+        if (!finishDate || finishDate.slice(0, 7) !== ym) continue;
+        finishCount += 1;
+        if (task && task.rewardType === 'custom') {
+            prizeCount += 1;
+        } else {
+            let raw = 0;
+            if (task && task.rewardValue !== undefined && task.rewardValue !== null && task.rewardValue !== '') raw = task.rewardValue;
+            else if (task) raw = task.money;
+            const n = Number(raw);
+            if (Number.isFinite(n)) money += n;
+        }
+    }
+    return { money, prizeCount, finishCount, yearMonth: ym };
+}
+function formatMonthCompletionSummary(stats) {
+    if (!stats || !stats.finishCount) return '本月暂无完成入账';
+    const parts = [];
+    if (stats.money > 0) parts.push('¥' + formatMoney(stats.money));
+    if (stats.prizeCount > 0) parts.push('奖品 ' + stats.prizeCount + ' 件');
+    if (!parts.length) parts.push('完成 ' + stats.finishCount + ' 项');
+    return '本月入账 ' + parts.join(' · ');
+}
+function updateCalendarMonthSummary() {
+    const summaryEl = document.getElementById('calendarMonthSummary') || (el && el.calendarMonthSummary);
+    if (!summaryEl) return;
+    try {
+        summaryEl.textContent = formatMonthCompletionSummary(
+            getMonthCompletionStats(currentCalYear, currentCalMonth)
+        );
+    } catch (err) {
+        summaryEl.textContent = '本月暂无完成入账';
+    }
+}
+
 function renderCalendar() {
-    el.calendarTitleText.innerText = `${currentCalYear}年${currentCalMonth + 1}月`;
-    el.calendarGrid.innerHTML = "";
+    const titleEl = document.getElementById('calendarTitleText') || (el && el.calendarTitleText);
+    if (titleEl) titleEl.innerText = `${currentCalYear}年${currentCalMonth + 1}月`;
+    updateCalendarMonthSummary();
+    const gridEl = document.getElementById('calendarGrid') || (el && el.calendarGrid);
+    if (!gridEl) return;
+    if (el) el.calendarGrid = gridEl;
+    gridEl.innerHTML = "";
     const firstDayIndex = new Date(currentCalYear, currentCalMonth, 1).getDay();
     const totalDaysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
     const todayStr = getTodayStr();
@@ -4725,6 +4878,14 @@ function renderPage() {
 }
 
 function handleCardAction(e) {
+    const webLinkBtn = e.target.closest('[data-web-link]');
+    if (webLinkBtn) {
+        const url = normalizeWebLink(webLinkBtn.dataset.webLink || webLinkBtn.getAttribute('data-web-link'));
+        if (!url) { showToast('⚠️ 链接无效'); return; }
+        try { window.open(url, '_blank', 'noopener,noreferrer'); }
+        catch (err) { showToast('⚠️ 无法打开网页链接'); }
+        return;
+    }
     const openAppBtn = e.target.closest('[data-open-app]');
     if (openAppBtn) {
         const url = openAppBtn.dataset.openApp;
@@ -4743,6 +4904,7 @@ function handleCardAction(e) {
         !e.target.closest('.btn-more-history') && 
         !e.target.closest('.task-checkbox') &&
         !e.target.closest('[data-check]') &&
+        !e.target.closest('[data-web-link]') &&
         !e.target.closest('[data-retro]')) return;
         
     lastClickTime = now;
@@ -4876,6 +5038,7 @@ function restartTask(id) {
             id: Date.now(),
             name: newName,
             appScheme: item.appScheme,
+            webLink: item.webLink || '',
             category: item.category,
             remark: item.remark,
             totalDay: item.totalDay,
@@ -5048,6 +5211,7 @@ function openAdd() {
     el.inpAppScheme.value = "auto";
     el.customSchemeWrap.style.display = "none";
     el.inpCustomScheme.value = "";
+    if (el.inpWebLink) el.inpWebLink.value = "";
     el.inpCategory.value = "";
     el.inpRemark.value = "";
     el.inpDay.value = "30";
@@ -5083,6 +5247,7 @@ function openEdit(id) {
     }
 
     el.inpCategory.value = item.category || "";
+    if (el.inpWebLink) el.inpWebLink.value = getTaskWebLink(item) || "";
     el.inpRemark.value = item.remark || "";
     el.inpDay.value = item.totalDay || 30;
     el.inpTimesPerDay.value = item.timesPerDay || 1;
@@ -5116,6 +5281,11 @@ function saveTask() {
         if (savedAppScheme === "custom") {
             savedAppScheme = el.inpCustomScheme.value.trim();
         }
+        const rawWebLink = el.inpWebLink ? el.inpWebLink.value.trim() : '';
+        const savedWebLink = normalizeWebLink(rawWebLink);
+        if (rawWebLink && !savedWebLink) {
+            return showToast('网页链接格式不正确，请使用 http(s):// 开头');
+        }
 
         const selectedType = document.querySelector('input[name="rewardType"]:checked');
         if (!selectedType) return showToast("请选择奖励类型");
@@ -5132,6 +5302,7 @@ function saveTask() {
             id: editId || Date.now(),
             name,
             appScheme: savedAppScheme,
+            webLink: savedWebLink,
             category: category,
             remark: el.inpRemark.value.trim(),
             totalDay: Number(el.inpDay.value) || 30,
@@ -5615,6 +5786,9 @@ function bindGlobalEvent() {
         el.toggleCalBtn.classList.toggle('active', isHidden);
         el.toggleCalBtn.setAttribute('aria-expanded', String(isHidden));
         localStorage.setItem("daka_cal_hidden", !isHidden);
+        if (isHidden) {
+            try { renderCalendar(); } catch (e) { try { updateCalendarMonthSummary(); } catch (e2) {} }
+        }
     };
 
     if (el.calendarDetailClose && el.calendarDetailPopWrap) {
