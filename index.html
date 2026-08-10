@@ -417,7 +417,19 @@ html[data-theme="dark"] .task-web-link{background:rgba(255,255,255,.04);}
     text-align:center;font-size:12px;font-weight:600;color:var(--primary);
     margin:0 0 10px;line-height:1.4;min-height:18px;
 }
+.month-sum-chip{
+    display:inline-block;
+    color:var(--primary);
+    font-weight:700;
+    text-decoration:underline;
+    text-underline-offset:2px;
+    cursor:pointer;
+    padding:0 2px;
+    border-radius:4px;
+}
+.month-sum-chip:active{ opacity:.75; background:rgba(25,137,250,.08); }
 html[data-theme="dark"] .calendar-month-summary{color:#7eb6ff;}
+html[data-theme="dark"] .month-sum-chip{color:#7eb6ff;}
 
 .hand-btn {display: inline-flex; align-items: center; justify-content: center;gap: 6px; padding: 6px 14px; border-radius: 20px;font-size: 13px; font-weight: bold; cursor: pointer;transition: all 0.2s; border: 1px solid transparent;}
 .hand-btn.todo {background: var(--primary); color: #fff;box-shadow: 0 2px 6px rgba(25, 137, 250, 0.3);}
@@ -1292,6 +1304,24 @@ html[data-theme="dark"] .calendar-header-bar{
     font-size:12px;
     color:var(--text-light);
 }
+.backup-nav{
+    display:flex;
+    align-items:center;
+    flex-wrap:nowrap;
+    white-space:nowrap;
+}
+.backup-nav-item{
+    cursor:pointer;
+    user-select:none;
+    -webkit-tap-highlight-color:transparent;
+}
+.backup-nav-item:active{
+    color:var(--primary);
+}
+.backup-nav-sep{
+    margin:0 6px;
+    color:var(--text-light);
+}
 .calendar-detail-close{
     width:34px;
     height:34px;
@@ -1374,6 +1404,14 @@ html[data-theme="dark"] .calendar-header-bar{
     font-weight:600;
     color:var(--text-main);
     word-break:break-all;
+}
+.calendar-detail-finish-date{
+    flex:0 0 auto;
+    font-size:10px;
+    line-height:1;
+    color:var(--text-light);
+    white-space:nowrap;
+    letter-spacing:-0.15px;
 }
 .calendar-detail-time{
     flex:0 0 auto;
@@ -1749,6 +1787,19 @@ html[data-theme="dark"] .calendar-header-bar{
     background:rgba(25,137,250,.08);
     color:var(--primary);
     border:1px solid rgba(25,137,250,.14);
+    cursor:pointer;
+    font-family:inherit;
+    -webkit-tap-highlight-color:transparent;
+}
+.sync-log-stat:active{ transform:scale(.97); }
+.sync-log-stat.is-zero{
+    cursor:default;
+    opacity:.45;
+    font-weight:500;
+    background:var(--border-color);
+    color:var(--text-light);
+    border-color:transparent;
+    pointer-events:none;
 }
 .sync-log-item.ok.expandable{
     cursor:pointer;
@@ -2119,19 +2170,27 @@ html[data-theme="dark"] .sync-log-result.fail{
             <div class="calendar-detail-head">
                 <div>
                     <div class="calendar-detail-date">备份管理</div>
-                    <div class="calendar-detail-sub">同步记录 · 数据备份 · 历史快照 · 设备管理</div>
+                    <div class="calendar-detail-sub backup-nav">
+                        <span class="backup-nav-item" role="button" tabindex="0" data-backup-nav="sync">同步记录</span>
+                        <span class="backup-nav-sep">·</span>
+                        <span class="backup-nav-item" role="button" tabindex="0" data-backup-nav="data">数据备份</span>
+                        <span class="backup-nav-sep">·</span>
+                        <span class="backup-nav-item" role="button" tabindex="0" data-backup-nav="snapshot">历史快照</span>
+                        <span class="backup-nav-sep">·</span>
+                        <span class="backup-nav-item" role="button" tabindex="0" data-backup-nav="device">设备管理</span>
+                    </div>
                 </div>
                 <button type="button" class="calendar-detail-close" id="backupManageClose">×</button>
             </div>
             <div class="backup-manage-scroll">
-                <div class="backup-section">
+                <div class="backup-section" id="backupSectionSync">
                     <div class="backup-section-title">同步记录 <span class="backup-section-hint">最近50条</span></div>
                     <div id="syncUndoWrap" style="display:none; margin-bottom:10px;">
                         <button type="button" id="syncUndoBtn" class="backup-action-btn" style="width:100%; color:var(--danger); border-color:var(--danger);">↩ 撤销本次同步</button>
                     </div>
                     <div id="syncLogList"></div>
                 </div>
-                <div class="backup-section">
+                <div class="backup-section" id="backupSectionData">
                     <div class="backup-section-title">数据备份</div>
                     <div class="backup-btn-row">
                         <button type="button" id="bmExportBtn" class="backup-action-btn">💾 导出数据（JSON）</button>
@@ -2139,11 +2198,11 @@ html[data-theme="dark"] .sync-log-result.fail{
                         <button type="button" id="bmExportCsvBtn" class="backup-action-btn">📊 导出报表（CSV）</button>
                     </div>
                 </div>
-                <div class="backup-section">
+                <div class="backup-section" id="backupSectionSnapshot">
                     <div class="backup-section-title">历史快照 <span class="backup-section-hint">保留最近3天，可恢复</span></div>
                     <div id="snapshotList"></div>
                 </div>
-                <div class="backup-section">
+                <div class="backup-section" id="backupSectionDevice">
                     <div class="backup-section-title">设备管理 <span class="backup-section-hint">DeviceId 本地生成，备注云端共享，3天未活跃自动清理</span></div>
                     <div class="device-panel">
                         <div class="device-panel-current">
@@ -3117,14 +3176,14 @@ function renderSyncDetailHTML(diff) {
     if (!diff) return `<div class="sync-detail-empty">无详细变化记录</div>`;
     let html = '';
     diff.checkins.forEach(c => {
-        html += `<div class="sync-detail-block">
+        html += `<div class="sync-detail-block" data-sync-block="checkin">
             <div class="sync-detail-head">✅ 打卡成功</div>
             <div class="sync-detail-row"><span>任务：</span>${escapeHTML(c.taskName)}</div>
             <div class="sync-detail-row"><span>完成时间：</span>${escapeHTML(c.date)}</div>
         </div>`;
     });
     diff.uncheckins.forEach(c => {
-        html += `<div class="sync-detail-block">
+        html += `<div class="sync-detail-block" data-sync-block="uncheckin">
             <div class="sync-detail-head">↩️ 撤销打卡</div>
             <div class="sync-detail-row"><span>任务：</span>${escapeHTML(c.taskName)}</div>
             <div class="sync-detail-row"><span>日期：</span>${escapeHTML(c.date)}</div>
@@ -3134,7 +3193,7 @@ function renderSyncDetailHTML(diff) {
         const rType = t.rewardType || 'money';
         const rValue = t.rewardValue !== undefined ? t.rewardValue : t.money;
         const rewardText = rType === 'money' ? `现金${formatMoney(rValue)}元` : escapeHTML(rValue || '');
-        html += `<div class="sync-detail-block">
+        html += `<div class="sync-detail-block" data-sync-block="added">
             <div class="sync-detail-head">➕ 新增任务</div>
             <div class="sync-detail-row"><span>任务：</span>${escapeHTML(t.name)}</div>
             <div class="sync-detail-row"><span>奖励：</span>${rewardText}</div>
@@ -3143,7 +3202,7 @@ function renderSyncDetailHTML(diff) {
     });
     diff.modified.forEach(m => {
         const rows = m.changes.map(c => `<div class="sync-detail-row"><span>${escapeHTML(c.label)}：</span>${escapeHTML(String(c.from === undefined || c.from === '' ? '无' : c.from))} → ${escapeHTML(String(c.to === undefined || c.to === '' ? '无' : c.to))}</div>`).join('');
-        html += `<div class="sync-detail-block">
+        html += `<div class="sync-detail-block" data-sync-block="modified">
             <div class="sync-detail-head">✏️ 修改任务</div>
             <div class="sync-detail-row"><span>任务：</span>${escapeHTML(m.taskName)}</div>
             ${rows}
@@ -3153,7 +3212,7 @@ function renderSyncDetailHTML(diff) {
         const rType = t.rewardType || 'money';
         const rValue = t.rewardValue !== undefined ? t.rewardValue : t.money;
         const rewardText = rType === 'money' ? `现金${formatMoney(rValue)}元` : escapeHTML(rValue || '');
-        html += `<div class="sync-detail-block">
+        html += `<div class="sync-detail-block" data-sync-block="removed">
             <div class="sync-detail-head">🗑 删除任务</div>
             <div class="sync-detail-row"><span>任务：</span>${escapeHTML(t.name)}</div>
             <div class="sync-detail-row"><span>奖励：</span>${rewardText}</div>
@@ -4354,39 +4413,102 @@ function getTaskFinishDate(item) {
 function getMonthCompletionStats(year, month0) {
     const ym = year + '-' + String(month0 + 1).padStart(2, '0');
     let money = 0, prizeCount = 0, finishCount = 0;
+    const moneyItems = [];
+    const prizeItems = [];
     const list = Array.isArray(taskList) ? taskList : [];
     for (let i = 0; i < list.length; i++) {
         const task = list[i];
         const finishDate = getTaskFinishDate(task);
         if (!finishDate || finishDate.slice(0, 7) !== ym) continue;
         finishCount += 1;
+        const name = (typeof getTaskNameText === 'function' ? getTaskNameText(task) : '') || task.name || '未命名任务';
         if (task && task.rewardType === 'custom') {
             prizeCount += 1;
+            const prizeName = String(
+                task.rewardValue !== undefined && task.rewardValue !== null && task.rewardValue !== ''
+                    ? task.rewardValue
+                    : (task.custom || '未填写奖品')
+            );
+            prizeItems.push({ name, prizeName, finishDate });
         } else {
             let raw = 0;
             if (task && task.rewardValue !== undefined && task.rewardValue !== null && task.rewardValue !== '') raw = task.rewardValue;
             else if (task) raw = task.money;
             const n = Number(raw);
-            if (Number.isFinite(n)) money += n;
+            const amount = Number.isFinite(n) ? n : 0;
+            if (amount > 0) {
+                money += amount;
+                moneyItems.push({ name, amount, finishDate });
+            } else {
+                // 金额为 0 的完成任务不计入金额明细，但仍计完成数
+            }
         }
     }
-    return { money, prizeCount, finishCount, yearMonth: ym };
+    moneyItems.sort((a, b) => b.amount - a.amount || String(a.name).localeCompare(String(b.name)));
+    prizeItems.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    return { money, prizeCount, finishCount, yearMonth: ym, moneyItems, prizeItems };
 }
-function formatMonthCompletionSummary(stats) {
+function formatMonthCompletionSummaryHTML(stats) {
     if (!stats || !stats.finishCount) return '本月暂无完成入账';
     const parts = [];
-    if (stats.money > 0) parts.push('¥' + formatMoney(stats.money));
-    if (stats.prizeCount > 0) parts.push('奖品 ' + stats.prizeCount + ' 件');
-    if (!parts.length) parts.push('完成 ' + stats.finishCount + ' 项');
+    if (stats.money > 0) {
+        parts.push(`<span class="month-sum-chip" data-month-detail="money" role="button" tabindex="0">¥${formatMoney(stats.money)}</span>`);
+    }
+    if (stats.prizeCount > 0) {
+        parts.push(`<span class="month-sum-chip" data-month-detail="prize" role="button" tabindex="0">奖品 ${stats.prizeCount} 件</span>`);
+    }
+    if (!parts.length) parts.push(`完成 ${stats.finishCount} 项`);
     return '本月入账 ' + parts.join(' · ');
+}
+function openMonthCompletionDetail(kind) {
+    const stats = getMonthCompletionStats(currentCalYear, currentCalMonth);
+    const isMoney = kind === 'money';
+    const items = isMoney ? (stats.moneyItems || []) : (stats.prizeItems || []);
+    if (!items.length) {
+        showToast(isMoney ? '本月暂无现金入账明细' : '本月暂无奖品明细');
+        return;
+    }
+    const monthLabel = `${currentCalYear}年${currentCalMonth + 1}月`;
+    if (el.calendarDetailDate) el.calendarDetailDate.textContent = monthLabel;
+    if (el.calendarDetailTitle) {
+        el.calendarDetailTitle.textContent = isMoney ? '本月现金入账明细' : '本月奖品入账明细';
+    }
+    if (el.calendarDetailCount) {
+        el.calendarDetailCount.textContent = isMoney ? (`¥${formatMoney(stats.money)}`) : String(stats.prizeCount);
+    }
+    // 复用三个统计格：总数 / 类型 / 月份
+    const countLabel = document.querySelector('#calendarDetailCount')?.parentElement?.querySelector('span');
+    if (countLabel) countLabel.textContent = isMoney ? '合计金额' : '奖品件数';
+    if (el.calendarDetailDayType) el.calendarDetailDayType.textContent = isMoney ? '现金' : '奖品';
+    const dayTypeLabel = document.querySelector('#calendarDetailDayType')?.parentElement?.querySelector('span');
+    if (dayTypeLabel) dayTypeLabel.textContent = '类型';
+    if (el.calendarDetailMonthText) el.calendarDetailMonthText.textContent = stats.yearMonth || monthLabel;
+    const monthLabelEl = document.querySelector('#calendarDetailMonthText')?.parentElement?.querySelector('span');
+    if (monthLabelEl) monthLabelEl.textContent = '月份';
+
+    if (el.calendarDetailList) {
+        el.calendarDetailList.innerHTML = items.map((item, idx) => {
+            const right = isMoney
+                ? `¥${formatMoney(item.amount)}`
+                : escapeHTML(String(item.prizeName || ''));
+            return `
+            <div class="calendar-detail-item">
+                <div class="calendar-detail-index">${idx + 1}</div>
+                <div class="calendar-detail-name">${escapeHTML(String(item.name || ''))}</div>
+                <div class="calendar-detail-finish-date">${escapeHTML(String(item.finishDate || ''))}</div>
+                <div class="calendar-detail-time">${right}</div>
+                <div class="calendar-detail-tag">完成</div>
+            </div>`;
+        }).join('');
+    }
+    if (el.calendarDetailPopWrap) el.calendarDetailPopWrap.style.display = 'block';
 }
 function updateCalendarMonthSummary() {
     const summaryEl = document.getElementById('calendarMonthSummary') || (el && el.calendarMonthSummary);
     if (!summaryEl) return;
     try {
-        summaryEl.textContent = formatMonthCompletionSummary(
-            getMonthCompletionStats(currentCalYear, currentCalMonth)
-        );
+        const stats = getMonthCompletionStats(currentCalYear, currentCalMonth);
+        summaryEl.innerHTML = formatMonthCompletionSummaryHTML(stats);
     } catch (err) {
         summaryEl.textContent = '本月暂无完成入账';
     }
@@ -4492,6 +4614,17 @@ function renderCalendar() {
 }
 
 function openCalendarDetail(dateString, taskEntries) {
+    // 恢复日历详情统计格文案（可能被「本月入账明细」改过）
+    const countLabel = document.querySelector('#calendarDetailCount') && document.querySelector('#calendarDetailCount').parentElement
+        ? document.querySelector('#calendarDetailCount').parentElement.querySelector('span') : null;
+    if (countLabel) countLabel.textContent = '次打卡';
+    const dayTypeLabel = document.querySelector('#calendarDetailDayType') && document.querySelector('#calendarDetailDayType').parentElement
+        ? document.querySelector('#calendarDetailDayType').parentElement.querySelector('span') : null;
+    if (dayTypeLabel) dayTypeLabel.textContent = '日期状态';
+    const monthLabelEl = document.querySelector('#calendarDetailMonthText') && document.querySelector('#calendarDetailMonthText').parentElement
+        ? document.querySelector('#calendarDetailMonthText').parentElement.querySelector('span') : null;
+    if (monthLabelEl) monthLabelEl.textContent = '查看范围';
+
     const cleanList = Array.isArray(taskEntries) ? taskEntries.filter(t => t && t.name) : [];
     cleanList.sort((a, b) => {
         if (a.time && b.time) return a.time.localeCompare(b.time);
@@ -5554,12 +5687,19 @@ function renderSyncLogList() {
         if (item.ok && hasChange) {
             const d = item.detail;
             const checkinTotal = d.checkins.length + d.uncheckins.length;
+            const mkStat = (type, label, count) => {
+                const n = Number(count) || 0;
+                if (n <= 0) {
+                    return `<span class="sync-log-stat is-zero" aria-disabled="true">${label} 0</span>`;
+                }
+                return `<button type="button" class="sync-log-stat" data-sync-stat="${type}">${label} ${n}</button>`;
+            };
             statsLine = `
                 <div class="sync-log-stats">
-                    <span class="sync-log-stat">打卡 ${checkinTotal}</span>
-                    <span class="sync-log-stat">新增 ${d.added.length}</span>
-                    <span class="sync-log-stat">修改 ${d.modified.length}</span>
-                    <span class="sync-log-stat">删除 ${d.removed.length}</span>
+                    ${mkStat('checkin', '打卡', checkinTotal)}
+                    ${mkStat('added', '新增', d.added.length)}
+                    ${mkStat('modified', '修改', d.modified.length)}
+                    ${mkStat('removed', '删除', d.removed.length)}
                 </div>`;
         }
         return `
@@ -5598,6 +5738,35 @@ function openBackupManage() {
 }
 function closeBackupManage() {
     el.backupManagePopWrap.style.display = 'none';
+}
+
+function scrollBackupSection(key) {
+    const wrap = el.backupManagePopWrap?.querySelector('.backup-manage-scroll');
+    const idMap = { sync: 'backupSectionSync', data: 'backupSectionData', snapshot: 'backupSectionSnapshot', device: 'backupSectionDevice' };
+    const target = wrap && wrap.querySelector('#' + idMap[key]);
+    if (!wrap || !target) return;
+    const wr = wrap.getBoundingClientRect();
+    const tr = target.getBoundingClientRect();
+    wrap.scrollTo({ top: Math.max(0, wrap.scrollTop + tr.top - wr.top - 6), behavior: 'smooth' });
+}
+
+function scrollSyncStat(logItem, type) {
+    if (!logItem) return;
+    logItem.classList.add('expanded');
+    const map = {
+        checkin: ['[data-sync-block="checkin"]', '[data-sync-block="uncheckin"]'],
+        added: ['[data-sync-block="added"]'],
+        modified: ['[data-sync-block="modified"]'],
+        removed: ['[data-sync-block="removed"]']
+    };
+    const selectors = map[type] || [];
+    let target = null;
+    for (const selector of selectors) {
+        target = logItem.querySelector(selector);
+        if (target) break;
+    }
+    if (!target) return;
+    setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 80);
 }
 
 function initWidgetStates() {
@@ -5710,14 +5879,42 @@ function bindGlobalEvent() {
     el.backupManageBtn.onclick = () => { el.moreMenu.classList.remove('show'); openBackupManage(); };
     el.backupManageClose.onclick = closeBackupManage;
     el.backupManagePopWrap.addEventListener('click', (e) => {
-        if (e.target === el.backupManagePopWrap) closeBackupManage();
-    });
-    el.backupManagePopWrap.addEventListener('click', (e) => {
+        if (e.target === el.backupManagePopWrap) {
+            closeBackupManage();
+            return;
+        }
+
+        const nav = e.target.closest('[data-backup-nav]');
+        if (nav) {
+            scrollBackupSection(nav.dataset.backupNav);
+            return;
+        }
+
         const restoreBtn = e.target.closest('[data-restore-snap]');
-        if (restoreBtn) withBtnBusy(restoreBtn, '⏳ 恢复中...', () => restoreSnapshot(restoreBtn.dataset.restoreSnap));
+        if (restoreBtn) {
+            withBtnBusy(restoreBtn, '⏳ 恢复中...', () => restoreSnapshot(restoreBtn.dataset.restoreSnap));
+            return;
+        }
+
+        const statBtn = e.target.closest('[data-sync-stat]');
+        if (statBtn) {
+            if (statBtn.disabled || statBtn.getAttribute('aria-disabled') === 'true') return;
+            const logItem = statBtn.closest('.sync-log-item.expandable');
+            if (logItem) scrollSyncStat(logItem, statBtn.dataset.syncStat);
+            return;
+        }
+
+        // 点在统计按钮上时不要再 toggle 展开
+        if (e.target.closest('[data-sync-stat]')) return;
+
         const logItem = e.target.closest('.sync-log-item.expandable');
-        if (logItem && !restoreBtn) {
-            logItem.classList.toggle('expanded');
+        if (logItem) logItem.classList.toggle('expanded');
+    });
+    el.backupManagePopWrap.addEventListener('keydown', (e) => {
+        const nav = e.target.closest?.('[data-backup-nav]');
+        if (nav && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault();
+            scrollBackupSection(nav.dataset.backupNav);
         }
     });
     if (el.currentDeviceNoteInput) {
@@ -5795,6 +5992,23 @@ function bindGlobalEvent() {
         el.calendarDetailClose.onclick = closeCalendarDetail;
         el.calendarDetailPopWrap.addEventListener('click', (e) => {
             if (e.target === el.calendarDetailPopWrap) closeCalendarDetail();
+        });
+    }
+    const monthSummaryEl = document.getElementById('calendarMonthSummary');
+    if (monthSummaryEl && !monthSummaryEl.dataset.boundDetail) {
+        monthSummaryEl.dataset.boundDetail = '1';
+        monthSummaryEl.addEventListener('click', (e) => {
+            const chip = e.target.closest('[data-month-detail]');
+            if (!chip) return;
+            e.preventDefault();
+            openMonthCompletionDetail(chip.getAttribute('data-month-detail'));
+        });
+        monthSummaryEl.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            const chip = e.target.closest('[data-month-detail]');
+            if (!chip) return;
+            e.preventDefault();
+            openMonthCompletionDetail(chip.getAttribute('data-month-detail'));
         });
     }
 
