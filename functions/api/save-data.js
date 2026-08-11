@@ -419,9 +419,16 @@ export async function onRequestPost(context) {
     const normalized = normalizeDeviceRegistry(registry);
     const pruned = {};
     Object.keys(normalized).forEach(id => {
+      if (!id) return;
       const entry = normalized[id];
+      // 有备注的设备永久保留；仅清理「无备注且超过 3 天未活跃」的设备
+      const hasNote = !!(entry.note && String(entry.note).trim());
+      if (hasNote) {
+        pruned[id] = entry;
+        return;
+      }
       const activityAt = Math.max(toMs(entry.lastUploadAt), toMs(entry.lastSeenAt), toMs(entry.firstSeenAt));
-      if (id && activityAt >= cutoff) {
+      if (activityAt >= cutoff) {
         pruned[id] = entry;
       }
     });
