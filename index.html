@@ -289,16 +289,35 @@ html[data-theme="dark"] .empty-state-icon .empty-soft{
 }
 .empty-state-btn:active{ transform:scale(0.96); }
 
-.toast{ display:none; align-items:center; gap:8px; }
+.toast{
+    display:none;
+    align-items:center;
+    gap:10px;
+    position:fixed;
+    left:50%;
+    bottom:calc(88px + env(safe-area-inset-bottom));
+    transform:translateX(-50%);
+    z-index:10000;
+    max-width:min(92vw, 360px);
+    padding:12px 16px;
+    border-radius:14px;
+    font-size:13.5px;
+    font-weight:600;
+    color:#fff;
+    box-shadow:0 10px 28px rgba(0,0,0,.18);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+}
 .toast .toast-icon{
     display:inline-flex; align-items:center; justify-content:center;
-    width:18px; height:18px; border-radius:50%; font-size:12px; font-weight:700; flex:0 0 auto;
-    background:rgba(255,255,255,0.18);
+    width:22px; height:22px; border-radius:50%; font-size:12px; font-weight:700; flex:0 0 auto;
+    background:rgba(255,255,255,0.2);
 }
-.toast.toast-success{ background:rgba(7,193,96,0.92); }
-.toast.toast-error{ background:rgba(238,10,36,0.92); }
-.toast.toast-warning{ background:rgba(245,166,35,0.94); color:#3a2a00; }
-.toast.toast-info{ background:rgba(0,0,0,0.75); }
+.toast .toast-msg{ line-height:1.35; word-break:break-word; }
+.toast.toast-success{ background:rgba(7,193,96,0.94); }
+.toast.toast-error{ background:rgba(238,10,36,0.94); }
+.toast.toast-warning{ background:rgba(245,166,35,0.95); color:#3a2a00; }
+.toast.toast-info{ background:rgba(25,137,250,0.94); }
 
 .sync-log-item{ cursor:default; }
 .sync-log-item.expandable{ cursor:pointer; }
@@ -377,7 +396,7 @@ button.btn-busy, .btn-busy{ opacity:0.65; pointer-events:none; }
 .big-btn{width:100%;padding:12px;border-radius:10px;background:var(--primary);color:#fff;border:none;font-size:15px;font-weight:bold;cursor:pointer; margin-bottom: 10px;}
 .big-btn.secondary { background: var(--card-bg); color: var(--primary); border: 1px solid var(--primary); }
 .big-btn.danger{background: var(--card-bg); color: var(--danger); border: 1px solid var(--danger); font-weight: normal;}
-.mask{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:none;z-index:100;}
+.mask{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);display:none;z-index:200;}
 .pop{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:90%;max-width:400px;background:var(--card-bg);border-radius:16px;padding:20px; max-height:85vh; overflow-y:auto; padding-bottom:30px;}
 .pop-title{font-size:17px;font-weight:bold;margin-bottom:16px;text-align:center;color:var(--text-main);}
 .form-item{margin-bottom:14px;}
@@ -389,7 +408,6 @@ button.btn-busy, .btn-busy{ opacity:0.65; pointer-events:none; }
 .radio-group input[type="radio"], .form-item input[type="checkbox"] {width: auto; margin: 0; accent-color: var(--primary);}
 .pop-buttons{display:flex;gap:12px;margin-top:20px;}
 .pop-buttons button{flex:1;padding:12px;border-radius:8px;border:none;font-size:14px;cursor:pointer; font-weight:bold;}
-.toast{position:fixed;left:50%;top:45%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.75);color:#fff;padding:10px 20px;border-radius:8px;font-size:14px;display:none;z-index:999;}
 .oper-btn-group{display:flex;gap:8px; align-items:center; flex-wrap:wrap;}
 .oper-btn-group button{padding:4px 12px;font-size:12px;border-radius:16px;border:1px solid var(--border-color);background:transparent;color:var(--text-sub);cursor:pointer;}
 .oper-btn-group .del{border-color:var(--danger);color:var(--danger);}
@@ -436,8 +454,9 @@ html[data-theme="dark"] .month-sum-chip{color:#7eb6ff;}
 .hand-btn.done {background: #edfbf0; color: var(--success);border: 1px solid var(--success);}
 .hand-btn.retro {background: #fff7e6; color: #d46b08; border: 1px solid #ffd591; box-shadow: 0 2px 6px rgba(245, 166, 35, 0.2);}
 .hand-btn:active { transform: scale(0.95); }
-.confirm-pop{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:101;}
-.confirm-inner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:85%;max-width:360px;background:var(--card-bg);border-radius:14px;padding:20px;}
+.confirm-pop{display:none;position:fixed;inset:0;width:100%;height:100%;background:rgba(0,0,0,0.55);z-index:400;
+    align-items:center;justify-content:center;padding:16px;box-sizing:border-box;}
+.confirm-inner{position:relative;top:auto;left:auto;transform:none;width:min(92vw,360px);max-width:360px;background:var(--card-bg);border-radius:14px;padding:20px;max-height:min(85vh, 100dvh - 32px);overflow-y:auto;}
 .confirm-title{font-size:16px;font-weight:bold;margin-bottom:10px;text-align:center;color:var(--text-main);}
 .confirm-desc{font-size:14px;color:var(--text-sub);text-align:center;margin-bottom:20px;line-height:1.5;white-space:pre-line;}
 .confirm-btns{display:flex;gap:10px;}
@@ -1008,8 +1027,7 @@ html[data-theme="dark"] .task-pop .switch-ui{ background:#4b5563; }
 
 
 .toast {
-    border-radius: 999px;
-    box-shadow: 0 10px 28px rgba(0,0,0,.18);
+    /* 样式见主 .toast 规则 */
 }
 .empty-box {
     padding: 56px 20px;
@@ -1266,7 +1284,7 @@ html[data-theme="dark"] .calendar-header-bar{
 }
 .calendar-detail-mask{
     display:none;
-    z-index:110;
+    z-index:300;
 }
 .calendar-detail-pop{
     position:absolute;
@@ -1904,32 +1922,86 @@ html[data-theme="dark"] .sync-log-result.fail{
 }
 </style>
 
+
+<style id="unified-icon-system">
+.ui-icon{width:18px;height:18px;display:inline-block;vertical-align:-3.5px;flex:0 0 auto}
+.hand-btn .ui-icon,.oper-btn-group .ui-icon,.batch-btn .ui-icon{width:15px;height:15px}
+.more-item .ui-icon,.backup-action-btn .ui-icon{margin-right:6px;vertical-align:-3px}
+.theme-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;color:var(--text-sub)}
+.theme-btn:active{transform:scale(.94)}
+.mini-tool-btn .ui-icon{width:16px;height:16px}
+.sync-btn-left .sync-icon,.sync-btn-left .ui-icon{width:16px;height:16px}
+.announcement-prefix .ui-icon{margin-right:4px;vertical-align:-3px;color:var(--primary)}
+.panel-title .ui-icon{margin-right:6px;vertical-align:-3px;color:var(--primary)}
+.edit-btn .ui-icon{margin-right:4px}
+.pin .ui-icon,.open-app .ui-icon{margin-right:3px}
+.open-app{display:inline-flex;align-items:center;gap:3px}
+.empty-state-icon .ui-icon{width:28px;height:28px}
+.today-glance{font-size:13px;color:var(--text-sub);line-height:1.5}
+.today-glance b{color:var(--primary);font-weight:700}
+.today-glance .glance-money{color:var(--success);font-weight:700}
+.calendar-month-progress{margin:6px 0 10px;padding:10px 12px;border-radius:12px;background:var(--bg-color);border:1px solid var(--border-color);font-size:12.5px;color:var(--text-sub);line-height:1.55}
+.calendar-month-progress b{color:var(--text-main)}
+.check-success-float .ui-icon{width:48px;height:48px}
+</style>
+
+<style>.calendar-detail-name.is-link{color:var(--primary);cursor:pointer}</style>
+
+<style id="back-to-top-style">
+.back-to-top-btn{
+    position:fixed;
+    right:16px;
+    bottom:calc(72px + env(safe-area-inset-bottom));
+    width:44px;
+    height:44px;
+    border-radius:50%;
+    border:1px solid var(--border-color);
+    background:var(--card-bg);
+    color:var(--primary);
+    box-shadow:0 6px 18px rgba(0,0,0,.12);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:90;
+    cursor:pointer;
+    padding:0;
+    transition:opacity .2s ease, transform .15s ease, background .15s ease;
+}
+.back-to-top-btn.show{ display:inline-flex; }
+.back-to-top-btn:active{ transform:scale(.94); }
+.back-to-top-btn .ui-icon{ width:20px; height:20px; }
+html[data-theme="dark"] .back-to-top-btn{
+    box-shadow:0 6px 18px rgba(0,0,0,.35);
+    background:#1e1e1e;
+}
+</style>
+
 </head>
 <body>
 <div id="app">
     <div class="nav-bar">
-        <div class="sync-btn-left" id="syncBtn" data-status="syncing"><svg viewBox="0 0 24 24" class="sync-icon" aria-hidden="true"><path d="M20 12a8 8 0 0 1-13.9 5.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M5 12a7 7 0 0 1 11.8-5.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16.4 6.4H18V4.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.6 17.6H6v1.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="sync-text">同步中...</span></div>
+        <div class="sync-btn-left" id="syncBtn" data-status="syncing"><svg class="ui-icon sync-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19.2 8.2A7.2 7.2 0 0 0 6.5 6.2L4.8 7.9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 4.2v3.7H8.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 15.8A7.2 7.2 0 0 0 17.5 17.8l1.7-1.7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.2 19.8v-3.7H15.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="sync-text">同步中...</span></div>
         <div class="nav-title"></div>
         <div class="top-tool">
             <a class="tool-btn github-btn" id="githubBtn" href="https://github.com/Xh1275/daka" target="_blank" rel="noopener noreferrer" title="GitHub 开源地址" aria-label="GitHub 开源地址">
                 <svg class="github-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
             </a>
-            <span class="tool-btn" id="themeBtn">🌙</span>
+            <span class="tool-btn" id="themeBtn" class="theme-btn" aria-label="切换主题"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15.5 3.2a8.5 8.5 0 1 0 5.3 13.8A7 7 0 0 1 15.5 3.2Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
             <div class="more-wrap">
-                <span class="tool-btn more-trigger" id="moreBtn" aria-label="更多操作">⋯</span>
+                <span class="tool-btn more-trigger" id="moreBtn" aria-label="更多操作"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="6.5" cy="12" r="1.35" fill="currentColor"/><circle cx="12" cy="12" r="1.35" fill="currentColor"/><circle cx="17.5" cy="12" r="1.35" fill="currentColor"/></svg></span>
                 <div class="more-menu" id="moreMenu">
-                    <button type="button" class="more-item" id="backupManageBtn">🗂 备份管理</button>
-                    <button type="button" class="more-item" id="archiveBtn">📦 归档上月</button>
+                    <button type="button" class="more-item" id="backupManageBtn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.5 8.5A2 2 0 0 1 8.5 6.5h2.2l1.2 1.4H17A2 2 0 0 1 19 9.9v6.6A2 2 0 0 1 17 18.5H8.5A2 2 0 0 1 6.5 16.5Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 11v4.2M10.2 13.1H13.8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 备份管理</button>
+                    <button type="button" class="more-item" id="archiveBtn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16v12.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19.5Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 4.5h18V7H3Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 12h5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 归档上月</button>
                     <div class="more-sep"></div>
-                    <button type="button" class="more-item danger" id="clearAllBtn">🗑️ 清空所有本地数据</button>
+                    <button type="button" class="more-item danger" id="clearAllBtn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M9.5 7V5h5v2M8 7l.7 12h6.6L16 7M10 11v5M14 11v5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 清空所有本地数据</button>
                 </div>
             </div>
         </div>
     </div>
     <div class="announcement-bar">
         <div class="announcement-head">
-            <span class="announcement-prefix">📢 公告</span>
-            <button type="button" id="editAnnounceBtn" class="edit-btn" onclick="toggleAnnouncementEdit()">编辑</button>
+            <span class="announcement-prefix"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 10.5v3a2 2 0 0 0 2 2H8l5 3.5V5L8 8.5H6.5a2 2 0 0 0-2 2Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M16.5 9.2a3.2 3.2 0 0 1 0 5.6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 公告</span>
+            <button type="button" id="editAnnounceBtn" class="edit-btn" onclick="toggleAnnouncementEdit()"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.2 6.3 17.7 10.8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 16.8 4.2 20.2 7.6 19.4 18.8 8.2a2.4 2.4 0 0 0-3.4-3.4Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 编辑</button>
         </div>
         <div id="announcementContent" class="announcement-text" contenteditable="false"></div>
     </div>
@@ -1939,17 +2011,17 @@ html[data-theme="dark"] .sync-log-result.fail{
             <input class="search-input" id="searchTodayInput" placeholder="搜索今日待打卡任务或大类...">
         </div>
         <div class="top-tip" id="todayTipWrap">
-            <span class="tip-text">今日剩余 <span id="todayCount" style="color:var(--primary);font-weight:bold;">0</span> 项待打卡</span>
+            <span class="tip-text today-glance" id="todayGlanceText">今日 <b>0</b>/<b>0</b> 已完成 · 剩余 <b id="todayCount">0</b> 项</span>
         </div>
         <div class="today-progress-card">
             <div class="today-progress-title">
-                <span>📈 今日完成进度</span>
+                <span><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 19V5M4 19h16" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 16v-5M12 16V8M16 16v-3" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 今日完成进度</span>
                 <b id="todayProgressPercent">0%</b>
             </div>
             <div class="today-progress-bar"><div class="today-progress-inner" id="todayProgressInner" style="width:0%"></div></div>
         </div>
         <div class="empty-box" id="todayEmpty" style="display:none">
-            <div style="font-size:48px;color:var(--success);margin-bottom:10px;">👌</div>
+            <div class="empty-state-icon" style="margin-bottom:10px;"><span class="empty-soft" style="color:var(--success);background:rgba(7,193,96,.12);"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.2" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="m8.5 12.2 2.4 2.4 4.7-4.8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
             <p>太棒了！今日任务已全部完成</p>
         </div>
         <div id="todayListWrap"></div>
@@ -1962,13 +2034,13 @@ html[data-theme="dark"] .sync-log-result.fail{
                 <input class="search-input" id="searchAllInput" placeholder="搜索全部任务名称、备注或大类...">
             </div>
             <div class="all-mini-actions">
-                <button type="button" class="mini-tool-btn" id="toggleCalBtn" title="展开日历" aria-label="日历签到">📅</button>
+                <button type="button" class="mini-tool-btn" id="toggleCalBtn" title="展开日历" aria-label="日历签到"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 3.4V7M16 3.4V7M3.5 10h17" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
             </div>
         </div>
 
         <div class="calendar-card compact-panel" id="calContentWrap" style="display:none;">
             <div class="panel-topline">
-                <div class="panel-title">📅 日历签到追踪</div>
+                <div class="panel-title"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 3.4V7M16 3.4V7M3.5 10h17" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 日历签到追踪</div>
                 <div class="panel-sub">点日期看明细</div>
             </div>
             <div class="calendar-header-bar">
@@ -1996,6 +2068,9 @@ html[data-theme="dark"] .sync-log-result.fail{
         <div class="empty-box" id="allEmpty" style="display:none">暂无任务</div>
         <div id="allListWrap"></div>
     </div>
+    
+    <button type="button" class="back-to-top-btn" id="backToTopBtn" title="回到顶部" aria-label="回到顶部"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 19V7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="m7 11 5-5 5 5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 5h12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+
     <div class="tab-bar">
         <div class="tab-item active" data-page="today">今日打卡 <span id="tabBadge"></span></div>
         <div class="tab-item" data-page="all">全部任务 <span id="allTabBadge"></span></div>
@@ -2008,10 +2083,10 @@ html[data-theme="dark"] .sync-log-result.fail{
             </label>
         </div>
         <div class="batch-actions">
-            <button class="batch-btn" id="batchPinBtn">批量置顶</button>
+            <button class="batch-btn" id="batchPinBtn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 16.5V21" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.2 4h7.6l-1.2 6.2h3.1L12 16.2 6.3 10.2h3.1L8.2 4Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 批量置顶</button>
             <button class="batch-btn" id="batchCategoryBtn">改分类</button>
-            <button class="batch-btn" id="batchArchiveBtn">归档</button>
-            <button class="batch-btn danger" id="batchDeleteBtn">删除</button>
+            <button class="batch-btn" id="batchArchiveBtn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16v12.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19.5Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 4.5h18V7H3Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 12h5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 归档</button>
+            <button class="batch-btn danger" id="batchDeleteBtn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M9.5 7V5h5v2M8 7l.7 12h6.6L16 7M10 11v5M14 11v5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 删除</button>
             <button class="batch-btn" id="batchCancelBtn">取消</button>
         </div>
     </div>
@@ -2090,8 +2165,8 @@ html[data-theme="dark"] .sync-log-result.fail{
                     <div class="form-item">
                         <label>跳转 APP</label>
                         <select id="inpAppScheme">
-                            <option value="auto">🤖 自动匹配（根据任务名称）</option>
-                            <option value="">🚫 不跳转</option>
+                            <option value="auto">自动匹配（根据任务名称）</option>
+                            <option value="">不跳转</option>
                             <option value="snssdk2329://">抖音极速版</option>
                             <option value="snssdk1128://">抖音</option>
                             <option value="ksnebula://">快手极速版</option>
@@ -2105,7 +2180,7 @@ html[data-theme="dark"] .sync-log-result.fail{
                             <option value="meituan://">美团</option>
                             <option value="alipay://">支付宝</option>
                             <option value="weixin://">微信</option>
-                            <option value="custom">✏️ 自定义协议</option>
+                            <option value="custom">自定义协议</option>
                         </select>
                     </div>
                     <div class="form-item" id="customSchemeWrap" style="display:none">
@@ -2138,7 +2213,7 @@ html[data-theme="dark"] .sync-log-result.fail{
     <!-- 同步风险确认弹窗 -->
     <div class="confirm-pop" id="syncRiskPopWrap">
         <div class="confirm-inner">
-            <div class="confirm-title">🛡️ 检测到可能的数据回退</div>
+            <div class="confirm-title">检测到可能的数据回退</div>
             <div class="confirm-desc">为了保护已有打卡记录，本次同步已暂停。请确认是否继续同步。</div>
             <div id="syncRiskSummary" style="font-size:13px; color:var(--text-sub); line-height:1.8; margin:2px 0 10px;"></div>
             <div style="text-align:center; margin-bottom:10px;">
@@ -2186,16 +2261,16 @@ html[data-theme="dark"] .sync-log-result.fail{
                 <div class="backup-section" id="backupSectionSync">
                     <div class="backup-section-title">同步记录 <span class="backup-section-hint">最近50条</span></div>
                     <div id="syncUndoWrap" style="display:none; margin-bottom:10px;">
-                        <button type="button" id="syncUndoBtn" class="backup-action-btn" style="width:100%; color:var(--danger); border-color:var(--danger);">↩ 撤销本次同步</button>
+                        <button type="button" id="syncUndoBtn" class="backup-action-btn" style="width:100%; color:var(--danger); border-color:var(--danger);"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 8 4 12l5 4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 12h8a6 6 0 0 1 6 6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 撤销本次同步</button>
                     </div>
                     <div id="syncLogList"></div>
                 </div>
                 <div class="backup-section" id="backupSectionData">
                     <div class="backup-section-title">数据备份</div>
                     <div class="backup-btn-row">
-                        <button type="button" id="bmExportBtn" class="backup-action-btn">💾 导出数据（JSON）</button>
-                        <button type="button" id="bmImportBtn" class="backup-action-btn">📥 导入数据</button>
-                        <button type="button" id="bmExportCsvBtn" class="backup-action-btn">📊 导出报表（CSV）</button>
+                        <button type="button" id="bmExportBtn" class="backup-action-btn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v11M8 8l4-4 4 4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 14v3.5A2.5 2.5 0 0 0 7.5 20h9a2.5 2.5 0 0 0 2.5-2.5V14" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 导出数据（JSON）</button>
+                        <button type="button" id="bmImportBtn" class="backup-action-btn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 14V3M8 10l4 4 4-4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 14v3.5A2.5 2.5 0 0 0 7.5 20h9a2.5 2.5 0 0 0 2.5-2.5V14" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 导入数据</button>
+                        <button type="button" id="bmExportCsvBtn" class="backup-action-btn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 19V10M12 19V5M19 19v-7M3.5 19.5h17" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 导出报表（CSV）</button>
                     </div>
                 </div>
                 <div class="backup-section" id="backupSectionSnapshot">
@@ -2260,8 +2335,10 @@ html[data-theme="dark"] .sync-log-result.fail{
     <input type="file" id="fileInput" style="display:none" accept=".json">
 </div>
 <script>
-const ICON_OPEN_APP = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="7" y="3.5" width="10" height="17" rx="2.2" stroke="currentColor" stroke-width="1.8"/><path d="M11 6.5h2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="17.2" r="1" fill="currentColor"/></svg>`;
-const ICON_WEB_LINK = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l1.41-1.41a5 5 0 0 0-7.07-7.07L10 5.93" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 11a5 5 0 0 0-7.07 0L5.52 12.4a5 5 0 0 0 7.07 7.07L14 18.07" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+const ICON_OPEN_APP = `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="7.5" y="2.8" width="9" height="18.4" rx="2.6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.5 5.2h3" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="17.6" r="1.05" fill="currentColor"/></svg>`;
+const ICON_PIN = `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 16.5V21" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.2 4h7.6l-1.2 6.2h3.1L12 16.2 6.3 10.2h3.1L8.2 4Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const ICON_EDIT = `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.2 6.3 17.7 10.8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 16.8 4.2 20.2 7.6 19.4 18.8 8.2a2.4 2.4 0 0 0-3.4-3.4Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const ICON_WEB_LINK = `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9.2 14.8a3.8 3.8 0 0 0 5.4 0l2.2-2.2a3.8 3.8 0 0 0-5.4-5.4l-1.1 1.1" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M14.8 9.2a3.8 3.8 0 0 0-5.4 0L7.2 11.4a3.8 3.8 0 0 0 5.4 5.4l1.1-1.1" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 const appSchemeRules = [
   {k:"抖音极速版",s:"snssdk2329://"},
@@ -2281,12 +2358,12 @@ const appSchemeRules = [
 ];
 
 const SYNC_ICON_SVG = {
-  syncing: `<svg viewBox="0 0 24 24" class="sync-icon" aria-hidden="true"><path d="M20 12a8 8 0 0 1-13.9 5.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M5 12a7 7 0 0 1 11.8-5.1" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M16.4 6.4H18V4.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.6 17.6H6v1.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  success: `<svg viewBox="0 0 24 24" class="sync-icon" aria-hidden="true"><path d="M20 11.8A7.5 7.5 0 0 0 6.3 7.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M6 7.6H8.8V4.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 12.2A7.5 7.5 0 0 1 7.7 17.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M17.6 17.4H15V20.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.2 13.1l2 2 3.6-4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  error: `<svg viewBox="0 0 24 24" class="sync-icon" aria-hidden="true"><path d="M12 4.5 3.8 18.6h16.4L12 4.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 9v4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M12 16.6h.01" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>`
+  syncing: `<svg class="ui-icon sync-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19.2 8.2A7.2 7.2 0 0 0 6.5 6.2L4.8 7.9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 4.2v3.7H8.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 15.8A7.2 7.2 0 0 0 17.5 17.8l1.7-1.7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.2 19.8v-3.7H15.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  success: `<svg class="ui-icon sync-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19.2 8.2A7.2 7.2 0 0 0 6.5 6.2L4.8 7.9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 4.2v3.7H8.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 15.8A7.2 7.2 0 0 0 17.5 17.8l1.7-1.7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.2 19.8v-3.7H15.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="m9.2 12.4 2 2 3.8-3.9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  error: `<svg class="ui-icon sync-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4.5 3.8 18.3h16.4L12 4.5Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9.5v4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="16.3" r="1" fill="currentColor"/></svg>`
 };
 
-const FOLDER_ICON = `<svg viewBox="0 0 24 24" class="category-icon" aria-hidden="true"><path d="M3.8 7.5A2.2 2.2 0 0 1 6 5.3h4.1c.7 0 1.3.3 1.8.8l1 1.1c.4.4 1 .7 1.6.7H18a2.2 2.2 0 0 1 2.2 2.2v6.1A2.2 2.2 0 0 1 18 18.4H6A2.2 2.2 0 0 1 3.8 16.2V7.5Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3.8 9.2h16.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+const FOLDER_ICON = `<svg class="ui-icon category-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.5 8.2A2.2 2.2 0 0 1 5.7 6h3.1l1.4 1.6h8.1A2.2 2.2 0 0 1 20.5 9.8v7A2.2 2.2 0 0 1 18.3 19H5.7A2.2 2.2 0 0 1 3.5 16.8Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 function getTaskAppScheme(item) {
     if (item.appScheme !== undefined && item.appScheme !== null && item.appScheme !== 'auto') {
         return item.appScheme;
@@ -2665,6 +2742,7 @@ const el = {
     todayProgressPercent: document.getElementById("todayProgressPercent"),
     todayProgressInner: document.getElementById("todayProgressInner"),
     todayEmpty: document.getElementById("todayEmpty"),
+    backToTopBtn: document.getElementById("backToTopBtn"),
     todayListWrap: document.getElementById("todayListWrap"),
     allEmpty: document.getElementById("allEmpty"),
     allListWrap: document.getElementById("allListWrap"),
@@ -2744,7 +2822,7 @@ const el = {
     batchDeleteBtn: document.getElementById('batchDeleteBtn'),
     batchCancelBtn: document.getElementById('batchCancelBtn'),
 
-    // 🛡️ V1.2 同步安全保护
+    // 同步安全保护
     syncRiskPopWrap: document.getElementById('syncRiskPopWrap'),
     syncRiskSummary: document.getElementById('syncRiskSummary'),
     syncRiskDetailWrap: document.getElementById('syncRiskDetailWrap'),
@@ -2760,12 +2838,15 @@ function updateSyncStatus(status, text) {
     el.syncBtn.dataset.status = status;
     if (status === 'success') {
         el.syncBtn.classList.remove('error');
-        el.syncBtn.innerHTML = `${SYNC_ICON_SVG.success}<span class="sync-text">已同步 ${text}</span>`;
+        const devicePart = (typeof deviceNote === 'string' && deviceNote.trim())
+            ? ` · ${deviceNote.trim()}`
+            : ' · 与云端一致';
+        el.syncBtn.innerHTML = `${SYNC_ICON_SVG.success}<span class="sync-text">已同步 ${text || ''}${devicePart}</span>`;
     } else if (status === 'error') {
         el.syncBtn.classList.add('error');
         el.syncBtn.innerHTML = `${SYNC_ICON_SVG.error}<span class="sync-text">同步失败 · 点击重试</span>`;
     } else if (status === 'paused') {
-        // 🛡️ V1.2：检测到高危风险，同步已暂停，等待用户确认
+        // 检测到高危风险，同步已暂停
         el.syncBtn.classList.add('error');
         el.syncBtn.innerHTML = `${SYNC_ICON_SVG.error}<span class="sync-text">同步已暂停 · 待确认</span>`;
     } else {
@@ -2983,18 +3064,18 @@ function mergeImportedTasks(localList, remoteList) {
 function initThemeUI() {
 
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    el.themeBtn.innerText = isDark ? '☀️' : '🌙';
+    el.themeBtn.innerHTML = isDark ? `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3.6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 2.6v2M12 19.4v2M2.6 12h2M19.4 12h2M5.05 5.05l1.4 1.4M17.55 17.55l1.4 1.4M17.55 5.05l-1.4 1.4M5.05 18.95l1.4-1.4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>` : `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15.5 3.2a8.5 8.5 0 1 0 5.3 13.8A7 7 0 0 1 15.5 3.2Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 function toggleTheme() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     if (isDark) {
         document.documentElement.removeAttribute('data-theme');
         localStorage.setItem('daka_theme', 'light');
-        el.themeBtn.innerText = '🌙';
+        el.themeBtn.innerHTML = `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15.5 3.2a8.5 8.5 0 1 0 5.3 13.8A7 7 0 0 1 15.5 3.2Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     } else {
         document.documentElement.setAttribute('data-theme', 'dark');
         localStorage.setItem('daka_theme', 'dark');
-        el.themeBtn.innerText = '☀️';
+        el.themeBtn.innerHTML = `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="3.6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 2.6v2M12 19.4v2M2.6 12h2M19.4 12h2M5.05 5.05l1.4 1.4M17.55 17.55l1.4 1.4M17.55 5.05l-1.4 1.4M5.05 18.95l1.4-1.4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     }
 }
 
@@ -3076,11 +3157,11 @@ function escapeHTML(str) {
 function showToast(msg, type) {
     if (!type) {
         if (/失败|错误|无法|不能/.test(msg)) type = 'error';
-        else if (/⚠/.test(msg)) type = 'warning';
-        else if (/成功|✅|👌|📌|已恢复|已删除|已置顶|已取消置顶|已开启/.test(msg)) type = 'success';
+        else if (/警告|注意|断签/.test(msg)) type = 'warning';
+        else if (/成功|已恢复|已删除|已置顶|已取消|已开启|已归档|已覆盖|已完成|已打卡|补卡|合并完成|导出|同步/.test(msg)) type = 'success';
         else type = 'info';
     }
-    const icons = { success: '✓', error: '×', warning: '⚠', info: 'i' };
+    const icons = { success: '✓', error: '!', warning: '!', info: 'i' };
     el.toastBox.innerHTML = `<span class="toast-icon">${icons[type] || ''}</span><span class="toast-msg"></span>`;
     el.toastBox.querySelector('.toast-msg').innerText = msg;
     el.toastBox.className = `toast toast-${type}`;
@@ -3089,7 +3170,7 @@ function showToast(msg, type) {
     toastTimer = setTimeout(() => { el.toastBox.style.display = "none"; }, 1800);
 }
 
-function emptyStateHTML({ icon = '📭', title = '', desc = '', actionText = '' } = {}) {
+function emptyStateHTML({ icon = '', title = '', desc = '', actionText = '' } = {}) {
     return `
     <div class="empty-state">
         <div class="empty-state-icon">${icon}</div>
@@ -3177,14 +3258,14 @@ function renderSyncDetailHTML(diff) {
     let html = '';
     diff.checkins.forEach(c => {
         html += `<div class="sync-detail-block" data-sync-block="checkin">
-            <div class="sync-detail-head">✅ 打卡成功</div>
+            <div class="sync-detail-head">打卡成功</div>
             <div class="sync-detail-row"><span>任务：</span>${escapeHTML(c.taskName)}</div>
             <div class="sync-detail-row"><span>完成时间：</span>${escapeHTML(c.date)}</div>
         </div>`;
     });
     diff.uncheckins.forEach(c => {
         html += `<div class="sync-detail-block" data-sync-block="uncheckin">
-            <div class="sync-detail-head">↩️ 撤销打卡</div>
+            <div class="sync-detail-head">撤销打卡</div>
             <div class="sync-detail-row"><span>任务：</span>${escapeHTML(c.taskName)}</div>
             <div class="sync-detail-row"><span>日期：</span>${escapeHTML(c.date)}</div>
         </div>`;
@@ -3194,7 +3275,7 @@ function renderSyncDetailHTML(diff) {
         const rValue = t.rewardValue !== undefined ? t.rewardValue : t.money;
         const rewardText = rType === 'money' ? `现金${formatMoney(rValue)}元` : escapeHTML(rValue || '');
         html += `<div class="sync-detail-block" data-sync-block="added">
-            <div class="sync-detail-head">➕ 新增任务</div>
+            <div class="sync-detail-head">新增任务</div>
             <div class="sync-detail-row"><span>任务：</span>${escapeHTML(t.name)}</div>
             <div class="sync-detail-row"><span>奖励：</span>${rewardText}</div>
             ${t.remark ? `<div class="sync-detail-row"><span>备注：</span>${escapeHTML(t.remark)}</div>` : ''}
@@ -3203,7 +3284,7 @@ function renderSyncDetailHTML(diff) {
     diff.modified.forEach(m => {
         const rows = m.changes.map(c => `<div class="sync-detail-row"><span>${escapeHTML(c.label)}：</span>${escapeHTML(String(c.from === undefined || c.from === '' ? '无' : c.from))} → ${escapeHTML(String(c.to === undefined || c.to === '' ? '无' : c.to))}</div>`).join('');
         html += `<div class="sync-detail-block" data-sync-block="modified">
-            <div class="sync-detail-head">✏️ 修改任务</div>
+            <div class="sync-detail-head">修改任务</div>
             <div class="sync-detail-row"><span>任务：</span>${escapeHTML(m.taskName)}</div>
             ${rows}
         </div>`;
@@ -3213,7 +3294,7 @@ function renderSyncDetailHTML(diff) {
         const rValue = t.rewardValue !== undefined ? t.rewardValue : t.money;
         const rewardText = rType === 'money' ? `现金${formatMoney(rValue)}元` : escapeHTML(rValue || '');
         html += `<div class="sync-detail-block" data-sync-block="removed">
-            <div class="sync-detail-head">🗑 删除任务</div>
+            <div class="sync-detail-head">删除任务</div>
             <div class="sync-detail-row"><span>任务：</span>${escapeHTML(t.name)}</div>
             <div class="sync-detail-row"><span>奖励：</span>${rewardText}</div>
         </div>`;
@@ -3225,7 +3306,7 @@ function openConfirm(title, desc, onConfirm, isDanger = false) {
     el.confirmTitle.innerText = title;
     el.confirmDesc.innerText = desc;
     el.confirmOk.style.background = isDanger ? "var(--danger)" : "var(--primary)";
-    el.confirmPopWrap.style.display = "block";
+    el.confirmPopWrap.style.display = "flex";
     confirmCallback = onConfirm;
 }
 function closeConfirm() {
@@ -3497,7 +3578,7 @@ function renderDeviceList() {
     });
     if (entries.length === 0) {
         box.innerHTML = emptyStateHTML({
-            icon: '📱',
+            icon: `<span class="empty-soft"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 7h10M9 12h10M9 17h10" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 7h.01M5 12h.01M5 17h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span>`,
             title: '暂无设备记录',
             desc: '设备首次同步后，这里会自动显示所有出现过的设备'
         });
@@ -3794,7 +3875,7 @@ function showSyncRiskModal(oldList, newList, risk, onContinue, onCancel) {
     el.syncRiskDetailWrap.style.display = 'none';
     el.syncRiskDetailWrap.innerHTML = '';
     el.syncRiskToggleDetail.textContent = '查看详情 ▾';
-    el.syncRiskPopWrap.style.display = 'block';
+    el.syncRiskPopWrap.style.display = "flex";
 }
 
 function closeSyncRiskModal() {
@@ -3856,7 +3937,7 @@ async function loadStorage() {
                             addSyncLog('download', false, '用户取消（检测到数据回退风险）', null, true);
                             saveLocalStorage();
                             updateSyncStatus('error');
-                            showToast('⚠️ 已取消本次同步，继续使用本地数据');
+                            showToast('已取消本次同步，继续使用本地数据', 'warning');
                             renderPage();
                         }
                     );
@@ -3875,7 +3956,7 @@ async function loadStorage() {
                 console.error('本地保存失败', saveErr);
             }
             updateSyncStatus('error');
-            showToast(`⚠️ ${e.message || '同步失败'}，已使用本地数据`);
+            showToast(`${e.message || '同步失败'}，已使用本地数据`, 'error');
         }
     } else {
         maybeCreateDailySnapshot();
@@ -3923,7 +4004,7 @@ function applyDownloadedRemoteData(remoteData, localBeforeSync, riskConfirmed) {
         }
     }
     if (riskConfirmed) {
-        addSyncLog('download', true, '⚠️ 已确认风险后继续同步', diffTaskLists(localBeforeSync, taskList), true);
+        addSyncLog('download', true, '已确认风险后继续同步', diffTaskLists(localBeforeSync, taskList), true);
     } else {
         addSyncLog('download', true, null, diffTaskLists(localBeforeSync, taskList));
     }
@@ -3932,7 +4013,7 @@ function applyDownloadedRemoteData(remoteData, localBeforeSync, riskConfirmed) {
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     updateSyncStatus('success', timeStr);
-    showToast(riskConfirmed ? '✅ 已确认并完成同步' : '☁️ 云端数据同步成功');
+    showToast(riskConfirmed ? '已确认并完成同步' : '云端数据同步成功', 'success');
         saveRemoteData().catch(() => {});
     lastSyncedSnapshot = cloneTasks(taskList);
     renderPage();
@@ -3950,14 +4031,14 @@ function saveStorage(riskCheck) {
             updateSyncStatus('paused');
             showSyncRiskModal(beforeUploadSnapshot, taskList, risk,
                 () => {
-                    addSyncLog('upload', true, '⚠️ 已确认风险后继续同步', diffTaskLists(beforeUploadSnapshot, taskList), true);
+                    addSyncLog('upload', true, '已确认风险后继续同步', diffTaskLists(beforeUploadSnapshot, taskList), true);
                     doUploadRemoteData(beforeUploadSnapshot);
                 },
                 () => {
                     addSyncLog('upload', false, '用户取消（检测到数据回退风险）', null, true);
                     saveLocalStorage();
                     updateSyncStatus('error');
-                    showToast('⚠️ 已取消本次上传，云端数据未更新');
+                    showToast('已取消本次上传，云端数据未更新', 'warning');
                 }
             );
             return;
@@ -3985,7 +4066,7 @@ async function doUploadRemoteData(beforeUploadSnapshot) {
         addSyncLog('upload', false, friendlySyncErrorReason(e), buildSyncErrorDetail(e));
         try { saveLocalStorage(); } catch (saveErr) { console.error('本地保存失败', saveErr); }
         updateSyncStatus('error');
-        showToast(`⚠️ ${e.message || '同步失败'}`);
+        showToast(`${e.message || '同步失败'}`, 'error');
     }
 }
 
@@ -4055,7 +4136,7 @@ function archiveOldHistory(isManual = false) {
     });
     if (archivedTotalCount > 0) {
         saveStorage();
-        if (isManual) showToast(`✅ 成功将 ${archivedTotalCount} 条旧历史记录归档压缩`);
+        if (isManual) showToast(`已归档 ${archivedTotalCount} 条旧历史记录`, 'success');
     } else if (isManual) {
         showToast("暂无需要归档的上月历史数据");
     }
@@ -4239,7 +4320,7 @@ function renderTaskCard(item, isTodayPage = false) {
         tagText = "进行中"; tagClass = "tag-doing"; barColor = "var(--primary)";
     }
     let extraTagsHtml = "";
-    if (isPinned) extraTagsHtml += `<span class="tag tag-doing">📌 已置顶</span>`;
+    if (isPinned) extraTagsHtml += `<span class="tag tag-doing">${ICON_PIN} 置顶</span>`;
     if (broken && status === "doing") {
         extraTagsHtml += `<span class="tag tag-danger">已断签</span>`;
         barColor = "var(--danger)";
@@ -4255,12 +4336,12 @@ function renderTaskCard(item, isTodayPage = false) {
     let checkBtnHtml = "";
     if (isTodayPage && status === "doing") {
         if (needsYesterdayRetro) {
-            checkBtnHtml += `<button class="hand-btn retro" data-retro="${item.id}" title="昨日未完成打卡，点击一键补签">🩹 补卡 (${yesterdayCount}/${tPerDay})</button>`;
+            checkBtnHtml += `<button class="hand-btn retro" data-retro="${item.id}" title="昨日未完成打卡，点击一键补签"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 8 4 12l5 4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 12h8a6 6 0 0 1 6 6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 补卡 (${yesterdayCount}/${tPerDay})</button>`;
         }
         if (isChecked) {
-            checkBtnHtml += `<button class="hand-btn done" data-check="${item.id}">👌 今日已完成 (${todayCount}/${tPerDay})</button>`;
+            checkBtnHtml += `<button class="hand-btn done" data-check="${item.id}"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.2 4.2L19 7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 今日已完成 (${todayCount}/${tPerDay})</button>`;
         } else {
-            checkBtnHtml += `<button class="hand-btn todo" data-check="${item.id}">✍️ 打卡 (${todayCount}/${tPerDay})</button>`;
+            checkBtnHtml += `<button class="hand-btn todo" data-check="${item.id}"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.2 4.2L19 7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 打卡 (${todayCount}/${tPerDay})</button>`;
         }
     }
 
@@ -4293,7 +4374,7 @@ function renderTaskCard(item, isTodayPage = false) {
     const archives = Array.isArray(item.archives) ? item.archives : [];
     let archiveTagsHtml = "";
     if (archives.length > 0) {
-        archiveTagsHtml = archives.map(a => `<div class="archive-tag">📦 ${a.month} 累计打卡 ${a.days || 0} 天 (${a.count || 0}次)</div>`).join("");
+        archiveTagsHtml = archives.map(a => `<div class="archive-tag">${a.month} 累计打卡 ${a.days || 0} 天 (${a.count || 0}次)</div>`).join("");
     }
     let historyHtml = "";
     if (sortedHistory.length > 0 || archives.length > 0) {
@@ -4305,17 +4386,17 @@ function renderTaskCard(item, isTodayPage = false) {
                 <div class="history-list">
                     ${visibleHistory.map(d => `<span class="history-date-tag" data-task-id="${item.id}" data-record="${d}">${d} ✕</span>`).join("")}
                 </div>
-                ${hasMoreHistory ? `<div style="text-align:center; margin-top:10px;"><button class="btn-more-history" data-more-history="${item.id}" style="background:var(--border-color); border:none; padding:4px 12px; border-radius:12px; font-size:11px; color:var(--text-sub); cursor:pointer;">👇 加载更多 (剩余 ${sortedHistory.length - limit} 条)</button></div>` : ''}
+                ${hasMoreHistory ? `<div style="text-align:center; margin-top:10px;"><button class="btn-more-history" data-more-history="${item.id}" style="background:var(--border-color); border:none; padding:4px 12px; border-radius:12px; font-size:11px; color:var(--text-sub); cursor:pointer;">加载更多 (剩余 ${sortedHistory.length - limit} 条)</button></div>` : ''}
             </div>
         </details>`;
     }
-    const pinBtnText = isPinned ? "取消置顶" : "置顶";
+    const pinBtnText = isPinned ? `${ICON_PIN} 取消置顶` : `${ICON_PIN} 置顶`;
     const pinBtnClass = isPinned ? "pin active-pin" : "pin";
 
     const editDelBtnsHtml = isTodayPage ? "" : `
-        ${status === "finish" ? `<button class="restart-round" data-restart="${item.id}">🔄 再开一轮</button>` : ''}
-        <button data-edit="${item.id}">编辑</button>
-        <button class="del" data-del="${item.id}">删除</button>
+        ${status === "finish" ? `<button class="restart-round" data-restart="${item.id}"><svg class="ui-icon sync-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19.2 8.2A7.2 7.2 0 0 0 6.5 6.2L4.8 7.9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 4.2v3.7H8.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 15.8A7.2 7.2 0 0 0 17.5 17.8l1.7-1.7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.2 19.8v-3.7H15.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 再开一轮</button>` : ''}
+        <button data-edit="${item.id}">${ICON_EDIT} 编辑</button>
+        <button class="del" data-del="${item.id}"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M9.5 7V5h5v2M8 7l.7 12h6.6L16 7M10 11v5M14 11v5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 删除</button>
     `;
 
     return `
@@ -4429,7 +4510,7 @@ function getMonthCompletionStats(year, month0) {
                     ? task.rewardValue
                     : (task.custom || '未填写奖品')
             );
-            prizeItems.push({ name, prizeName, finishDate });
+            prizeItems.push({ name, prizeName, finishDate, taskId: task.id != null ? String(task.id) : '' });
         } else {
             let raw = 0;
             if (task && task.rewardValue !== undefined && task.rewardValue !== null && task.rewardValue !== '') raw = task.rewardValue;
@@ -4438,7 +4519,7 @@ function getMonthCompletionStats(year, month0) {
             const amount = Number.isFinite(n) ? n : 0;
             if (amount > 0) {
                 money += amount;
-                moneyItems.push({ name, amount, finishDate });
+                moneyItems.push({ name, amount, finishDate, taskId: task.id != null ? String(task.id) : '' });
             } else {
                 // 金额为 0 的完成任务不计入金额明细，但仍计完成数
             }
@@ -4449,16 +4530,18 @@ function getMonthCompletionStats(year, month0) {
     return { money, prizeCount, finishCount, yearMonth: ym, moneyItems, prizeItems };
 }
 function formatMonthCompletionSummaryHTML(stats) {
-    if (!stats || !stats.finishCount) return '本月暂无完成入账';
+    if (!stats || !stats.finishCount) {
+        return '<div class="calendar-month-progress">本月暂无完成入账</div>';
+    }
     const parts = [];
+    parts.push(`完成 <b>${stats.finishCount}</b> 项`);
     if (stats.money > 0) {
-        parts.push(`<span class="month-sum-chip" data-month-detail="money" role="button" tabindex="0">¥${formatMoney(stats.money)}</span>`);
+        parts.push(`入账 <span class="month-sum-chip" data-month-detail="money" role="button" tabindex="0">¥${formatMoney(stats.money)}</span>`);
     }
     if (stats.prizeCount > 0) {
-        parts.push(`<span class="month-sum-chip" data-month-detail="prize" role="button" tabindex="0">奖品 ${stats.prizeCount} 件</span>`);
+        parts.push(`奖品 <span class="month-sum-chip" data-month-detail="prize" role="button" tabindex="0">${stats.prizeCount} 件</span>`);
     }
-    if (!parts.length) parts.push(`完成 ${stats.finishCount} 项`);
-    return '本月入账 ' + parts.join(' · ');
+    return `<div class="calendar-month-progress">本月 ${parts.join(' · ')}</div>`;
 }
 function openMonthCompletionDetail(kind) {
     const stats = getMonthCompletionStats(currentCalYear, currentCalMonth);
@@ -4491,15 +4574,35 @@ function openMonthCompletionDetail(kind) {
             const right = isMoney
                 ? `¥${formatMoney(item.amount)}`
                 : escapeHTML(String(item.prizeName || ''));
+            const tid = item.taskId != null && item.taskId !== ''
+                ? String(item.taskId)
+                : (item.id != null && item.id !== '' ? String(item.id) : '');
+            const nameCls = tid ? 'calendar-detail-name is-link' : 'calendar-detail-name';
+            const jumpAttr = tid ? ` data-jump-task="${escapeHTML(tid)}"` : '';
             return `
-            <div class="calendar-detail-item">
+            <div class="calendar-detail-item"${jumpAttr}>
                 <div class="calendar-detail-index">${idx + 1}</div>
-                <div class="calendar-detail-name">${escapeHTML(String(item.name || ''))}</div>
+                <div class="${nameCls}">${escapeHTML(String(item.name || ''))}</div>
                 <div class="calendar-detail-finish-date">${escapeHTML(String(item.finishDate || ''))}</div>
                 <div class="calendar-detail-time">${right}</div>
                 <div class="calendar-detail-tag">完成</div>
             </div>`;
         }).join('');
+        // 仅本月入账明细需要跳转
+        try {
+            const list = el.calendarDetailList;
+            if (list) {
+                list.querySelectorAll('[data-jump-task]').forEach(node => {
+                    node.style.cursor = 'pointer';
+                    node.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const id = node.getAttribute('data-jump-task');
+                        if (id) jumpToTaskFromCalendar(id);
+                    });
+                });
+            }
+        } catch (e) {}
     }
     if (el.calendarDetailPopWrap) el.calendarDetailPopWrap.style.display = 'block';
 }
@@ -4545,7 +4648,7 @@ function renderCalendar() {
                     const dStr = hStr.substring(0, 10);
                     const timeFull = hStr.length >= 19 ? hStr : (hStr.length >= 16 ? hStr : null);
                     pushRecord(dStr, {
-                        taskId: Number.isFinite(taskId) ? taskId : taskName,
+                        taskId: (task && task.id != null && task.id !== '') ? String(task.id) : String(taskName),
                         name: taskName,
                         time: timeFull,
                         source: 'history'
@@ -4566,7 +4669,7 @@ function renderCalendar() {
                         );
                         if (alreadyFromHistory) return;
                         pushRecord(dayKey, {
-                            taskId: Number.isFinite(taskId) ? taskId : taskName,
+                            taskId: (task && task.id != null && task.id !== '') ? String(task.id) : String(taskName),
                             name: taskName,
                             time: null,
                             source: 'archive'
@@ -4613,6 +4716,59 @@ function renderCalendar() {
     }
 }
 
+
+
+
+
+
+
+
+
+function jumpToTaskFromCalendar(taskId) {
+    const raw = String(taskId == null ? '' : taskId).trim();
+    if (!raw || raw === 'undefined' || raw === 'null') {
+        showToast('无法定位任务');
+        return;
+    }
+    try { closeCalendarDetail(); } catch (e) {}
+    currentPage = 'all';
+    if (batchMode) {
+        try { toggleBatchMode(); } catch (e) {}
+    }
+    try {
+        if (el.searchAllInput) el.searchAllInput.value = '';
+        if (typeof filterType !== 'undefined') filterType = 'all';
+        document.querySelectorAll('.filter-item').forEach(f => {
+            f.classList.toggle('active', f.dataset.filter === 'all');
+        });
+    } catch (e) {}
+    document.querySelectorAll('.tab-item').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.page === 'all');
+    });
+    renderPage();
+    const tryFind = () => {
+        let card = document.querySelector(`.task-card[data-id="${raw}"]`);
+        if (!card) {
+            card = Array.from(document.querySelectorAll('.task-card')).find(
+                c => String(c.getAttribute('data-id')) === raw
+            );
+        }
+        if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.classList.add('card-just-checked');
+            setTimeout(() => card.classList.remove('card-just-checked'), 900);
+            return true;
+        }
+        return false;
+    };
+    setTimeout(() => {
+        if (tryFind()) return;
+        setTimeout(() => {
+            if (!tryFind()) showToast('未找到对应任务（可能已删除或被筛选隐藏）');
+        }, 200);
+    }, 120);
+}
+
 function openCalendarDetail(dateString, taskEntries) {
     // 恢复日历详情统计格文案（可能被「本月入账明细」改过）
     const countLabel = document.querySelector('#calendarDetailCount') && document.querySelector('#calendarDetailCount').parentElement
@@ -4654,13 +4810,13 @@ function openCalendarDetail(dateString, taskEntries) {
             return `
             <div class="calendar-detail-item">
                 <div class="calendar-detail-index">${idx + 1}</div>
-                <div class="calendar-detail-name">${escapeHTML(item.name)}</div>
+                <div class="calendar-detail-name">${escapeHTML(item.name || '')}</div>
                 <div class="calendar-detail-time">${escapeHTML(timeText)}</div>
                 <div class="calendar-detail-tag">已打卡</div>
             </div>`;
         }).join('');
     } else {
-        el.calendarDetailList.innerHTML = emptyStateHTML({ icon: '📅', title: '当天没有打卡记录', desc: '继续坚持保持习惯' });
+        el.calendarDetailList.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 3.4V7M16 3.4V7M3.5 10h17" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`, title: '当天没有打卡记录', desc: '继续坚持保持习惯' });
     }
     el.calendarDetailPopWrap.style.display = 'block';
 }
@@ -4842,10 +4998,27 @@ function batchDeleteTasks() {
     }, true);
 }
 
+
+function updateBackToTopBtn() {
+    const btn = (el && el.backToTopBtn) || document.getElementById('backToTopBtn');
+    if (!btn) return;
+    const onAll = (typeof currentPage !== 'undefined' && currentPage === 'all');
+    const scrolled = (window.scrollY || document.documentElement.scrollTop || 0) > 280;
+    btn.classList.toggle('show', onAll && scrolled);
+}
+function scrollPageToTop() {
+    try {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (e) {
+        window.scrollTo(0, 0);
+    }
+}
+
 function renderPage() {
     if (!Array.isArray(taskList)) taskList = [];
     el.pageToday.style.display = currentPage === "today" ? "block" : "none";
     el.pageAll.style.display = currentPage === "all" ? "block" : "none";
+    try { updateBackToTopBtn(); } catch (e) {}
     
     document.querySelectorAll(".tab-item").forEach(tab => {
         tab.classList.toggle("active", tab.dataset.page === currentPage);
@@ -4854,18 +5027,20 @@ function renderPage() {
     const queryToday = (el.searchTodayInput.value || "").toLowerCase().trim();
     let filterTodayAll = taskList.filter(i => taskMatchesQuery(i, queryToday));
     let todayList = filterTodayAll.filter(i => getTaskStatus(i) === "doing");
+    // 固定排序：未完成 → 已完成；同组内 置顶优先（避免「置顶但已打完」压住未打卡）
     todayList.sort((a, b) => {
+        const aNeed = Number(a.timesPerDay) || 1;
+        const bNeed = Number(b.timesPerDay) || 1;
+        const aDoneToday = getTodayCheckCount(a) >= aNeed ? 1 : 0;
+        const bDoneToday = getTodayCheckCount(b) >= bNeed ? 1 : 0;
+        if (aDoneToday !== bDoneToday) return aDoneToday - bDoneToday;
         const aPin = a.isPinned ? 1 : 0;
         const bPin = b.isPinned ? 1 : 0;
         if (aPin !== bPin) return bPin - aPin;
-        const aChecked = isCheckedToday(a) ? 1 : 0;
-        const bChecked = isCheckedToday(b) ? 1 : 0;
-        if (aChecked !== bChecked) return aChecked - bChecked;
-        
         const aBroken = isStreakBroken(a) ? -1 : 0;
         const bBroken = isStreakBroken(b) ? -1 : 0;
         if (aBroken !== bBroken) return aBroken - bBroken;
-        return b.id - a.id; 
+        return (Number(b.id) || 0) - (Number(a.id) || 0);
     });
     let todayGroups = {};
     todayList.forEach(item => {
@@ -4913,10 +5088,35 @@ function renderPage() {
             </div>
         </details>`;
     });
-    el.todayCount.innerText = totalRemainingCount;
+    if (el.todayCount) el.todayCount.innerText = totalRemainingCount;
     const todayTotal = todayList.length;
-    const todayDone = todayList.filter(t => isCheckedToday(t)).length;
+    const todayDone = todayList.filter(t => {
+        const need = Number(t.timesPerDay) || 1;
+        return getTodayCheckCount(t) >= need;
+    }).length;
     const todayPercent = todayTotal ? Math.round(todayDone / todayTotal * 100) : 0;
+    // 仅统计「今天刚完成整个周期」的入账，不把未完成任务的奖励算进来
+    let todayEarnMoney = 0;
+    let todayEarnPrize = 0;
+    const todayStrEarn = getTodayStr();
+    (Array.isArray(taskList) ? taskList : []).forEach(task => {
+        if (!task) return;
+        const fd = typeof getTaskFinishDate === 'function' ? getTaskFinishDate(task) : null;
+        if (!fd || fd !== todayStrEarn) return;
+        if (task.rewardType === 'custom') {
+            todayEarnPrize += 1;
+        } else {
+            const rv = Number(task.rewardValue !== undefined ? task.rewardValue : task.money) || 0;
+            if (rv > 0) todayEarnMoney += rv;
+        }
+    });
+    const glance = document.getElementById('todayGlanceText');
+    if (glance) {
+        let earnPart = '';
+        if (todayEarnMoney > 0) earnPart += ` · 今日入账 <span class="glance-money">¥${formatMoney(todayEarnMoney)}</span>`;
+        if (todayEarnPrize > 0) earnPart += ` · 奖品 <span class="glance-money">${todayEarnPrize}</span> 件`;
+        glance.innerHTML = `今日 <b>${todayDone}</b>/<b>${todayTotal}</b> 已完成 · 剩余 <b>${totalRemainingCount}</b> 项${earnPart}<br><span style="font-size:12px;color:var(--text-light)">排序：未完成 → 已完成（同组置顶优先）</span>${earnPart ? `<br><span style="font-size:11px;color:var(--text-light)">今日入账：仅统计今天刚好完成整个周期的任务</span>` : ''}`;
+    }
     if (el.todayProgressPercent) el.todayProgressPercent.innerText = todayPercent + "%";
     if (el.todayProgressInner) el.todayProgressInner.style.width = todayPercent + "%";
     el.tabBadge.innerText = totalRemainingCount > 0 ? `(${totalRemainingCount})` : "";
@@ -4924,11 +5124,11 @@ function renderPage() {
     if (todayList.length === 0) {
         el.todayEmpty.style.display = "block";
         if (taskList.length === 0) {
-            el.todayEmpty.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"/><path d="M5 12h14"/></svg></span>`, title: '欢迎使用羊毛打卡管家', desc: '创建第一个任务，开始管理你的打卡计划', actionText: '添加任务' });
+            el.todayEmpty.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 7h10M9 12h10M9 17h10" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 7h.01M5 12h.01M5 17h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span>`, title: '欢迎使用羊毛打卡管家', desc: '创建第一个任务，开始管理你的打卡计划', actionText: '添加任务' });
         } else if (queryToday && filterTodayAll.length === 0) {
-            el.todayEmpty.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg></span>`, title: '没有找到相关任务', desc: '换个关键词试试看' });
+            el.todayEmpty.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 20l-3.2-3.2" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`, title: '没有找到相关任务', desc: '换个关键词试试看' });
         } else {
-            el.todayEmpty.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></span>`, title: '今天没有需要打卡的任务', desc: '享受轻松的一天吧！' });
+            el.todayEmpty.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 7h10M9 12h10M9 17h10" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 7h.01M5 12h.01M5 17h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span>`, title: '今天没有需要打卡的任务', desc: '享受轻松的一天吧！' });
         }
     } else {
         el.todayEmpty.style.display = "none";
@@ -4962,11 +5162,11 @@ function renderPage() {
     if (filterArr.length === 0) {
         el.allEmpty.style.display = "block";
         if (taskList.length === 0) {
-            el.allEmpty.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M5 6h.01M5 12h.01M5 18h.01"/></svg></span>`, title: '还没有创建任务', desc: '点击添加第一个任务开始使用', actionText: '添加任务' });
+            el.allEmpty.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 7h10M9 12h10M9 17h10" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 7h.01M5 12h.01M5 17h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span>`, title: '还没有创建任务', desc: '点击添加第一个任务开始使用', actionText: '添加任务' });
         } else if (queryAll && filterAllTaskList.length === 0) {
-            el.allEmpty.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg></span>`, title: '没有找到相关任务', desc: '换个关键词试试看' });
+            el.allEmpty.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 20l-3.2-3.2" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`, title: '没有找到相关任务', desc: '换个关键词试试看' });
         } else {
-            el.allEmpty.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"/></svg></span>`, title: '暂无任务', desc: '当前分类下还没有任务' });
+            el.allEmpty.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`, title: '暂无任务', desc: '当前分类下还没有任务' });
         }
     } else {
         el.allEmpty.style.display = "none";
@@ -5014,9 +5214,9 @@ function handleCardAction(e) {
     const webLinkBtn = e.target.closest('[data-web-link]');
     if (webLinkBtn) {
         const url = normalizeWebLink(webLinkBtn.dataset.webLink || webLinkBtn.getAttribute('data-web-link'));
-        if (!url) { showToast('⚠️ 链接无效'); return; }
+        if (!url) { showToast('链接无效', 'warning'); return; }
         try { window.open(url, '_blank', 'noopener,noreferrer'); }
-        catch (err) { showToast('⚠️ 无法打开网页链接'); }
+        catch (err) { showToast('无法打开网页链接', 'warning'); }
         return;
     }
     const openAppBtn = e.target.closest('[data-open-app]');
@@ -5025,7 +5225,7 @@ function handleCardAction(e) {
         try {
             window.location.href = url;
         } catch(err) {
-            showToast("⚠️ 调起 APP 失败，请尝试直接在手机打开应用");
+            showToast("无法调起 APP，请直接在手机打开应用", "warning");
         }
         return;
     }
@@ -5079,7 +5279,7 @@ function handleCardAction(e) {
             item.updateAt = getNowDateTimeStr();
             saveStorage();
             renderPage();
-            showToast(item.isPinned ? "📌 已置顶任务" : "已取消置顶");
+            showToast(item.isPinned ? "已置顶" : "已取消置顶", "success");
         }
         return;
     }
@@ -5191,7 +5391,7 @@ function restartTask(id) {
         taskList.push(normalizeTaskRecord(newTask));
         saveStorage();
         renderPage();
-        showToast(`🔄 已开启新一轮：${newName}`);
+        showToast(`已开启新一轮：${newName}`, 'success');
     });
 }
 
@@ -5212,23 +5412,15 @@ function retroCheck(id) {
     const second = String(Math.max(0, 59 - yesterdayCount)).padStart(2, "0");
     item.history.push(`${yesterday} 23:59:${second}`);
     item.history.sort();
-    showCheckAnimation();
-    item.updateAt = getNowDateTimeStr();
+        item.updateAt = getNowDateTimeStr();
 
     saveStorage();
     renderPage();
 
     const newCount = getYesterdayCheckCount(item);
-    showToast(`🩹 昨日补卡成功 (${newCount}/${tPerDay})，连续打卡续上！`);
+    showToast(`补卡成功 · ${newCount}/${tPerDay} · 连续已续上`, "success");
 }
 
-function showCheckAnimation() {
-    const el = document.createElement("div");
-    el.className = "check-success-float";
-    el.innerHTML = "🎉";
-    document.body.appendChild(el);
-    setTimeout(()=>el.remove(),900);
-}
 
 function toggleCheck(id) {
     const item = taskList.find(t => t.id === id);
@@ -5258,7 +5450,7 @@ function toggleCheck(id) {
         return;
     }
     if (isStreakBroken(item)) {
-        openConfirm("⚠️ 断签提示", "该任务要求连续打卡，您已断签！\n继续打卡将清空之前的进度并从今天重新计算，是否继续？", () => {
+        openConfirm("断签提示", "该任务要求连续打卡，您已断签！\n继续打卡将清空之前的进度并从今天重新计算，是否继续？", () => {
             const wiped = Array.isArray(item.history) ? [...item.history] : [];
             touchHistoryDeletionRecords(item.id, wiped);
             item.history = [getNowDateTimeStr()];
@@ -5266,18 +5458,36 @@ function toggleCheck(id) {
             item.updateAt = getNowDateTimeStr();
             saveStorage(); 
             renderPage();
-            showToast("👌 进度已重置并打卡");
+            showToast("进度已重置并完成打卡", "success");
         }, true);
         return;
     }
     if(!Array.isArray(item.history)) item.history = [];
     item.history.push(getNowDateTimeStr());
     item.updateAt = getNowDateTimeStr();
-    showCheckAnimation();
-    saveStorage(); 
+    saveStorage();
 
     const newCount = getTodayCheckCount(item);
     const isDone = newCount >= tPerDay;
+    (function(){
+        const name = (typeof getTaskNameText === 'function' ? getTaskNameText(item) : item.name) || '任务';
+        let tip;
+        const finishedToday = typeof getTaskFinishDate === 'function' && getTaskFinishDate(item) === getTodayStr();
+        if (finishedToday) {
+            if (item.rewardType === 'custom') {
+                const prize = item.rewardValue || item.money || '';
+                tip = prize ? `周期完成 · ${name} · ${prize}` : `周期完成 · ${name}`;
+            } else {
+                const rv = Number(item.rewardValue !== undefined ? item.rewardValue : item.money) || 0;
+                tip = rv > 0 ? `周期完成 · ${name} · ¥${formatMoney(rv)}` : `周期完成 · ${name}`;
+            }
+        } else if (isDone) {
+            tip = `今日完成 · ${name}`;
+        } else {
+            tip = `已打卡 · ${name} · ${newCount}/${tPerDay}`;
+        }
+        showToast(tip, 'success');
+    })();
 
     // 1. 立即更新当前卡片的 UI 状态与触发缩放连打特效
     const cardEls = document.querySelectorAll(`.task-card[data-id="${id}"]`);
@@ -5290,10 +5500,10 @@ function toggleCheck(id) {
         if (btn) {
             if (isDone) {
                 btn.className = 'hand-btn done';
-                btn.innerHTML = `👌 今日已完成 (${newCount}/${tPerDay})`;
+                btn.innerHTML = `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.2 4.2L19 7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 今日已完成 (${newCount}/${tPerDay})`;
             } else {
                 btn.className = 'hand-btn todo';
-                btn.innerHTML = `✍️ 打卡 (${newCount}/${tPerDay})`;
+                btn.innerHTML = `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m5 12.5 4.2 4.2L19 7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 打卡 (${newCount}/${tPerDay})`;
             }
         }
         const pct = getPercent(item);
@@ -5308,14 +5518,8 @@ function toggleCheck(id) {
         }
     });
 
-    // 2. 立即显示 Toast 提醒
-    if (isDone) {
-        showToast(`👌 今日打卡圆满完成 (${newCount}/${tPerDay})`);
-    } else {
-        showToast(`👌 打卡成功 (${newCount}/${tPerDay})`);
-    }
+    // 视觉短暂停留后重排列表
 
-    // 3. 增加 600ms 视觉沉浸延迟，延迟结束后再重排页面下沉
     setTimeout(() => {
         renderPage();
     }, 600);
@@ -5525,7 +5729,7 @@ function exportCsv() {
     a.href = URL.createObjectURL(blob);
     a.download = `羊毛打卡报表_${getTodayStr()}.csv`;
     a.click();
-    showToast("📊 CSV 报表导出成功");
+    showToast("CSV 报表导出成功", "success");
 }
 
 
@@ -5569,9 +5773,9 @@ function triggerImport(e) {
                 throw new Error("Invalid Schema");
             }
             tempImportData = normalized;
-            el.importPopWrap.style.display = "block";
+            el.importPopWrap.style.display = "flex";
         } catch (err) {
-            showToast("⚠️ 备份文件格式错误");
+            showToast("备份文件格式错误", "error");
         }
     };
     reader.readAsText(file);
@@ -5582,7 +5786,7 @@ el.importOverwriteBtn.onclick = () => {
     if (!tempImportData) { el.importPopWrap.style.display = "none"; return; }
     el.importPopWrap.style.display = "none";
     openConfirm(
-        "⚠️ 确认覆盖导入",
+        "确认覆盖导入",
         "此操作将：\n1. 覆盖本地数据\n2. 同步覆盖云端数据\n3. 不可撤销\n\n确定要继续吗？",
         () => {
             taskList = normalizeTaskList(tempImportData.tasks || []);
@@ -5590,7 +5794,7 @@ el.importOverwriteBtn.onclick = () => {
             historyDeletionRecords = normalizeHistoryDeletionList(tempImportData.historyDeletionRecords || []);
             taskList = applyHistoryDeletionLedger(taskList, historyDeletionRecords);
             saveStorage(true); renderPage();
-            showToast("✅ 已覆盖本地数据");
+            showToast("已覆盖本地数据", "success");
             tempImportData = null;
         },
         true
@@ -5605,7 +5809,7 @@ el.importMergeBtn.onclick = () => {
         taskList = applyHistoryDeletionLedger(taskList, historyDeletionRecords);
         saveStorage(); 
         renderPage();
-        showToast(`✅ 合并完成，已智能融合本地与导入数据`);
+        showToast(`合并完成，已融合本地与导入数据`, 'success');
     }
     el.importPopWrap.style.display = "none";
     tempImportData = null;
@@ -5615,7 +5819,7 @@ el.importCancelBtn.onclick = () => {
     tempImportData = null;
 };
 function clearAllData() {
-    openConfirm("🗑️ 清空全部数据", "确定清空所有打卡任务？\n数据无法恢复，建议先在顶部进行【备份】！", () => {
+    openConfirm("清空全部数据", "确定清空所有打卡任务？\n数据无法恢复，建议先在顶部进行【备份】！", () => {
         taskList = [];
         saveStorage(true); renderPage();
         showToast("已清空全部数据");
@@ -5641,7 +5845,7 @@ function restoreSnapshot(dateStr) {
             saveStorage(true);
             renderPage();
             renderBackupManagePanel();
-            showToast(`✅ 已恢复到${formatSnapshotLabel(dateStr)}的快照`);
+            showToast(`已恢复到${formatSnapshotLabel(dateStr)}的快照`, 'success');
         },
         true
     );
@@ -5651,7 +5855,7 @@ function renderSnapshotList() {
     const box = document.getElementById('snapshotList');
     if (!box) return;
     if (snapshots.length === 0) {
-        box.innerHTML = emptyStateHTML({ icon: '📦', title: '暂无历史快照', desc: '系统会自动保存历史版本，用于数据恢复' });
+        box.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 7h10M9 12h10M9 17h10" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 7h.01M5 12h.01M5 17h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span>`, title: '暂无历史快照', desc: '系统会自动保存历史版本，用于数据恢复' });
         return;
     }
     box.innerHTML = snapshots.map(s => `
@@ -5669,7 +5873,7 @@ function renderSyncLogList() {
     const box = document.getElementById('syncLogList');
     if (!box) return;
     if (syncLog.length === 0) {
-        box.innerHTML = emptyStateHTML({ icon: '☁️', title: '暂无同步记录', desc: '完成一次同步后，这里会显示详细记录' });
+        box.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 7h10M9 12h10M9 17h10" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 7h.01M5 12h.01M5 17h.01" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg></span>`, title: '暂无同步记录', desc: '完成一次同步后，这里会显示详细记录' });
         return;
     }
     box.innerHTML = syncLog.map(item => {
@@ -5779,6 +5983,15 @@ function initWidgetStates() {
 }
 
 function bindGlobalEvent() {
+
+    if (el.backToTopBtn) {
+        el.backToTopBtn.addEventListener('click', scrollPageToTop);
+    }
+    window.addEventListener('scroll', () => {
+        try { updateBackToTopBtn(); } catch (e) {}
+    }, { passive: true });
+
+    
     el.todayListWrap.addEventListener('click', handleCardAction);
     el.allListWrap.addEventListener('click', handleCardAction);
     el.todayEmpty.addEventListener('click', (e) => { if (e.target.closest('[data-empty-action]')) openAdd(); });
@@ -5794,7 +6007,7 @@ function bindGlobalEvent() {
                 .catch((e) => {
                     console.error('手动同步失败', e);
                     updateSyncStatus('error');
-                    showToast(`⚠️ ${e && e.message ? e.message : '同步失败'}`);
+                    showToast(`${e && e.message ? e.message : '同步失败'}`, 'error');
                 })
                 .finally(() => { syncInFlight = false; });
         }
@@ -5892,7 +6105,7 @@ function bindGlobalEvent() {
 
         const restoreBtn = e.target.closest('[data-restore-snap]');
         if (restoreBtn) {
-            withBtnBusy(restoreBtn, '⏳ 恢复中...', () => restoreSnapshot(restoreBtn.dataset.restoreSnap));
+            withBtnBusy(restoreBtn, '恢复中...', () => restoreSnapshot(restoreBtn.dataset.restoreSnap));
             return;
         }
 
@@ -5955,8 +6168,8 @@ function bindGlobalEvent() {
             }
         });
     }
-    el.bmExportBtn.onclick = () => withBtnBusy(el.bmExportBtn, '⏳ 导出中...', exportBackup);
-    el.bmExportCsvBtn.onclick = () => withBtnBusy(el.bmExportCsvBtn, '⏳ 导出中...', exportCsv);
+    el.bmExportBtn.onclick = () => withBtnBusy(el.bmExportBtn, '导出中...', exportBackup);
+    el.bmExportCsvBtn.onclick = () => withBtnBusy(el.bmExportCsvBtn, '导出中...', exportCsv);
     el.bmImportBtn.onclick = () => el.fileInput.click();
     el.fileInput.onchange = triggerImport;
     el.clearAllBtn.onclick = clearAllData;
@@ -5994,6 +6207,7 @@ function bindGlobalEvent() {
             if (e.target === el.calendarDetailPopWrap) closeCalendarDetail();
         });
     }
+
     const monthSummaryEl = document.getElementById('calendarMonthSummary');
     if (monthSummaryEl && !monthSummaryEl.dataset.boundDetail) {
         monthSummaryEl.dataset.boundDetail = '1';
@@ -6064,14 +6278,14 @@ window.onload = async function() {
     } catch (e) {
         console.error('启动同步失败', e);
         updateSyncStatus('error');
-        showToast(`⚠️ ${e && e.message ? e.message : '启动同步失败'}`);
+        showToast(`${e && e.message ? e.message : '启动同步失败'}`, 'error');
     }
     archiveOldHistory(false);
     renderPage();
     try {
         if (sessionStorage.getItem(KEY_RESTORE_TOAST_FLAG) === '1') {
             sessionStorage.removeItem(KEY_RESTORE_TOAST_FLAG);
-            showToast('✓ 已恢复到同步前状态');
+            showToast('已恢复到同步前状态', 'success');
         }
     } catch (e) {}
 };
