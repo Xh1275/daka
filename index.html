@@ -1925,7 +1925,7 @@ html[data-theme="dark"] .sync-log-result.fail{
 
 <style id="unified-icon-system">
 .ui-icon{width:18px;height:18px;display:inline-block;vertical-align:-3.5px;flex:0 0 auto}
-.hand-btn .ui-icon,.oper-btn-group .ui-icon,.batch-btn .ui-icon{width:15px;height:15px}
+.hand-btn .ui-icon,.oper-btn-group .ui-icon,.batch-btn .ui-icon{width:15px;height:15px;pointer-events:none}
 .more-item .ui-icon,.backup-action-btn .ui-icon{margin-right:6px;vertical-align:-3px}
 .theme-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;color:var(--text-sub)}
 .theme-btn:active{transform:scale(.94)}
@@ -3122,10 +3122,14 @@ function toggleAnnouncementEdit() {
     }
 }
 
-function triggerVibrate(pattern = [60, 30, 60]) {
-    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
-        try { navigator.vibrate(pattern); } catch (e) {}
-    }
+function triggerVibrate(pattern = [40, 30, 60]) {
+    try {
+        if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+            navigator.vibrate(0); // 打断上一段，提高连续打卡时的手感
+            navigator.vibrate(pattern);
+            return;
+        }
+    } catch (e) {}
 }
 
 function getOffsetDateStr(offsetDays = 0) {
@@ -3431,6 +3435,12 @@ function pruneStaleDevices(referenceTime = Date.now(), { keepCurrent = true, per
         if (!id) return;
         if (keepCurrent && id === deviceId) return;
         const entry = normalizeDeviceEntry(deviceRegistry[id], id);
+        // 有备注的设备永久保留，不参与 3 天未活跃清理
+        const hasNote = !!(entry.note && String(entry.note).trim());
+        if (hasNote) {
+            deviceRegistry[id] = entry;
+            return;
+        }
         const activityAt = Math.max(Number(entry.lastUploadAt) || 0, Number(entry.lastSeenAt) || 0, Number(entry.firstSeenAt) || 0);
         if (activityAt && activityAt >= cutoff) {
             deviceRegistry[id] = entry;
@@ -5418,6 +5428,7 @@ function retroCheck(id) {
     renderPage();
 
     const newCount = getYesterdayCheckCount(item);
+    triggerVibrate([40, 30, 70]);
     showToast(`补卡成功 · ${newCount}/${tPerDay} · 连续已续上`, "success");
 }
 
@@ -5486,6 +5497,7 @@ function toggleCheck(id) {
         } else {
             tip = `已打卡 · ${name} · ${newCount}/${tPerDay}`;
         }
+        triggerVibrate([40, 30, 70]);
         showToast(tip, 'success');
     })();
 
