@@ -1976,6 +1976,49 @@ html[data-theme="dark"] .back-to-top-btn{
 }
 </style>
 
+
+<style id="overlay-scroll-lock">
+/* 弹层打开时锁住底层滚动；弹层内部仍可滚 */
+html.body-scroll-locked {
+    overflow: hidden !important;
+    overscroll-behavior: none;
+}
+html.body-scroll-locked body {
+    overflow: hidden !important;
+    position: fixed !important;
+    width: 100%;
+    left: 0;
+    right: 0;
+    overscroll-behavior: none;
+}
+/* 弹层打开时禁止点到底部 Tab / 回到顶部，避免误切页 */
+html.body-scroll-locked .tab-bar,
+html.body-scroll-locked .back-to-top-btn,
+html.body-scroll-locked .batch-bar {
+    pointer-events: none !important;
+}
+.mask,
+.confirm-pop,
+.calendar-detail-mask {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+.calendar-detail-mask {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    box-sizing: border-box;
+}
+.calendar-detail-pop,
+.confirm-inner,
+.backup-manage-scroll,
+.pop.task-pop {
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+}
+</style>
+
 </head>
 <body>
 <div id="app">
@@ -2214,15 +2257,15 @@ html[data-theme="dark"] .back-to-top-btn{
     <div class="confirm-pop" id="syncRiskPopWrap">
         <div class="confirm-inner">
             <div class="confirm-title">检测到可能的数据回退</div>
-            <div class="confirm-desc">为了保护已有打卡记录，本次同步已暂停。请确认是否继续同步。</div>
+            <div class="confirm-desc">合并后仍可能丢失部分本地进度（例如其他设备删除了任务）。<br>·「保留本地并上传」：不采用云端删除，把本地推上云端<br>·「继续合并」：采用合并结果（含其他设备的删除）</div>
             <div id="syncRiskSummary" style="font-size:13px; color:var(--text-sub); line-height:1.8; margin:2px 0 10px;"></div>
             <div style="text-align:center; margin-bottom:10px;">
                 <span id="syncRiskToggleDetail" style="font-size:13px; color:var(--primary); cursor:pointer;">查看详情 ▾</span>
             </div>
             <div id="syncRiskDetailWrap" style="display:none; max-height:240px; overflow-y:auto; margin-bottom:10px; text-align:left;"></div>
             <div class="confirm-btns">
-                <button id="syncRiskCancelBtn" style="background:var(--border-color); color:var(--text-sub);">取消同步</button>
-                <button id="syncRiskContinueBtn" style="background:var(--danger); color:#fff;">继续同步</button>
+                <button id="syncRiskCancelBtn" style="background:var(--border-color); color:var(--text-sub);">保留本地并上传</button>
+                <button id="syncRiskContinueBtn" style="background:var(--danger); color:#fff;">继续合并</button>
             </div>
         </div>
     </div>
@@ -3012,7 +3055,80 @@ function debounce(func, wait) {
     };
 }
 
-function mergeImportedTasks(localList, remoteList) {
+function parseUpdateAtMs(value) {
+    if (value === undefined || value === null || value === '') return 0;
+    if (typeof value === 'number') {
+        if (!Number.isFinite(value) || value <= 0) return 0;
+        return value < 1e12 ? Math.round(value * 1000) : value;
+    }
+    const raw = String(value).trim();
+    if (!raw) return 0;
+    const asNum = Number(raw);
+    if (Number.isFinite(asNum) && asNum > 0) {
+        return asNum < 1e12 ? Math.round(asNum * 1000) : asNum;
+    }
+    const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (m) {
+        const dt = new Date(
+            Number(m[1]),
+            Number(m[2]) - 1,
+            Number(m[3]),
+            Number(m[4]),
+            Number(m[5]),
+            Number(m[6] || 0)
+        );
+        const t = dt.getTime();
+        return Number.isFinite(t) ? t : 0;
+    }
+    const parsed = Date.parse(raw);
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function mergeArchiveLists(a, b) {
+    const map = new Map();
+    const push = (list) => {
+        (Array.isArray(list) ? list : []).forEach(item => {
+            if (!item || !item.month) return;
+            const month = String(item.month);
+            const existed = map.get(month);
+            if (!existed) {
+                map.set(month, {
+                    ...item,
+                    month,
+                    dates: Array.isArray(item.dates) ? [...item.dates] : [],
+                    completedDates: Array.isArray(item.completedDates) ? [...item.completedDates] : []
+                });
+                return;
+            }
+            const dates = Array.from(new Set([
+                ...(Array.isArray(existed.dates) ? existed.dates : []),
+                ...(Array.isArray(item.dates) ? item.dates : [])
+            ])).filter(v => typeof v === 'string').sort();
+            const completedDates = Array.from(new Set([
+                ...(Array.isArray(existed.completedDates) ? existed.completedDates : []),
+                ...(Array.isArray(item.completedDates) ? item.completedDates : [])
+            ])).filter(v => typeof v === 'string').sort();
+            const leftTs = parseUpdateAtMs(existed.ts || existed.updateAt);
+            const rightTs = parseUpdateAtMs(item.ts || item.updateAt);
+            const prefer = rightTs >= leftTs ? item : existed;
+            map.set(month, {
+                ...prefer,
+                month,
+                count: Math.max(Number(existed.count) || 0, Number(item.count) || 0, dates.length),
+                days: Math.max(Number(existed.days) || 0, Number(item.days) || 0, completedDates.length),
+                dates,
+                completedDates
+            });
+        });
+    };
+    push(a);
+    push(b);
+    return Array.from(map.values());
+}
+
+// 同步专用合并：history/archives 取并集，元数据按 updateAt 取较新一侧
+// 解决「本地已打卡但上传失败 → 再打开被云端旧数据顶掉」
+function mergeTasksForSync(localList, remoteList) {
     const normalizedLocal = normalizeTaskList(localList);
     const normalizedRemote = normalizeTaskList(remoteList);
     if (normalizedLocal.length === 0) return normalizedRemote;
@@ -3020,38 +3136,33 @@ function mergeImportedTasks(localList, remoteList) {
 
     const mergedMap = new Map();
     normalizedRemote.forEach(item => {
-        mergedMap.set(item.id, { ...item, history: [...item.history], archives: JSON.parse(JSON.stringify(item.archives)) });
+        mergedMap.set(item.id, {
+            ...item,
+            history: Array.isArray(item.history) ? [...item.history] : [],
+            archives: Array.isArray(item.archives) ? JSON.parse(JSON.stringify(item.archives)) : []
+        });
     });
 
     normalizedLocal.forEach(localItem => {
         if (mergedMap.has(localItem.id)) {
             const remoteItem = mergedMap.get(localItem.id);
-
             const mergedHistory = Array.from(new Set([
                 ...(Array.isArray(localItem.history) ? localItem.history : []),
                 ...(Array.isArray(remoteItem.history) ? remoteItem.history : [])
-            ])).sort();
+            ].filter(v => typeof v === 'string'))).sort();
 
-            const archivesMap = new Map();
-            (Array.isArray(remoteItem.archives) ? remoteItem.archives : []).forEach(a => {
-                if (a && a.month) archivesMap.set(a.month, { ...a });
-            });
-            (Array.isArray(localItem.archives) ? localItem.archives : []).forEach(a => {
-                if (a && a.month && !archivesMap.has(a.month)) {
-                    archivesMap.set(a.month, { ...a });
+            const localTime = parseUpdateAtMs(localItem.updateAt);
+            const remoteTime = parseUpdateAtMs(remoteItem.updateAt);
+            const baseTask = localTime >= remoteTime ? { ...localItem } : { ...remoteItem };
+            baseTask.history = mergedHistory;
+            baseTask.archives = mergeArchiveLists(localItem.archives, remoteItem.archives);
+            // 补齐较旧一侧有、较新一侧缺失的字段
+            const older = localTime >= remoteTime ? remoteItem : localItem;
+            Object.keys(older).forEach(key => {
+                if (baseTask[key] === undefined || baseTask[key] === null || baseTask[key] === '') {
+                    baseTask[key] = older[key];
                 }
             });
-
-            const localTime = new Date(localItem.updateAt || 0).getTime();
-            const remoteTime = new Date(remoteItem.updateAt || 0).getTime();
-
-            let baseTask = localTime >= remoteTime ? { ...localItem } : { ...remoteItem };
-            baseTask.history = mergedHistory;
-            baseTask.archives = Array.from(archivesMap.values()).map(a => ({
-                ...a,
-                dates: Array.isArray(a.dates) ? [...a.dates] : [],
-                completedDates: Array.isArray(a.completedDates) ? [...a.completedDates] : []
-            }));
             mergedMap.set(localItem.id, normalizeTaskRecord(baseTask));
         } else {
             mergedMap.set(localItem.id, normalizeTaskRecord(localItem));
@@ -3059,6 +3170,10 @@ function mergeImportedTasks(localList, remoteList) {
     });
 
     return Array.from(mergedMap.values());
+}
+
+function mergeImportedTasks(localList, remoteList) {
+    return mergeTasksForSync(localList, remoteList);
 }
 
 function initThemeUI() {
@@ -3310,17 +3425,17 @@ function openConfirm(title, desc, onConfirm, isDanger = false) {
     el.confirmTitle.innerText = title;
     el.confirmDesc.innerText = desc;
     el.confirmOk.style.background = isDanger ? "var(--danger)" : "var(--primary)";
-    el.confirmPopWrap.style.display = "flex";
+    setOverlayDisplay(el.confirmPopWrap, 'flex');
     confirmCallback = onConfirm;
 }
 function closeConfirm() {
-    el.confirmPopWrap.style.display = "none";
+    setOverlayDisplay(el.confirmPopWrap, 'none');
     confirmCallback = null;
 }
 
 function closeCalendarDetail() {
     if (!el.calendarDetailPopWrap) return;
-    el.calendarDetailPopWrap.style.display = "none";
+    setOverlayDisplay(el.calendarDetailPopWrap, 'none');
 }
 
 function loadLocalStorage() {
@@ -3885,11 +4000,11 @@ function showSyncRiskModal(oldList, newList, risk, onContinue, onCancel) {
     el.syncRiskDetailWrap.style.display = 'none';
     el.syncRiskDetailWrap.innerHTML = '';
     el.syncRiskToggleDetail.textContent = '查看详情 ▾';
-    el.syncRiskPopWrap.style.display = "flex";
+    setOverlayDisplay(el.syncRiskPopWrap, 'flex');
 }
 
 function closeSyncRiskModal() {
-    if (el.syncRiskPopWrap) el.syncRiskPopWrap.style.display = 'none';
+    if (el.syncRiskPopWrap) setOverlayDisplay(el.syncRiskPopWrap, 'none');
     pendingSyncRisk = null;
 }
 
@@ -3929,31 +4044,41 @@ async function loadStorage() {
         try {
             const remoteData = await fetchRemoteData();
             if (remoteData && remoteData.tasks && Array.isArray(remoteData.tasks)) {
-                const normalizedRemoteTasks = normalizeTaskList(remoteData.tasks);
                 remoteData.taskDeletionRecords = normalizeTaskDeletionList(remoteData.taskDeletionRecords || []);
                 remoteData.historyDeletionRecords = normalizeHistoryDeletionList(remoteData.historyDeletionRecords || []);
-                const mergedTaskDelForRisk = mergeTaskDeletionLists(taskDeletionRecords, remoteData.taskDeletionRecords);
-                const mergedHistDelForRisk = mergeHistoryDeletionLists(historyDeletionRecords, remoteData.historyDeletionRecords);
-                let remoteTasksForRisk = applyTaskDeletionLedger(normalizedRemoteTasks, mergedTaskDelForRisk);
-                remoteTasksForRisk = applyHistoryDeletionLedger(remoteTasksForRisk, mergedHistDelForRisk);
-                remoteData.tasks = remoteTasksForRisk;
-                const risk = detectSyncRisk(localBeforeSync, remoteTasksForRisk, mergedTaskDelForRisk, mergedHistDelForRisk);
+                const mergedTaskDel = mergeTaskDeletionLists(taskDeletionRecords, remoteData.taskDeletionRecords);
+                const mergedHistDel = mergeHistoryDeletionLists(historyDeletionRecords, remoteData.historyDeletionRecords);
+
+                // 关键：本地与云端合并（history 取并集），而不是用云端覆盖本地
+                // 这样「A 设备打卡后上传失败 → 再打开」不会丢掉本地已打的卡
+                let mergedTasks = mergeTasksForSync(localBeforeSync, remoteData.tasks);
+                mergedTasks = applyTaskDeletionLedger(mergedTasks, mergedTaskDel);
+                mergedTasks = applyHistoryDeletionLedger(mergedTasks, mergedHistDel);
+
+                // 风险只针对「合并后仍会丢失本地进度」的情况（例如其他设备明确删除）
+                // 本地比云端多打卡的正常情况，合并后不会丢，不会弹窗
+                const risk = detectSyncRisk(localBeforeSync, mergedTasks, mergedTaskDel, mergedHistDel);
                 if (risk) {
                     updateSyncStatus('paused');
                     renderPage();
-                    showSyncRiskModal(localBeforeSync, remoteTasksForRisk, risk,
-                        () => applyDownloadedRemoteData(remoteData, localBeforeSync, true),
+                    showSyncRiskModal(localBeforeSync, mergedTasks, risk,
+                        () => applyDownloadedRemoteData(remoteData, localBeforeSync, true, mergedTasks, mergedTaskDel, mergedHistDel),
                         () => {
-                            addSyncLog('download', false, '用户取消（检测到数据回退风险）', null, true);
+                            // 取消：保留本地，并尝试把本地进度推上云端，避免下次打开再次冲突
+                            addSyncLog('download', false, '用户取消（检测到数据回退风险），保留本地并尝试上传', null, true);
+                            taskList = localBeforeSync;
                             saveLocalStorage();
-                            updateSyncStatus('error');
-                            showToast('已取消本次同步，继续使用本地数据', 'warning');
-                            renderPage();
+                            updateSyncStatus('syncing');
+                            showToast('已保留本地数据，正在上传到云端…', 'warning');
+                            doUploadRemoteData(localBeforeSync).finally(() => {
+                                lastSyncedSnapshot = cloneTasks(taskList);
+                                renderPage();
+                            });
                         }
                     );
-                    return; // 暂停，等待用户在弹窗中做出选择
+                    return;
                 }
-                applyDownloadedRemoteData(remoteData, localBeforeSync, false);
+                applyDownloadedRemoteData(remoteData, localBeforeSync, false, mergedTasks, mergedTaskDel, mergedHistDel);
                 return;
             }
         } catch (e) {
@@ -3979,11 +4104,20 @@ async function loadStorage() {
     renderPage();
 }
 
-function applyDownloadedRemoteData(remoteData, localBeforeSync, riskConfirmed) {
-    taskDeletionRecords = mergeTaskDeletionLists(taskDeletionRecords, remoteData.taskDeletionRecords);
-    historyDeletionRecords = mergeHistoryDeletionLists(historyDeletionRecords, remoteData.historyDeletionRecords);
-    taskList = applyTaskDeletionLedger(remoteData.tasks, taskDeletionRecords);
-    taskList = applyHistoryDeletionLedger(taskList, historyDeletionRecords);
+function applyDownloadedRemoteData(remoteData, localBeforeSync, riskConfirmed, preMergedTasks, preMergedTaskDel, preMergedHistDel) {
+    taskDeletionRecords = preMergedTaskDel || mergeTaskDeletionLists(taskDeletionRecords, remoteData.taskDeletionRecords);
+    historyDeletionRecords = preMergedHistDel || mergeHistoryDeletionLists(historyDeletionRecords, remoteData.historyDeletionRecords);
+
+    if (Array.isArray(preMergedTasks)) {
+        taskList = preMergedTasks;
+    } else {
+        // 兜底：仍做合并，避免旧调用路径直接覆盖
+        let merged = mergeTasksForSync(localBeforeSync || taskList, remoteData.tasks);
+        merged = applyTaskDeletionLedger(merged, taskDeletionRecords);
+        merged = applyHistoryDeletionLedger(merged, historyDeletionRecords);
+        taskList = merged;
+    }
+
     syncLog = mergeSyncLog(syncLog, remoteData.syncLog);
     snapshots = mergeSnapshots(snapshots, remoteData.snapshots);
     deviceRegistry = mergeDeviceRegistry(deviceRegistry, remoteData.devices);
@@ -3996,8 +4130,11 @@ function applyDownloadedRemoteData(remoteData, localBeforeSync, riskConfirmed) {
             lastSeenAt: remoteData.deviceMeta.updatedAt,
             noteUpdatedAt: remoteData.deviceMeta.updatedAt
         }, remoteData.deviceMeta.deviceId);
-        deviceRegistry[remoteCurrent.deviceId] = mergeDeviceRegistry({ [remoteCurrent.deviceId]: deviceRegistry[remoteCurrent.deviceId] }, { [remoteCurrent.deviceId]: remoteCurrent })[remoteCurrent.deviceId];
-    pruneStaleDevices(Date.now(), { keepCurrent: true, persist: false });
+        deviceRegistry[remoteCurrent.deviceId] = mergeDeviceRegistry(
+            { [remoteCurrent.deviceId]: deviceRegistry[remoteCurrent.deviceId] },
+            { [remoteCurrent.deviceId]: remoteCurrent }
+        )[remoteCurrent.deviceId];
+        pruneStaleDevices(Date.now(), { keepCurrent: true, persist: false });
     }
     if (deviceRegistry[deviceId] && deviceRegistry[deviceId].note !== undefined) {
         deviceNote = safeText(deviceRegistry[deviceId].note).trim();
@@ -4013,19 +4150,51 @@ function applyDownloadedRemoteData(remoteData, localBeforeSync, riskConfirmed) {
             setLocalAnnouncement(remoteData.announcement, remoteAt || localAt || Date.now());
         }
     }
+
+    const diff = diffTaskLists(localBeforeSync, taskList);
     if (riskConfirmed) {
-        addSyncLog('download', true, '已确认风险后继续同步', diffTaskLists(localBeforeSync, taskList), true);
+        addSyncLog('download', true, '已确认风险后继续同步（已合并本地进度）', diff, true);
     } else {
-        addSyncLog('download', true, null, diffTaskLists(localBeforeSync, taskList));
+        addSyncLog('download', true, null, diff);
     }
     maybeCreateDailySnapshot();
     saveLocalStorage();
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     updateSyncStatus('success', timeStr);
-    showToast(riskConfirmed ? '已确认并完成同步' : '云端数据同步成功', 'success');
-        saveRemoteData().catch(() => {});
+
+    const localAhead = diffHasChange(diffTaskLists(
+        applyHistoryDeletionLedger(
+            applyTaskDeletionLedger(normalizeTaskList(remoteData.tasks || []), taskDeletionRecords),
+            historyDeletionRecords
+        ),
+        taskList
+    ));
+    showToast(
+        riskConfirmed
+            ? '已确认并完成同步'
+            : (localAhead ? '已合并本地进度，正在上传…' : '云端数据同步成功'),
+        'success'
+    );
+
+    // 合并后始终尝试上传：把本地多出来的打卡推上云端，避免下次再冲突
     lastSyncedSnapshot = cloneTasks(taskList);
+    saveRemoteData()
+        .then((result) => {
+            if (result && !result.skipped) {
+                addSyncLog('upload', true, '合并后回写云端', diffTaskLists(localBeforeSync, taskList));
+                lastSyncedSnapshot = cloneTasks(taskList);
+                saveLocalStorage();
+            }
+            const t = new Date();
+            updateSyncStatus('success', `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`);
+        })
+        .catch((e) => {
+            console.error('合并后回写云端失败', e);
+            addSyncLog('upload', false, friendlySyncErrorReason(e), buildSyncErrorDetail(e));
+            updateSyncStatus('error');
+            showToast('本地已保留，云端上传失败，下次打开会再试', 'warning');
+        });
     renderPage();
 }
 
@@ -4614,7 +4783,7 @@ function openMonthCompletionDetail(kind) {
             }
         } catch (e) {}
     }
-    if (el.calendarDetailPopWrap) el.calendarDetailPopWrap.style.display = 'block';
+    if (el.calendarDetailPopWrap) setOverlayDisplay(el.calendarDetailPopWrap, 'block');
 }
 function updateCalendarMonthSummary() {
     const summaryEl = document.getElementById('calendarMonthSummary') || (el && el.calendarMonthSummary);
@@ -4779,6 +4948,65 @@ function jumpToTaskFromCalendar(taskId) {
     }, 120);
 }
 
+
+/** 弹层防底层滚动穿透 */
+let __bodyScrollLockCount = 0;
+let __bodyScrollLockY = 0;
+function lockBodyScroll() {
+    if (__bodyScrollLockCount === 0) {
+        __bodyScrollLockY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+        document.documentElement.classList.add('body-scroll-locked');
+        document.body.style.top = `-${__bodyScrollLockY}px`;
+    }
+    __bodyScrollLockCount++;
+}
+function unlockBodyScroll() {
+    if (__bodyScrollLockCount <= 0) {
+        __bodyScrollLockCount = 0;
+        return;
+    }
+    __bodyScrollLockCount--;
+    if (__bodyScrollLockCount === 0) {
+        document.documentElement.classList.remove('body-scroll-locked');
+        document.body.style.top = '';
+        window.scrollTo(0, __bodyScrollLockY || 0);
+    }
+}
+function isOverlayOpen(node) {
+    if (!node) return false;
+    const d = node.style && node.style.display;
+    if (d && d !== 'none') return true;
+    try {
+        return window.getComputedStyle(node).display !== 'none';
+    } catch (e) {
+        return false;
+    }
+}
+function refreshBodyScrollLockFromOverlays() {
+    const ids = ['calendarDetailPopWrap', 'backupManagePopWrap', 'maskWrap', 'confirmPopWrap', 'importPopWrap', 'syncRiskPopWrap'];
+    let any = false;
+    for (const id of ids) {
+        const node = document.getElementById(id);
+        if (isOverlayOpen(node)) { any = true; break; }
+    }
+    if (any) {
+        if (__bodyScrollLockCount === 0) lockBodyScroll();
+        else {
+            // 已锁定则保持
+        }
+    } else {
+        while (__bodyScrollLockCount > 0) unlockBodyScroll();
+    }
+}
+function setOverlayDisplay(node, display) {
+    if (!node) return;
+    const wasOpen = isOverlayOpen(node);
+    node.style.display = display;
+    const nowOpen = display && display !== 'none';
+    if (!wasOpen && nowOpen) lockBodyScroll();
+    else if (wasOpen && !nowOpen) unlockBodyScroll();
+}
+
 function openCalendarDetail(dateString, taskEntries) {
     // 恢复日历详情统计格文案（可能被「本月入账明细」改过）
     const countLabel = document.querySelector('#calendarDetailCount') && document.querySelector('#calendarDetailCount').parentElement
@@ -4828,7 +5056,7 @@ function openCalendarDetail(dateString, taskEntries) {
     } else {
         el.calendarDetailList.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 3.4V7M16 3.4V7M3.5 10h17" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`, title: '当天没有打卡记录', desc: '继续坚持保持习惯' });
     }
-    el.calendarDetailPopWrap.style.display = 'block';
+    setOverlayDisplay(el.calendarDetailPopWrap, 'block');
 }
 
 function getFilteredAllTasks() {
@@ -5571,7 +5799,7 @@ function openAdd() {
     el.inpContinuous.checked = false;
     
     toggleRewardInputForm('money');
-    el.maskWrap.style.display = "block";
+    setOverlayDisplay(el.maskWrap, 'block');
     setTimeout(()=>el.inpName.focus(),100);
 }
 
@@ -5614,7 +5842,7 @@ function openEdit(id) {
         el.inpCustom.value = rValue || "";
     }
     toggleRewardInputForm(rType);
-    el.maskWrap.style.display = "block";
+    setOverlayDisplay(el.maskWrap, 'block');
 }
 
 function saveTask() {
@@ -5683,7 +5911,7 @@ function saveTask() {
         }
 
         saveStorage();
-        el.maskWrap.style.display = "none";
+        setOverlayDisplay(el.maskWrap, 'none');
         renderPage();
         showToast("保存成功");
     } catch (e) {
@@ -5785,7 +6013,7 @@ function triggerImport(e) {
                 throw new Error("Invalid Schema");
             }
             tempImportData = normalized;
-            el.importPopWrap.style.display = "flex";
+            setOverlayDisplay(el.importPopWrap, 'flex');
         } catch (err) {
             showToast("备份文件格式错误", "error");
         }
@@ -5795,8 +6023,8 @@ function triggerImport(e) {
 }
 
 el.importOverwriteBtn.onclick = () => {
-    if (!tempImportData) { el.importPopWrap.style.display = "none"; return; }
-    el.importPopWrap.style.display = "none";
+    if (!tempImportData) { setOverlayDisplay(el.importPopWrap, 'none'); return; }
+    setOverlayDisplay(el.importPopWrap, 'none');
     openConfirm(
         "确认覆盖导入",
         "此操作将：\n1. 覆盖本地数据\n2. 同步覆盖云端数据\n3. 不可撤销\n\n确定要继续吗？",
@@ -5823,11 +6051,11 @@ el.importMergeBtn.onclick = () => {
         renderPage();
         showToast(`合并完成，已融合本地与导入数据`, 'success');
     }
-    el.importPopWrap.style.display = "none";
+    setOverlayDisplay(el.importPopWrap, 'none');
     tempImportData = null;
 };
 el.importCancelBtn.onclick = () => {
-    el.importPopWrap.style.display = "none";
+    setOverlayDisplay(el.importPopWrap, 'none');
     tempImportData = null;
 };
 function clearAllData() {
@@ -5950,10 +6178,10 @@ function renderBackupManagePanel() {
 
 function openBackupManage() {
     renderBackupManagePanel();
-    el.backupManagePopWrap.style.display = 'block';
+    setOverlayDisplay(el.backupManagePopWrap, 'block');
 }
 function closeBackupManage() {
-    el.backupManagePopWrap.style.display = 'none';
+    setOverlayDisplay(el.backupManagePopWrap, 'none');
 }
 
 function scrollBackupSection(key) {
@@ -5994,7 +6222,63 @@ function initWidgetStates() {
     }
 }
 
+
+
+function closeTopmostOverlay() {
+    const stack = [
+        { id: 'syncRiskPopWrap', close: () => { if (typeof closeSyncRiskModal === 'function') closeSyncRiskModal(); else setOverlayDisplay(document.getElementById('syncRiskPopWrap'), 'none'); } },
+        { id: 'importPopWrap', close: () => setOverlayDisplay(document.getElementById('importPopWrap'), 'none') },
+        { id: 'confirmPopWrap', close: () => { if (typeof closeConfirm === 'function') closeConfirm(); else setOverlayDisplay(document.getElementById('confirmPopWrap'), 'none'); } },
+        { id: 'calendarDetailPopWrap', close: () => { if (typeof closeCalendarDetail === 'function') closeCalendarDetail(); else setOverlayDisplay(document.getElementById('calendarDetailPopWrap'), 'none'); } },
+        { id: 'backupManagePopWrap', close: () => { if (typeof closeBackupManage === 'function') closeBackupManage(); else setOverlayDisplay(document.getElementById('backupManagePopWrap'), 'none'); } },
+        { id: 'maskWrap', close: () => setOverlayDisplay(document.getElementById('maskWrap'), 'none') }
+    ];
+    for (const item of stack) {
+        const node = document.getElementById(item.id);
+        if (isOverlayOpen(node)) {
+            item.close();
+            return true;
+        }
+    }
+    return false;
+}
+
+function bindOverlayTouchGuard() {
+    const ids = ['calendarDetailPopWrap', 'backupManagePopWrap', 'maskWrap', 'confirmPopWrap', 'importPopWrap', 'syncRiskPopWrap'];
+    ids.forEach(id => {
+        const node = document.getElementById(id);
+        if (!node || node.dataset.touchGuard === '1') return;
+        node.dataset.touchGuard = '1';
+        node.addEventListener('touchmove', (e) => {
+            // 点在遮罩空白处：禁止带动底层
+            if (e.target === node) {
+                e.preventDefault();
+                return;
+            }
+            // 内部可滚动区域：滚到顶/底时阻止链式滚动
+            const scrollable = e.target.closest('.calendar-detail-pop, .confirm-inner, .backup-manage-scroll, .pop.task-pop, .calendar-detail-list, .announcement-text');
+            if (!scrollable) {
+                // 非滚动区域的触摸不传给底层
+                if (e.target.closest('.mask, .confirm-pop, .calendar-detail-mask')) {
+                    // 允许默认以便内部按钮等正常，但不处理 body
+                }
+                return;
+            }
+            const el = scrollable;
+            const top = el.scrollTop;
+            const max = el.scrollHeight - el.clientHeight;
+            // 若内容不可滚，直接阻止
+            if (max <= 0) {
+                e.preventDefault();
+                return;
+            }
+        }, { passive: false });
+    });
+}
+
 function bindGlobalEvent() {
+    try { bindOverlayTouchGuard(); } catch (e) {}
+
 
     if (el.backToTopBtn) {
         el.backToTopBtn.addEventListener('click', scrollPageToTop);
@@ -6043,7 +6327,12 @@ function bindGlobalEvent() {
             }
         });
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeMoreMenu();
+            if (e.key !== 'Escape') return;
+            if (closeTopmostOverlay()) {
+                e.preventDefault();
+                return;
+            }
+            closeMoreMenu();
         });
     }
     
@@ -6092,11 +6381,11 @@ function bindGlobalEvent() {
     el.batchDeleteBtn.addEventListener('click', batchDeleteTasks);
     el.batchCancelBtn.addEventListener('click', toggleBatchMode);
 
-    el.popCancel.onclick = () => el.maskWrap.style.display = "none";
+    el.popCancel.onclick = () => setOverlayDisplay(el.maskWrap, 'none');
     const popCloseBtn = document.getElementById('popCloseBtn');
-    if (popCloseBtn) popCloseBtn.onclick = () => el.maskWrap.style.display = "none";
+    if (popCloseBtn) popCloseBtn.onclick = () => setOverlayDisplay(el.maskWrap, 'none');
     el.maskWrap.addEventListener('click', (e) => {
-        if (e.target === el.maskWrap) el.maskWrap.style.display = "none";
+        if (e.target === el.maskWrap) setOverlayDisplay(el.maskWrap, 'none');
     });
     el.popSave.onclick = saveTask;
     el.addTaskBtn.onclick = openAdd;
