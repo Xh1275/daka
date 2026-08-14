@@ -6245,6 +6245,19 @@ function closeTopmostOverlay() {
 
 function bindOverlayTouchGuard() {
     const ids = ['calendarDetailPopWrap', 'backupManagePopWrap', 'maskWrap', 'confirmPopWrap', 'importPopWrap', 'syncRiskPopWrap'];
+    // 必须指向真正 overflow 可滚的节点：
+    // 任务弹窗实际滚动的是 .pop-body，不是外层 .pop.task-pop（外层 overflow:hidden）
+    const SCROLLABLE_SEL = [
+        '.task-pop .pop-body',
+        '.pop-body',
+        '.calendar-detail-pop',
+        '.calendar-detail-list',
+        '.confirm-inner',
+        '.backup-manage-scroll',
+        '.announcement-text',
+        '#syncRiskDetailWrap',
+        '.sync-log-detail'
+    ].join(', ');
     ids.forEach(id => {
         const node = document.getElementById(id);
         if (!node || node.dataset.touchGuard === '1') return;
@@ -6255,23 +6268,19 @@ function bindOverlayTouchGuard() {
                 e.preventDefault();
                 return;
             }
-            // 内部可滚动区域：滚到顶/底时阻止链式滚动
-            const scrollable = e.target.closest('.calendar-detail-pop, .confirm-inner, .backup-manage-scroll, .pop.task-pop, .calendar-detail-list, .announcement-text');
+            const scrollable = e.target.closest(SCROLLABLE_SEL);
             if (!scrollable) {
-                // 非滚动区域的触摸不传给底层
-                if (e.target.closest('.mask, .confirm-pop, .calendar-detail-mask')) {
-                    // 允许默认以便内部按钮等正常，但不处理 body
-                }
+                // 弹层内但点在标题栏/底栏等非滚动区：只拦穿透，不拦点击
+                e.preventDefault();
                 return;
             }
-            const el = scrollable;
-            const top = el.scrollTop;
-            const max = el.scrollHeight - el.clientHeight;
-            // 若内容不可滚，直接阻止
+            const max = scrollable.scrollHeight - scrollable.clientHeight;
+            // 内容本身装得下、没有滚动条：阻止，避免带动底层
             if (max <= 0) {
                 e.preventDefault();
                 return;
             }
+            // 有可滚区域：放行，由浏览器滚动 .pop-body 等
         }, { passive: false });
     });
 }
