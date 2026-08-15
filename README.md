@@ -169,7 +169,9 @@ A personal multi-device check-in tracker for daily promo / sign-in tasks. Data i
 
 ### 许可与声明
 
-自用工具，许可以仓库声明为准。与各 APP 官方活动无关，仅作个人打卡记录。
+本项目采用仓库内 `LICENSE` 所述的限制性许可。未经作者书面许可，不得公开再发布、商业使用，或将本项目及其衍生版本作为自己的项目发布。
+
+与各 APP 官方活动无关，仅作个人打卡记录。
 
 ---
 
@@ -305,7 +307,13 @@ Designed for a few devices and ~100 tasks. Usually stays within Cloudflare free 
 
 ### License & disclaimer
 
-Personal tool; see the repository for license. Not affiliated with any app’s official campaigns; for personal check-in logging only.
+Copyright © 2026 羊毛打卡管家项目作者。
+
+This repository is **not** released under an open-source license. The source code and original project materials are provided for viewing and learning only. Unless you have received separate written permission from the author, you may not copy, republish, redistribute, sublicense, commercially use, sell, or present this project or a modified version of it as your own.
+
+You may fork or download the repository for personal reference, but this does not grant permission to publish or distribute the project or derivative works. See [`LICENSE`](./LICENSE) for the full terms.
+
+Not affiliated with any app’s official campaigns; for personal check-in logging only.
 
 ---
 

@@ -1,0 +1,55 @@
+# 羊毛打卡管家项目专用许可证
+
+Copyright © 2026 羊毛打卡管家项目作者。
+
+本项目及其源代码、界面设计、README 文档、图片素材和其他原创项目材料（以下简称“项目材料”）的著作权及其他适用的知识产权归项目作者所有。
+
+本项目不采用 MIT、Apache-2.0、GPL 等开源许可证。除本许可证明确授予的权限外，项目作者不授予任何复制、传播、修改、再许可或商业使用的权利。
+
+## 1. 允许的使用
+
+在遵守本许可证的前提下，你可以：
+
+- 查看、学习本项目的源代码；
+- 下载或 Fork 本项目用于个人学习、研究和个人使用；
+- 在本地对项目进行修改，仅供个人使用。
+
+## 2. 未经书面许可禁止的行为
+
+除非获得项目作者明确的书面许可，否则不得：
+
+- 将本项目或其主要代码复制到其他仓库、网站、应用或项目中并公开发布；
+- 直接重新发布、镜像、打包或分发本项目；
+- 将本项目的修改版、移植版、二次开发版作为独立项目公开发布；
+- 将本项目或其衍生版本用于商业运营、收费、销售、广告变现或其他营利活动；
+- 删除、隐藏或修改项目中的版权、作者及许可证声明；
+- 将本项目或其衍生版本冒充为自己原创的项目；
+- 将项目中的原创界面、文案、图片等材料单独提取后用于其他公开项目或商业用途。
+
+## 3. 第三方内容
+
+本项目可能包含由第三方提供、受第三方许可证约束的代码、库、字体、图标或其他内容。第三方内容仍受其各自许可证约束，本许可证不改变第三方权利。
+
+## 4. 免责声明
+
+本项目按“现状”提供，不保证始终可用、无错误或适用于特定用途。项目作者不对因使用本项目造成的任何直接或间接损失承担超出适用法律允许范围的责任。
+
+本项目与任何相关 APP、平台或官方活动没有官方关联，仅用于个人羊毛/签到记录。
+
+## 5. 许可申请
+
+如需获得公开发布、商业使用、再分发或其他超出本许可证范围的权限，请先取得项目作者的书面许可。
+
+---
+
+# English Summary
+
+Copyright © 2026 the author of Wool Check-in Manager.
+
+This project is **not open source** and is not released under MIT, Apache-2.0, GPL, or any other standard open-source license. The source code and original project materials are provided for viewing, learning, and personal use only.
+
+Without prior written permission from the author, you may not publicly redistribute, republish, commercially use, sell, sublicense, or present the project or a modified/derivative version as your own work.
+
+You may view, download, fork, and modify the project for private personal use, provided that you do not publicly distribute the resulting project or derivative work and do not remove copyright or license notices.
+
+Third-party components remain subject to their own licenses.
