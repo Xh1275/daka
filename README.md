@@ -1,7 +1,7 @@
 # 羊毛打卡管家 / Wool Check-in Manager
 
 <p align="center">
-  <a href="#zh">中文</a> · <a href="#en">English</a>
+  <a href="#zh">中文</a> · <a href="#en">English</a> · <a href="#sponsor">☕ 支持作者</a>
 </p>
 
 自用多端「羊毛 / 签到」打卡记录工具。数据优先保存在浏览器本地，可选同步到 Cloudflare KV，方便手机与电脑共用。
@@ -308,6 +308,8 @@ Designed for a few devices and ~100 tasks. Usually stays within Cloudflare free 
 Personal tool; see the repository for license. Not affiliated with any app’s official campaigns; for personal check-in logging only.
 
 ---
+
+<a id="sponsor"></a>
 
 ## 赞赏支持 / Support
 
