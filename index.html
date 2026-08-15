@@ -2325,7 +2325,7 @@ html.body-scroll-locked .batch-bar {
                     </div>
                 </div>
                 <div class="backup-section" id="backupSectionSnapshot">
-                    <div class="backup-section-title">历史快照 <span class="backup-section-hint">保留最近3天，可恢复</span></div>
+                    <div class="backup-section-title">历史快照 <span class="backup-section-hint">仅本机保留最近2天，不上传云端</span></div>
                     <div id="snapshotList"></div>
                 </div>
                 <div class="backup-section" id="backupSectionDevice">
@@ -2735,7 +2735,7 @@ const KEY_SNAPSHOTS = "daka_snapshots";
 const KEY_SYNC_RECOVERY = "daka_sync_recovery_point";
 const KEY_RESTORE_TOAST_FLAG = "daka_show_restore_toast";
 const SYNC_LOG_MAX = 50;
-const SNAPSHOT_KEEP_DAYS = 3;
+const SNAPSHOT_KEEP_DAYS = 2; // 仅本地保留最近 2 天，不上传云端
 const SYNC_PASSWORD_KEY = 'sync_password';
 const KEY_DEVICE_ID = 'daka_device_id';
 const KEY_DEVICE_NOTE = 'daka_device_note';
@@ -2921,7 +2921,8 @@ function buildRemotePayload() {
             deviceId: deviceId || ''
         },
         syncLog: syncLogForUpload,
-        snapshots,
+        // 快照仅本地：上传空数组，便于服务端清掉云端旧快照
+        snapshots: [],
         taskDeletionRecords,
         historyDeletionRecords,
         devices: deviceRegistry,
@@ -3477,6 +3478,7 @@ function loadLocalStorage() {
     try {
         const rawSnap = localStorage.getItem(KEY_SNAPSHOTS);
         snapshots = normalizeSnapshotList(rawSnap ? JSON.parse(rawSnap) : []);
+        pruneSnapshots();
     } catch (e) { snapshots = []; }
     try {
         const rawDeviceRegistry = localStorage.getItem(KEY_DEVICE_REGISTRY);
@@ -4133,7 +4135,8 @@ function applyDownloadedRemoteData(remoteData, localBeforeSync, riskConfirmed, p
     }
 
     syncLog = mergeSyncLog(syncLog, remoteData.syncLog);
-    snapshots = mergeSnapshots(snapshots, remoteData.snapshots);
+    // 快照仅本地：不合并云端 snapshots，只整理本机份
+    pruneSnapshots();
     deviceRegistry = mergeDeviceRegistry(deviceRegistry, remoteData.devices);
     pruneStaleDevices(Date.now(), { keepCurrent: true, persist: false });
     if (remoteData.deviceMeta && remoteData.deviceMeta.deviceId && remoteData.deviceMeta.deviceNote !== undefined) {
