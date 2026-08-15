@@ -587,7 +587,10 @@ export async function onRequestPost(context) {
       taskDeletionRecords: mergedTaskDeletionRecords,
       historyDeletionRecords: mergedHistoryDeletionRecords,
       syncLog: mergeSyncLogs(currentData.syncLog, incomingData.syncLog),
-      snapshots: mergeSnapshots(currentData.snapshots, incomingData.snapshots),
+      // 前端传空数组 = 快照仅本地，清空云端旧快照；有内容时仍合并（兼容旧客户端）
+      snapshots: (Array.isArray(incomingData.snapshots) && incomingData.snapshots.length === 0)
+        ? []
+        : mergeSnapshots(currentData.snapshots, incomingData.snapshots),
       devices: pruneDeviceRegistry(
         mergeDevices(currentData.devices, incomingData.devices, incomingData.deviceMeta),
         Date.now()
