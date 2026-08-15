@@ -209,6 +209,12 @@ html[data-theme="dark"] .github-btn:hover{ color:var(--text-main); background:rg
 .tag-wait{background:#fef6e9;color:var(--warning);}
 .tag-danger{background:#ffeced;color:var(--danger);}
 .tag-warning{background:#fff7e6;color:var(--warning); border:1px solid #ffe58f;}
+.tag-paused{background:#f0f0f0;color:#666666; border:1px solid #dddddd;}
+html[data-theme="dark"] .tag-paused{background:#2a2a2a !important;color:#a0a0a0 !important;border-color:#444 !important;}
+.oper-btn-group .pause-btn{border-color:var(--text-light);color:var(--text-sub);}
+.oper-btn-group .pause-btn.is-paused{border-color:var(--warning);color:var(--warning);font-weight:bold;}
+.task-card.card-paused{opacity:0.78;}
+.task-card.card-paused .task-name{color:var(--text-sub);font-weight:600;}
 .task-desc{font-size:13px;color:var(--text-sub);margin:6px 0; line-height: 1.4;}
 .progress-wrap{margin:10px 0;}
 .progress-row{display:flex;justify-content:space-between;font-size:12px;color:var(--text-sub);margin-bottom:4px;}
@@ -2101,6 +2107,7 @@ html.body-scroll-locked .batch-bar {
 
         <div class="filter-tab">
             <span data-filter="doing" class="filter-item active">进行中</span>
+            <span data-filter="paused" class="filter-item">已挂起</span>
             <span data-filter="finish" class="filter-item">已归档/完成</span>
             <span data-filter="all" class="filter-item">全部</span>
             <button class="sort-btn" id="batchModeBtn" style="margin-left: auto;">批量管理</button>
@@ -2127,6 +2134,7 @@ html.body-scroll-locked .batch-bar {
         </div>
         <div class="batch-actions">
             <button class="batch-btn" id="batchPinBtn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 16.5V21" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.2 4h7.6l-1.2 6.2h3.1L12 16.2 6.3 10.2h3.1L8.2 4Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 批量置顶</button>
+            <button class="batch-btn" id="batchPauseBtn">批量挂起</button>
             <button class="batch-btn" id="batchCategoryBtn">改分类</button>
             <button class="batch-btn" id="batchArchiveBtn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16v12.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19.5Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 4.5h18V7H3Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 12h5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 归档</button>
             <button class="batch-btn danger" id="batchDeleteBtn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M9.5 7V5h5v2M8 7l.7 12h6.6L16 7M10 11v5M14 11v5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 删除</button>
@@ -2488,6 +2496,7 @@ function normalizeTaskRecord(rawTask) {
     item.startDate = /^\d{4}-\d{2}-\d{2}$/.test(startDate) ? startDate : getTodayStr();
     item.isContinuous = !!item.isContinuous;
     item.isPinned = !!item.isPinned;
+    item.isPaused = !!item.isPaused;
     item.history = Array.isArray(item.history) ? item.history.filter(v => typeof v === 'string') : [];
     item.archives = Array.isArray(item.archives) ? item.archives.map(a => {
         const arc = a && typeof a === 'object' ? { ...a } : {};
@@ -2860,6 +2869,7 @@ const el = {
     batchSelectAll: document.getElementById('batchSelectAll'),
     batchSelectedCount: document.getElementById('batchSelectedCount'),
     batchPinBtn: document.getElementById('batchPinBtn'),
+    batchPauseBtn: document.getElementById('batchPauseBtn'),
     batchCategoryBtn: document.getElementById('batchCategoryBtn'),
     batchArchiveBtn: document.getElementById('batchArchiveBtn'),
     batchDeleteBtn: document.getElementById('batchDeleteBtn'),
@@ -3336,7 +3346,8 @@ function diffTaskLists(oldList, newList) {
     const added = [], removed = [], modified = [], checkins = [], uncheckins = [];
     const fieldsToCheck = [
         ['name', '任务名称'], ['remark', '备注'], ['rewardType', '奖励类型'], ['rewardValue', '奖励内容'],
-        ['category', '分类'], ['totalDay', '总天数'], ['timesPerDay', '每日次数'], ['startDate', '开始日期'], ['isContinuous', '连续打卡']
+        ['category', '分类'], ['totalDay', '总天数'], ['timesPerDay', '每日次数'], ['startDate', '开始日期'],
+        ['isContinuous', '连续打卡'], ['isPinned', '置顶'], ['isPaused', '挂起']
     ];
     // 只保留展示需要的原始值快照（字符串/数字），不持有任务对象的引用，
     // 避免任务之后被改名/编辑时，历史同步记录里的详情跟着"被篡改"。
@@ -3358,7 +3369,10 @@ function diffTaskLists(oldList, newList) {
         const changes = [];
         fieldsToCheck.forEach(([f, label]) => {
             let ov = oldT[f], nv = newT[f];
-            if (f === 'isContinuous') { ov = ov ? '是' : '否'; nv = nv ? '是' : '否'; }
+            if (f === 'isContinuous' || f === 'isPinned' || f === 'isPaused') {
+                ov = ov ? '是' : '否';
+                nv = nv ? '是' : '否';
+            }
             if (String(ov ?? '') !== String(nv ?? '')) changes.push({ field: f, label, from: ov, to: nv });
         });
         if (changes.length) modified.push({ taskName, changes });
@@ -4483,6 +4497,7 @@ function renderTaskCard(item, isTodayPage = false) {
     const needsYesterdayRetro = (status === "doing") && (item.startDate <= yesterdayStr) && (yesterdayCount < tPerDay);
     
     const isPinned = !!item.isPinned;
+    const isPaused = !!item.isPaused;
     const showBatch = batchMode && currentPage === 'all';
     const appScheme = getTaskAppScheme(item);
     const webLink = getTaskWebLink(item);
@@ -4491,7 +4506,9 @@ function renderTaskCard(item, isTodayPage = false) {
     const displayCategory = getTaskCategoryText(item);
     
     let tagText, tagClass, barColor;
-    if (status === "finish") {
+    if (isPaused) {
+        tagText = "已挂起"; tagClass = "tag-paused"; barColor = "var(--text-light)";
+    } else if (status === "finish") {
         tagText = "已完成/归档"; tagClass = "tag-finish"; barColor = "var(--success)";
     } else if (status === "wait") {
         tagText = "未开始"; tagClass = "tag-wait"; barColor = "var(--warning)";
@@ -4500,20 +4517,20 @@ function renderTaskCard(item, isTodayPage = false) {
     }
     let extraTagsHtml = "";
     if (isPinned) extraTagsHtml += `<span class="tag tag-doing">${ICON_PIN} 置顶</span>`;
-    if (broken && status === "doing") {
+    if (!isPaused && broken && status === "doing") {
         extraTagsHtml += `<span class="tag tag-danger">已断签</span>`;
         barColor = "var(--danger)";
     }
     const totalD = Number(item.totalDay) || 1;
     const completedD = getCompletedDaysCount(item);
     const leftDays = totalD - completedD;
-    if (status === "doing" && leftDays <= 3 && leftDays > 0) {
+    if (!isPaused && status === "doing" && leftDays <= 3 && leftDays > 0) {
         extraTagsHtml += `<span class="tag tag-warning">即将到期(${leftDays}天)</span>`;
     }
 
-    // 1. 打卡/补卡按钮逻辑：仅在【今日打卡】页面保留，全部任务页面隐藏
+    // 1. 打卡/补卡：仅今日页、进行中且未挂起
     let checkBtnHtml = "";
-    if (isTodayPage && status === "doing") {
+    if (isTodayPage && status === "doing" && !isPaused) {
         if (needsYesterdayRetro) {
             checkBtnHtml += `<button class="hand-btn retro" data-retro="${item.id}" title="昨日未完成打卡，点击一键补签"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 8 4 12l5 4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 12h8a6 6 0 0 1 6 6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 补卡 (${yesterdayCount}/${tPerDay})</button>`;
         }
@@ -4524,17 +4541,17 @@ function renderTaskCard(item, isTodayPage = false) {
         }
     }
 
-    // 2. 置灰规则逻辑：
-    // - 今日打卡页面：表示“今日已打卡完毕”
-    // - 全部任务页面：表示“已暂停/已下架/未开始/已完成”（不在今日任务生成中的项目）
+    // 2. 置灰：今日已打完 / 全部页完成·未开始 / 已挂起
     let isDimmed = false;
-    if (isTodayPage) {
+    if (isPaused) {
+        isDimmed = true;
+    } else if (isTodayPage) {
         isDimmed = isChecked;
     } else {
         isDimmed = (status === "finish" || status === "wait");
     }
 
-    const cardExtraClass = `${isDimmed ? "card-done-today" : ""} ${showBatch ? "batch-mode" : ""}`;
+    const cardExtraClass = `${isDimmed ? "card-done-today" : ""} ${isPaused ? "card-paused" : ""} ${showBatch ? "batch-mode" : ""}`;
     
     let rewardDisplay = "";
     const rType = item.rewardType || "money";
@@ -4571,9 +4588,11 @@ function renderTaskCard(item, isTodayPage = false) {
     }
     const pinBtnText = isPinned ? `${ICON_PIN} 取消置顶` : `${ICON_PIN} 置顶`;
     const pinBtnClass = isPinned ? "pin active-pin" : "pin";
+    const pauseBtnText = isPaused ? '恢复' : '挂起';
+    const pauseBtnClass = isPaused ? 'pause-btn is-paused' : 'pause-btn';
 
     const editDelBtnsHtml = isTodayPage ? "" : `
-        ${status === "finish" ? `<button class="restart-round" data-restart="${item.id}"><svg class="ui-icon sync-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19.2 8.2A7.2 7.2 0 0 0 6.5 6.2L4.8 7.9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 4.2v3.7H8.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 15.8A7.2 7.2 0 0 0 17.5 17.8l1.7-1.7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.2 19.8v-3.7H15.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 再开一轮</button>` : ''}
+        ${status === "finish" && !isPaused ? `<button class="restart-round" data-restart="${item.id}"><svg class="ui-icon sync-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19.2 8.2A7.2 7.2 0 0 0 6.5 6.2L4.8 7.9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 4.2v3.7H8.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 15.8A7.2 7.2 0 0 0 17.5 17.8l1.7-1.7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.2 19.8v-3.7H15.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 再开一轮</button>` : ''}
         <button data-edit="${item.id}">${ICON_EDIT} 编辑</button>
         <button class="del" data-del="${item.id}"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M9.5 7V5h5v2M8 7l.7 12h6.6L16 7M10 11v5M14 11v5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 删除</button>
     `;
@@ -4591,7 +4610,7 @@ function renderTaskCard(item, isTodayPage = false) {
                 <span class="tag ${tagClass}">${tagText}</span>
             </div>
         </div>
-        <div class="task-desc">${escapeHTML(displayRemark) || "无备注"} | ${rewardDisplay}</div>
+        <div class="task-desc">${escapeHTML(displayRemark) || "无备注"} | ${rewardDisplay}${isPaused ? ' | 已挂起，不计入今日' : ''}</div>
         <div class="progress-wrap">
             <div class="progress-row">
                 <span>进度: ${completedD}/${totalD}天 ${tPerDay > 1 ? `(今日 ${todayCount}/${tPerDay}次)` : ''}</span>
@@ -4604,8 +4623,9 @@ function renderTaskCard(item, isTodayPage = false) {
         <div class="action-row">
             <span class="date-small">起: ${item.startDate} ${tPerDay > 1 ? `| 每天需打卡${tPerDay}次` : ''} ${item.isContinuous ? '| 连续' : ''}</span>
             <div class="oper-btn-group">
-                ${appScheme ? `<button type="button" class="open-app" data-open-app="${escapeHTML(appScheme)}" title="打开 APP">${ICON_OPEN_APP}<span>打开APP</span></button>` : ''}
+                ${isTodayPage && appScheme ? `<button type="button" class="open-app" data-open-app="${escapeHTML(appScheme)}" title="打开 APP">${ICON_OPEN_APP}<span>打开APP</span></button>` : ''}
                 <button class="${pinBtnClass}" data-pin="${item.id}">${pinBtnText}</button>
+                ${!isTodayPage ? `<button type="button" class="${pauseBtnClass}" data-pause="${item.id}">${pauseBtnText}</button>` : ''}
                 ${editDelBtnsHtml}
                 ${checkBtnHtml}
             </div>
@@ -5063,8 +5083,11 @@ function getFilteredAllTasks() {
     const queryAll = (el.searchAllInput.value || "").toLowerCase().trim();
     if (!Array.isArray(taskList)) taskList = [];
     let filterAllTaskList = taskList.filter(i => taskMatchesQuery(i, queryAll));
-    if (filterType !== "all") {
-        filterAllTaskList = filterAllTaskList.filter(i => getTaskStatus(i) === filterType);
+    if (filterType === "paused") {
+        filterAllTaskList = filterAllTaskList.filter(i => !!i.isPaused);
+    } else if (filterType !== "all") {
+        // 进行中/完成/未开始：挂起任务单独归「已挂起」，不混在进行中
+        filterAllTaskList = filterAllTaskList.filter(i => !i.isPaused && getTaskStatus(i) === filterType);
     }
     return filterAllTaskList;
 }
@@ -5125,6 +5148,25 @@ function batchTogglePin() {
     saveStorage();
     renderPage();
     showToast(allPinned ? '已取消批量置顶' : '已批量置顶');
+}
+function batchTogglePause() {
+    if (selectedTaskIds.size === 0) return showToast('请先选择任务');
+    const allPaused = Array.from(selectedTaskIds).every(id => {
+        const item = taskList.find(t => t.id === id);
+        return item && item.isPaused;
+    });
+    const nowStr = getNowDateTimeStr();
+    let count = 0;
+    taskList.forEach(t => {
+        if (selectedTaskIds.has(t.id)) {
+            t.isPaused = !allPaused;
+            t.updateAt = nowStr;
+            count++;
+        }
+    });
+    saveStorage();
+    renderPage();
+    showToast(allPaused ? `已恢复 ${count} 个任务` : `已挂起 ${count} 个任务`, 'success');
 }
 function batchUpdateCategory() {
     if (selectedTaskIds.size === 0) return showToast('请先选择任务');
@@ -5264,7 +5306,8 @@ function renderPage() {
 
     const queryToday = (el.searchTodayInput.value || "").toLowerCase().trim();
     let filterTodayAll = taskList.filter(i => taskMatchesQuery(i, queryToday));
-    let todayList = filterTodayAll.filter(i => getTaskStatus(i) === "doing");
+    // 今日列表：进行中且未挂起
+    let todayList = filterTodayAll.filter(i => getTaskStatus(i) === "doing" && !i.isPaused);
     // 固定排序：未完成 → 已完成；同组内 置顶优先（避免「置顶但已打完」压住未打卡）
     todayList.sort((a, b) => {
         const aNeed = Number(a.timesPerDay) || 1;
@@ -5386,11 +5429,16 @@ function renderPage() {
     const queryAll = (el.searchAllInput.value || "").toLowerCase().trim();
     let filterAllTaskList = taskList.filter(i => taskMatchesQuery(i, queryAll));
     let filterArr = filterAllTaskList;
-    if (filterType !== "all") {
-        filterArr = filterAllTaskList.filter(i => getTaskStatus(i) === filterType);
+    if (filterType === "paused") {
+        filterArr = filterAllTaskList.filter(i => !!i.isPaused);
+    } else if (filterType !== "all") {
+        filterArr = filterAllTaskList.filter(i => !i.isPaused && getTaskStatus(i) === filterType);
     }
 
     filterArr.sort((a, b) => {
+        const aPause = a.isPaused ? 1 : 0;
+        const bPause = b.isPaused ? 1 : 0;
+        if (aPause !== bPause) return aPause - bPause; // 未挂起优先
         const aPin = a.isPinned ? 1 : 0;
         const bPin = b.isPinned ? 1 : 0;
         if (aPin !== bPin) return bPin - aPin; // 置顶始终优先
@@ -5423,7 +5471,7 @@ function renderPage() {
     });
     allCats.forEach(cat => {
         let catTasks = groups[cat];
-        let uncheckedCount = catTasks.filter(t => getTaskStatus(t) === "doing" && !isCheckedToday(t)).length;
+        let uncheckedCount = catTasks.filter(t => !t.isPaused && getTaskStatus(t) === "doing" && !isCheckedToday(t)).length;
         let totalC = catTasks.length;
         let badgeClass = uncheckedCount > 0 ? "category-badge has-unchecked" : "category-badge";
         let badgeText = uncheckedCount > 0 ? `${uncheckedCount} 个未打卡 / 共 ${totalC} 项` : `全部已完成 (${totalC}项)`;
@@ -5518,6 +5566,19 @@ function handleCardAction(e) {
             saveStorage();
             renderPage();
             showToast(item.isPinned ? "已置顶" : "已取消置顶", "success");
+        }
+        return;
+    }
+    const pauseBtn = e.target.closest('[data-pause]');
+    if (pauseBtn) {
+        const taskId = Number(pauseBtn.dataset.pause);
+        const item = taskList.find(t => t.id === taskId);
+        if (item) {
+            item.isPaused = !item.isPaused;
+            item.updateAt = getNowDateTimeStr();
+            saveStorage();
+            renderPage();
+            showToast(item.isPaused ? "已挂起（不再出现在今日）" : "已恢复，将回到今日列表", "success");
         }
         return;
     }
@@ -5620,6 +5681,7 @@ function restartTask(id) {
             startDate: getTodayStr(),
             isContinuous: item.isContinuous,
             isPinned: false,
+            isPaused: false,
             history: [],
             archives: [],
             createdByDeviceId: deviceId || '',
@@ -5636,6 +5698,7 @@ function restartTask(id) {
 function retroCheck(id) {
     const item = taskList.find(t => t.id === id);
     if (!item) return;
+    if (item.isPaused) return showToast("任务已挂起，请先恢复再补卡");
     if (getTaskStatus(item) === "finish") return showToast("该任务已完成，无法补卡");
 
     const tPerDay = Number(item.timesPerDay) || 1;
@@ -5664,6 +5727,7 @@ function retroCheck(id) {
 function toggleCheck(id) {
     const item = taskList.find(t => t.id === id);
     if(!item) return;
+    if (item.isPaused) return showToast("任务已挂起，请先恢复再打卡");
     if(getTaskStatus(item) === "finish") return showToast("该任务已完成，无法打卡");
     
     const tPerDay = Number(item.timesPerDay) || 1;
@@ -5890,6 +5954,7 @@ function saveTask() {
             startDate: el.inpStart.value || getTodayStr(),
             isContinuous: el.inpContinuous.checked,
             isPinned: existingTask ? !!existingTask.isPinned : false,
+            isPaused: existingTask ? !!existingTask.isPaused : false,
             history: existingTask && Array.isArray(existingTask.history) ? [...existingTask.history] : [],
             archives: existingTask && Array.isArray(existingTask.archives) ? JSON.parse(JSON.stringify(existingTask.archives)) : [],
             createdByDeviceId: existingTask && existingTask.createdByDeviceId
@@ -5944,7 +6009,7 @@ function exportBackup() {
 
 function exportCsv() {
     if (!Array.isArray(taskList) || taskList.length === 0) return showToast("暂无数据可导出");
-    let csvContent = "\uFEFF任务名称,大类分组,备注,状态,目标天数,每天打卡次数,已完成天数,收益/奖品,开始日期,连续打卡,是否置顶,最后更新时间\n";
+    let csvContent = "\uFEFF任务名称,大类分组,备注,状态,目标天数,每天打卡次数,已完成天数,收益/奖品,开始日期,连续打卡,是否置顶,是否挂起,最后更新时间\n";
     taskList.forEach(t => {
         const statusMap = { finish: "已完成/归档", wait: "未开始", doing: "进行中" };
         const status = statusMap[getTaskStatus(t)];
@@ -5962,7 +6027,8 @@ function exportCsv() {
         }
         const reward = `"${String(rawReward).replace(/"/g, '""')}"`;
         
-        csvContent += `${name},${category},${remark},${status},${t.totalDay},${t.timesPerDay || 1},${getCompletedDaysCount(t)},${reward},${t.startDate},${t.isContinuous ? 'yes' : 'no'},${t.isPinned ? 'yes' : 'no'},${t.updateAt || ''}\n`;
+        const statusLabel = t.isPaused ? '已挂起' : status;
+        csvContent += `${name},${category},${remark},${statusLabel},${t.totalDay},${t.timesPerDay || 1},${getCompletedDaysCount(t)},${reward},${t.startDate},${t.isContinuous ? 'yes' : 'no'},${t.isPinned ? 'yes' : 'no'},${t.isPaused ? 'yes' : 'no'},${t.updateAt || ''}\n`;
     });
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const a = document.createElement("a");
@@ -6385,6 +6451,7 @@ function bindGlobalEvent() {
     el.batchModeBtn.addEventListener('click', toggleBatchMode);
     el.batchSelectAll.addEventListener('change', batchSelectAll);
     el.batchPinBtn.addEventListener('click', batchTogglePin);
+    if (el.batchPauseBtn) el.batchPauseBtn.addEventListener('click', batchTogglePause);
     el.batchCategoryBtn.addEventListener('click', batchUpdateCategory);
     el.batchArchiveBtn.addEventListener('click', batchArchiveHistory);
     el.batchDeleteBtn.addEventListener('click', batchDeleteTasks);

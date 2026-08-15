@@ -92,6 +92,9 @@ export async function onRequestPost(context) {
     item.history = normalizeHistory(item.history);
     item.archives = normalizeArchives(item.archives);
     item.updateAt = safeText(item.updateAt, '');
+    item.isPinned = !!item.isPinned;
+    item.isPaused = !!item.isPaused;
+    item.isContinuous = !!item.isContinuous;
     const createdBy = safeText(item.createdByDeviceId).trim();
     if (createdBy) item.createdByDeviceId = createdBy;
     else delete item.createdByDeviceId;
