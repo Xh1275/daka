@@ -4199,7 +4199,8 @@ function applyDownloadedRemoteData(remoteData, localBeforeSync, riskConfirmed, p
     saveRemoteData()
         .then((result) => {
             if (result && !result.skipped) {
-                addSyncLog('upload', true, '合并后回写云端', diffTaskLists(localBeforeSync, taskList));
+                // 与紧前下载是同一份合并结果，不重复展示打卡/新增明细
+                addSyncLog('upload', true, '与上次下载相同', null);
                 lastSyncedSnapshot = cloneTasks(taskList);
                 saveLocalStorage();
             }
@@ -6190,7 +6191,8 @@ function renderSyncLogList() {
         const typeText = item.type === 'upload' ? '上传' : '下载';
         const resultText = item.ok ? '成功' : '失败';
         const cls = item.ok ? 'ok' : 'fail';
-        const hasChange = item.ok && diffHasChange(item.detail);
+        const sameAsDownload = item.ok && item.type === 'upload' && item.reason === '与上次下载相同';
+        const hasChange = item.ok && !sameAsDownload && diffHasChange(item.detail);
         const sourceLabel = getDeviceLabel(item.deviceId, item.deviceNote || item.deviceLabel || '');
         const timeText = escapeHTML(item.t);
         const sourceText = escapeHTML(sourceLabel);
@@ -6215,8 +6217,15 @@ function renderSyncLogList() {
                     ${mkStat('removed', '删除', d.removed.length)}
                 </div>`;
         }
+        let summaryLabel = '';
+        if (item.ok) {
+            if (sameAsDownload) summaryLabel = '与上次下载相同';
+            else if (hasChange) summaryLabel = '有数据更新';
+            else summaryLabel = '数据一致';
+        }
+        const canExpand = item.ok && hasChange;
         return `
-        <div class="sync-log-item ${cls} ${item.ok ? 'expandable' : ''}">
+        <div class="sync-log-item ${cls} ${canExpand ? 'expandable' : ''}">
             <div class="sync-log-header">
                 <div class="sync-log-title">
                     <div class="sync-log-main">${arrow} ${typeText}</div>
@@ -6229,9 +6238,9 @@ function renderSyncLogList() {
                 </div>
                 <div class="sync-log-result ${cls}">${resultText}</div>
             </div>
-            ${item.ok ? `<div class="sync-log-summary ${hasChange ? 'changed' : ''}">${hasChange ? '有数据更新' : '数据一致'}</div>` : ''}
+            ${item.ok ? `<div class="sync-log-summary ${hasChange ? 'changed' : ''}">${summaryLabel}</div>` : ''}
             ${statsLine}
-            ${item.ok ? `<div class="sync-log-detail">${renderSyncDetailHTML(item.detail)}</div>` : ''}
+            ${canExpand ? `<div class="sync-log-detail">${renderSyncDetailHTML(item.detail)}</div>` : ''}
         </div>`;
     }).join('');
 }
