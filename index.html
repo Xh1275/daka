@@ -87,6 +87,45 @@ body {
 .github-icon{ display:block; }
 html[data-theme="dark"] .github-btn{ color:var(--text-sub); }
 html[data-theme="dark"] .github-btn:hover{ color:var(--text-main); background:rgba(255,255,255,.08); }
+.contact-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:28px;
+    height:28px;
+    border-radius:50%;
+    border:none;
+    background:transparent;
+    padding:0;
+    color:var(--text-sub);
+    cursor:pointer;
+    transition:color .15s ease, background .15s ease, transform .15s ease;
+}
+.contact-btn:hover{
+    color:var(--text-main);
+    background:var(--border-color);
+}
+.contact-btn:active{ transform:scale(.94); }
+html[data-theme="dark"] .contact-btn{ color:var(--text-sub); }
+html[data-theme="dark"] .contact-btn:hover{ color:var(--text-main); background:rgba(255,255,255,.08); }
+.contact-form-item{ margin-bottom:12px; text-align:left; }
+.contact-form-item label{ display:block; font-size:13px; color:var(--text-sub); margin-bottom:6px; }
+.contact-form-item input,
+.contact-form-item textarea{
+    width:100%;
+    box-sizing:border-box;
+    padding:10px 12px;
+    border-radius:8px;
+    border:1px solid var(--border-color);
+    background:var(--bg-color);
+    color:var(--text-main);
+    font-size:14px;
+    outline:none;
+}
+.contact-form-item textarea{ min-height:96px; resize:vertical; line-height:1.5; }
+.contact-form-item input:focus,
+.contact-form-item textarea:focus{ border-color:var(--primary); }
+.contact-hint{ font-size:12px; color:var(--text-light); margin:0 0 12px; text-align:left; line-height:1.4; }
 .announcement-bar {
     background: var(--card-bg);
     color: var(--text-main);
@@ -2035,6 +2074,9 @@ html.body-scroll-locked .batch-bar {
             <a class="tool-btn github-btn" id="githubBtn" href="https://github.com/Xh1275/daka" target="_blank" rel="noopener noreferrer" title="GitHub 开源地址" aria-label="GitHub 开源地址">
                 <svg class="github-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
             </a>
+            <button type="button" class="tool-btn contact-btn" id="contactBtn" title="联系作者" aria-label="联系作者">
+                <svg class="ui-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true"><path d="M4.5 7.5h15v9.5a1.5 1.5 0 0 1-1.5 1.5h-12A1.5 1.5 0 0 1 4.5 17Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="m5 8 7 5 7-5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
             <span class="tool-btn" id="themeBtn" class="theme-btn" aria-label="切换主题"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15.5 3.2a8.5 8.5 0 1 0 5.3 13.8A7 7 0 0 1 15.5 3.2Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
             <div class="more-wrap">
                 <span class="tool-btn more-trigger" id="moreBtn" aria-label="更多操作"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="6.5" cy="12" r="1.35" fill="currentColor"/><circle cx="12" cy="12" r="1.35" fill="currentColor"/><circle cx="17.5" cy="12" r="1.35" fill="currentColor"/></svg></span>
@@ -2287,6 +2329,26 @@ html.body-scroll-locked .batch-bar {
                 <button id="importMergeBtn" style="padding:12px; border-radius:8px; border:1px solid var(--primary); background:var(--card-bg); color:var(--primary); font-size:14px;">合并记录 (智能对比更新时间)</button>
                 <button id="importOverwriteBtn" style="padding:12px; border-radius:8px; border:none; background:var(--danger); color:#fff; font-size:14px;">覆盖本地 (清空现有数据)</button>
                 <button id="importCancelBtn" style="padding:10px; border-radius:8px; border:none; background:var(--border-color); color:var(--text-sub); font-size:14px; margin-top:4px;">取消导入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 联系作者 -->
+    <div class="confirm-pop" id="contactPopWrap">
+        <div class="confirm-inner">
+            <div class="confirm-title">联系作者</div>
+            <p class="contact-hint">填写后提交会发送给作者，收到后会尽快回复。请勿提交密码等敏感信息。</p>
+            <div class="contact-form-item">
+                <label for="contactWayInput">联系方式 <span style="font-weight:normal;color:var(--text-light)">（选填）</span></label>
+                <input id="contactWayInput" type="text" maxlength="80" placeholder="微信 / QQ / 邮箱等，方便回复你" autocomplete="off">
+            </div>
+            <div class="contact-form-item">
+                <label for="contactMsgInput">意见内容 <span class="req">*</span></label>
+                <textarea id="contactMsgInput" maxlength="1000" placeholder="建议、问题或想说的话"></textarea>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:4px;">
+                <button type="button" id="contactCancelBtn" style="flex:1;padding:12px;border-radius:8px;border:none;background:var(--border-color);color:var(--text-sub);font-size:14px;">取消</button>
+                <button type="button" id="contactSubmitBtn" style="flex:1;padding:12px;border-radius:8px;border:none;background:var(--primary);color:#fff;font-size:14px;font-weight:bold;">提交</button>
             </div>
         </div>
     </div>
@@ -3216,7 +3278,7 @@ function initAnnouncement(defaultText) {
         if (savedAnnounce !== '' && savedAnnounce.trim() !== '') {
             contentDiv.innerHTML = savedAnnounce;
         } else {
-            contentDiv.innerHTML = '（✚v:1275176309）';
+            contentDiv.innerHTML = '';
         }
     }
 }
@@ -3285,6 +3347,88 @@ function escapeHTML(str) {
         '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
     }[tag] || tag));
 }
+let contactSubmitting = false;
+let contactLastSubmitAt = 0;
+
+function openContactPop() {
+    const wrap = document.getElementById('contactPopWrap');
+    if (!wrap) return;
+    const way = document.getElementById('contactWayInput');
+    const msg = document.getElementById('contactMsgInput');
+    if (way) way.value = '';
+    if (msg) msg.value = '';
+    setOverlayDisplay(wrap, 'block');
+    setTimeout(() => { try { (msg || way)?.focus(); } catch (e) {} }, 80);
+}
+
+function closeContactPop() {
+    const wrap = document.getElementById('contactPopWrap');
+    if (wrap) setOverlayDisplay(wrap, 'none');
+}
+
+async function submitContactForm() {
+    if (contactSubmitting) return;
+    const wayEl = document.getElementById('contactWayInput');
+    const msgEl = document.getElementById('contactMsgInput');
+    const contact = (wayEl && wayEl.value || '').trim();
+    const message = (msgEl && msgEl.value || '').trim();
+    if (!message) {
+        showToast('请填写意见内容', 'warning');
+        try { msgEl && msgEl.focus(); } catch (e) {}
+        return;
+    }
+    if (message.length > 1000) {
+        showToast('意见内容请控制在 1000 字以内', 'warning');
+        return;
+    }
+    if (contact.length > 80) {
+        showToast('联系方式过长', 'warning');
+        return;
+    }
+    const now = Date.now();
+    if (now - contactLastSubmitAt < 15000) {
+        showToast('提交过于频繁，请稍后再试', 'warning');
+        return;
+    }
+
+    const btn = document.getElementById('contactSubmitBtn');
+    contactSubmitting = true;
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '提交中…';
+    }
+    try {
+        const res = await fetch('/api/contact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contact,
+                message,
+                page: location.href || '',
+                ua: (navigator && navigator.userAgent) ? String(navigator.userAgent).slice(0, 180) : ''
+            })
+        });
+        let data = null;
+        try { data = await res.json(); } catch (e) { data = null; }
+        if (!res.ok) {
+            const err = (data && (data.error || data.message)) || ('提交失败 (' + res.status + ')');
+            throw new Error(err);
+        }
+        contactLastSubmitAt = Date.now();
+        closeContactPop();
+        showToast('已发送，感谢反馈', 'success');
+    } catch (e) {
+        console.error('contact submit failed', e);
+        showToast((e && e.message) ? e.message : '发送失败，请稍后重试', 'warning');
+    } finally {
+        contactSubmitting = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '提交';
+        }
+    }
+}
+
 function showToast(msg, type) {
     if (!type) {
         if (/失败|错误|无法|不能/.test(msg)) type = 'error';
@@ -6362,6 +6506,7 @@ function initWidgetStates() {
 function closeTopmostOverlay() {
     const stack = [
         { id: 'syncRiskPopWrap', close: () => { if (typeof closeSyncRiskModal === 'function') closeSyncRiskModal(); else setOverlayDisplay(document.getElementById('syncRiskPopWrap'), 'none'); } },
+        { id: 'contactPopWrap', close: () => { if (typeof closeContactPop === 'function') closeContactPop(); else setOverlayDisplay(document.getElementById('contactPopWrap'), 'none'); } },
         { id: 'importPopWrap', close: () => setOverlayDisplay(document.getElementById('importPopWrap'), 'none') },
         { id: 'confirmPopWrap', close: () => { if (typeof closeConfirm === 'function') closeConfirm(); else setOverlayDisplay(document.getElementById('confirmPopWrap'), 'none'); } },
         { id: 'calendarDetailPopWrap', close: () => { if (typeof closeCalendarDetail === 'function') closeCalendarDetail(); else setOverlayDisplay(document.getElementById('calendarDetailPopWrap'), 'none'); } },
@@ -6379,7 +6524,7 @@ function closeTopmostOverlay() {
 }
 
 function bindOverlayTouchGuard() {
-    const ids = ['calendarDetailPopWrap', 'backupManagePopWrap', 'maskWrap', 'confirmPopWrap', 'importPopWrap', 'syncRiskPopWrap'];
+    const ids = ['calendarDetailPopWrap', 'backupManagePopWrap', 'maskWrap', 'confirmPopWrap', 'importPopWrap', 'syncRiskPopWrap', 'contactPopWrap'];
     // 必须指向真正 overflow 可滚的节点：
     // 任务弹窗实际滚动的是 .pop-body，不是外层 .pop.task-pop（外层 overflow:hidden）
     const SCROLLABLE_SEL = [
@@ -6455,6 +6600,18 @@ function bindGlobalEvent() {
     el.syncBtn.addEventListener('dblclick', setSyncPassword);
     
     el.themeBtn.addEventListener('click', toggleTheme);
+    const contactBtn = document.getElementById('contactBtn');
+    if (contactBtn) contactBtn.addEventListener('click', openContactPop);
+    const contactCancelBtn = document.getElementById('contactCancelBtn');
+    const contactSubmitBtn = document.getElementById('contactSubmitBtn');
+    const contactPopWrap = document.getElementById('contactPopWrap');
+    if (contactCancelBtn) contactCancelBtn.addEventListener('click', closeContactPop);
+    if (contactSubmitBtn) contactSubmitBtn.addEventListener('click', submitContactForm);
+    if (contactPopWrap) {
+        contactPopWrap.addEventListener('click', (e) => {
+            if (e.target === contactPopWrap) closeContactPop();
+        });
+    }
     if (el.moreBtn && el.moreMenu) {
         const closeMoreMenu = () => el.moreMenu.classList.remove('show');
         el.moreBtn.addEventListener('click', (e) => {
