@@ -414,8 +414,8 @@ button.btn-busy, .btn-busy{ opacity:0.65; pointer-events:none; }
 .radio-group input[type="radio"], .form-item input[type="checkbox"] {width: auto; margin: 0; accent-color: var(--primary);}
 .pop-buttons{display:flex;gap:12px;margin-top:20px;}
 .pop-buttons button{flex:1;padding:12px;border-radius:8px;border:none;font-size:14px;cursor:pointer; font-weight:bold;}
-.oper-btn-group{display:flex;gap:8px; align-items:center; flex-wrap:wrap;}
-.oper-btn-group button{padding:4px 12px;font-size:12px;border-radius:16px;border:1px solid var(--border-color);background:transparent;color:var(--text-sub);cursor:pointer;}
+.oper-btn-group{display:flex;gap:6px; align-items:center; flex-wrap:wrap;}
+.oper-btn-group button{padding:4px 10px;font-size:11px;border-radius:16px;border:1px solid var(--border-color);background:transparent;color:var(--text-sub);cursor:pointer;white-space:nowrap;}
 .oper-btn-group .del{border-color:var(--danger);color:var(--danger);}
 .oper-btn-group .pin.active-pin{border-color:var(--primary);color:var(--primary);font-weight:bold;}
 .oper-btn-group .open-app{
@@ -2158,7 +2158,8 @@ html.body-scroll-locked .batch-bar {
                     <div class="form-row">
                         <div class="form-item">
                             <label>分组</label>
-                            <input id="inpCategory" type="text" placeholder="可不填" autocomplete="off" value="">
+                            <input id="inpCategory" type="text" list="categoryDatalist" placeholder="选择或输入新分组" autocomplete="off" value="">
+                            <datalist id="categoryDatalist"></datalist>
                         </div>
                         <div class="form-item">
                             <label>开始日期</label>
@@ -4595,8 +4596,11 @@ function renderTaskCard(item, isTodayPage = false) {
     const pauseBtnText = isPaused ? '恢复' : '挂起';
     const pauseBtnClass = isPaused ? 'pause-btn is-paused' : 'pause-btn';
 
+    // 已完成：不显示挂起/复制（再开一轮即可）；进行中：复制+编辑+删除
+    const isFinished = status === "finish";
     const editDelBtnsHtml = isTodayPage ? "" : `
-        ${status === "finish" && !isPaused ? `<button class="restart-round" data-restart="${item.id}"><svg class="ui-icon sync-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19.2 8.2A7.2 7.2 0 0 0 6.5 6.2L4.8 7.9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 4.2v3.7H8.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 15.8A7.2 7.2 0 0 0 17.5 17.8l1.7-1.7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.2 19.8v-3.7H15.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 再开一轮</button>` : ''}
+        ${isFinished && !isPaused ? `<button class="restart-round" data-restart="${item.id}"><svg class="ui-icon sync-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19.2 8.2A7.2 7.2 0 0 0 6.5 6.2L4.8 7.9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 4.2v3.7H8.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 15.8A7.2 7.2 0 0 0 17.5 17.8l1.7-1.7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.2 19.8v-3.7H15.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 再开一轮</button>` : ''}
+        ${!isFinished ? `<button type="button" data-copy="${item.id}" title="复制为新任务">复制</button>` : ''}
         <button data-edit="${item.id}">${ICON_EDIT} 编辑</button>
         <button class="del" data-del="${item.id}"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M9.5 7V5h5v2M8 7l.7 12h6.6L16 7M10 11v5M14 11v5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 删除</button>
     `;
@@ -4629,7 +4633,7 @@ function renderTaskCard(item, isTodayPage = false) {
             <div class="oper-btn-group">
                 ${isTodayPage && appScheme ? `<button type="button" class="open-app" data-open-app="${escapeHTML(appScheme)}" title="打开 APP">${ICON_OPEN_APP}<span>打开APP</span></button>` : ''}
                 <button class="${pinBtnClass}" data-pin="${item.id}">${pinBtnText}</button>
-                ${!isTodayPage ? `<button type="button" class="${pauseBtnClass}" data-pause="${item.id}">${pauseBtnText}</button>` : ''}
+                ${!isTodayPage && !isFinished ? `<button type="button" class="${pauseBtnClass}" data-pause="${item.id}">${pauseBtnText}</button>` : ''}
                 ${editDelBtnsHtml}
                 ${checkBtnHtml}
             </div>
@@ -5174,7 +5178,9 @@ function batchTogglePause() {
 }
 function batchUpdateCategory() {
     if (selectedTaskIds.size === 0) return showToast('请先选择任务');
-    const newCategory = prompt('请输入新的分类名称（留空=取消分组）：', '');
+    const existing = getExistingCategories();
+    const hint = existing.length ? `\n已有：${existing.slice(0, 12).join('、')}${existing.length > 12 ? '…' : ''}` : '';
+    const newCategory = prompt(`请输入分类名称（可输入新分组；取消请点取消）：${hint}`, '');
     if (newCategory === null || newCategory.trim() === '') return;
     
     const nowStr = getNowDateTimeStr();
@@ -5629,6 +5635,11 @@ function handleCardAction(e) {
         return;
     }
     
+    const copyBtn = e.target.closest('[data-copy]');
+    if (copyBtn) {
+        openCopy(Number(copyBtn.dataset.copy));
+        return;
+    }
     const editBtn = e.target.closest('[data-edit]');
     if (editBtn) {
         openEdit(Number(editBtn.dataset.edit));
@@ -5849,6 +5860,22 @@ function toggleRewardInputForm(type) {
     });
 }
 
+function getExistingCategories() {
+    const set = new Set();
+    (Array.isArray(taskList) ? taskList : []).forEach(t => {
+        const c = getTaskCategoryText(t);
+        if (c) set.add(c);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'zh-CN'));
+}
+
+function refreshCategoryDatalist() {
+    const list = document.getElementById('categoryDatalist');
+    if (!list) return;
+    const cats = getExistingCategories();
+    list.innerHTML = cats.map(c => `<option value="${escapeHTML(c)}"></option>`).join('');
+}
+
 function openAdd() {
     editId = null;
     el.popTitle.innerText = "新增羊毛任务";
@@ -5867,20 +5894,24 @@ function openAdd() {
     el.inpContinuous.checked = false;
     
     toggleRewardInputForm('money');
+    refreshCategoryDatalist();
     setOverlayDisplay(el.maskWrap, 'block');
     setTimeout(()=>el.inpName.focus(),100);
 }
 
-function openEdit(id) {
-    editId = id;
-    const item = taskList.find(t => t.id === id);
+function fillTaskFormFromItem(item, options = {}) {
+    const {
+        title = '编辑任务',
+        startDate = null,
+        focusCategory = false
+    } = options;
     if (!item) return;
-    el.popTitle.innerText = "编辑任务";
+    el.popTitle.innerText = title;
     el.inpName.value = item.name || "";
-    
+
     const schemeVal = item.appScheme || "auto";
     const isPresetOption = Array.from(el.inpAppScheme.options).some(opt => opt.value === schemeVal && opt.value !== 'custom');
-    
+
     if (isPresetOption) {
         el.inpAppScheme.value = schemeVal;
         el.customSchemeWrap.style.display = "none";
@@ -5896,12 +5927,12 @@ function openEdit(id) {
     el.inpRemark.value = item.remark || "";
     el.inpDay.value = item.totalDay || 30;
     el.inpTimesPerDay.value = item.timesPerDay || 1;
-    el.inpStart.value = item.startDate || getTodayStr();
+    el.inpStart.value = startDate || item.startDate || getTodayStr();
     el.inpContinuous.checked = !!item.isContinuous;
-    
+
     const rType = item.rewardType || "money";
     const rValue = item.rewardValue !== undefined ? item.rewardValue : item.money;
-    
+
     if (rType === "money") {
         el.inpMoney.value = formatMoney(rValue);
         el.inpCustom.value = "";
@@ -5910,7 +5941,33 @@ function openEdit(id) {
         el.inpCustom.value = rValue || "";
     }
     toggleRewardInputForm(rType);
+    refreshCategoryDatalist();
     setOverlayDisplay(el.maskWrap, 'block');
+    if (focusCategory) {
+        setTimeout(() => {
+            try { el.inpCategory.focus(); el.inpCategory.select && el.inpCategory.select(); } catch (e) {}
+        }, 100);
+    }
+}
+
+function openEdit(id) {
+    editId = id;
+    const item = taskList.find(t => t.id === id);
+    if (!item) return;
+    fillTaskFormFromItem(item, { title: '编辑任务' });
+}
+
+/** 复制为新任务：名称等字段相同，不带 history；保存时走新增 */
+function openCopy(id) {
+    const item = taskList.find(t => t.id === id);
+    if (!item) return;
+    editId = null;
+    fillTaskFormFromItem(item, {
+        title: '复制任务',
+        startDate: getTodayStr(),
+        focusCategory: true
+    });
+    showToast('已填入原任务内容，请确认分类/备注后保存', 'info');
 }
 
 function saveTask() {
