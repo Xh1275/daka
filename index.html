@@ -2068,7 +2068,7 @@ html.body-scroll-locked .batch-bar {
 <body>
 <div id="app">
     <div class="nav-bar">
-        <div class="sync-btn-left" id="syncBtn" data-status="syncing"><svg class="ui-icon sync-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19.2 8.2A7.2 7.2 0 0 0 6.5 6.2L4.8 7.9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 4.2v3.7H8.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 15.8A7.2 7.2 0 0 0 17.5 17.8l1.7-1.7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.2 19.8v-3.7H15.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="sync-text">同步中...</span></div>
+        <div class="sync-btn-left" id="syncBtn" data-status="local"><svg class="ui-icon sync-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="sync-text">仅本地</span></div>
         <div class="nav-title"></div>
         <div class="top-tool">
             <a class="tool-btn github-btn" id="githubBtn" href="https://github.com/Xh1275/daka" target="_blank" rel="noopener noreferrer" title="GitHub 开源地址" aria-label="GitHub 开源地址">
@@ -2474,6 +2474,7 @@ const appSchemeRules = [
 const SYNC_ICON_SVG = {
   syncing: `<svg class="ui-icon sync-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19.2 8.2A7.2 7.2 0 0 0 6.5 6.2L4.8 7.9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 4.2v3.7H8.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 15.8A7.2 7.2 0 0 0 17.5 17.8l1.7-1.7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.2 19.8v-3.7H15.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   success: `<svg class="ui-icon sync-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19.2 8.2A7.2 7.2 0 0 0 6.5 6.2L4.8 7.9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 4.2v3.7H8.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.8 15.8A7.2 7.2 0 0 0 17.5 17.8l1.7-1.7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M19.2 19.8v-3.7H15.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="m9.2 12.4 2 2 3.8-3.9" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  local: `<svg class="ui-icon sync-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
   error: `<svg class="ui-icon sync-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4.5 3.8 18.3h16.4L12 4.5Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 9.5v4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="16.3" r="1" fill="currentColor"/></svg>`
 };
 
@@ -2800,6 +2801,13 @@ const KEY_RESTORE_TOAST_FLAG = "daka_show_restore_toast";
 const SYNC_LOG_MAX = 50;
 const SNAPSHOT_KEEP_DAYS = 2; // 仅本地保留最近 2 天，不上传云端
 const SYNC_PASSWORD_KEY = 'sync_password';
+/**
+ * 是否允许在页面上输入 / 修改同步密码：
+ * 1 = 允许（点击左上角可输入密码开启云同步）
+ * 0 = 禁止输入（访客试不出密码；本机 localStorage 里已保存过密码的设备仍正常云同步）
+ * 改完后重新部署 index.html 即可，不改 KV / Worker。
+ */
+const ALLOW_SYNC_PASSWORD_INPUT = 1;
 const KEY_DEVICE_ID = 'daka_device_id';
 const KEY_DEVICE_NOTE = 'daka_device_note';
 const KEY_DEVICE_REGISTRY = 'daka_device_registry';
@@ -2958,6 +2966,10 @@ function updateSyncStatus(status, text) {
             ? ` · ${deviceNote.trim()}`
             : ' · 与云端一致';
         el.syncBtn.innerHTML = `${SYNC_ICON_SVG.success}<span class="sync-text">已同步 ${text || ''}${devicePart}</span>`;
+    } else if (status === 'local') {
+        // 未配置同步密码：仅本地，避免显示「同步中/已同步」造成误解
+        el.syncBtn.classList.remove('error');
+        el.syncBtn.innerHTML = `${SYNC_ICON_SVG.local}<span class="sync-text">仅本地${text ? ' · ' + text : ''}</span>`;
     } else if (status === 'error') {
         el.syncBtn.classList.add('error');
         el.syncBtn.innerHTML = `${SYNC_ICON_SVG.error}<span class="sync-text">同步失败 · 点击重试</span>`;
@@ -3110,7 +3122,15 @@ async function saveRemoteData() {
     }
 }
 
+function isSyncPasswordInputAllowed() {
+    return Number(ALLOW_SYNC_PASSWORD_INPUT) === 1;
+}
+
 function setSyncPassword() {
+    if (!isSyncPasswordInputAllowed()) {
+        showToast('当前版本未开放输入同步密码', 'warning');
+        return;
+    }
     const pwd = prompt('请输入同步密码：', syncPassword);
     if (pwd === null) return;
     syncPassword = pwd.trim();
@@ -3118,6 +3138,9 @@ function setSyncPassword() {
     if (syncPassword) {
         showToast('正在同步云端数据...');
         loadStorage();
+    } else {
+        updateSyncStatus('local');
+        showToast('已清除同步密码，仅使用本地数据', 'warning');
     }
 }
 
@@ -4257,9 +4280,7 @@ async function loadStorage() {
     } else {
         maybeCreateDailySnapshot();
         saveLocalStorage();
-        const now = new Date();
-        const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        updateSyncStatus('success', timeStr);
+        updateSyncStatus('local');
     }
     lastSyncedSnapshot = cloneTasks(taskList);
     renderPage();
@@ -6584,6 +6605,10 @@ function bindGlobalEvent() {
     
     el.syncBtn.addEventListener('click', () => {
         if (!syncPassword) {
+            if (!isSyncPasswordInputAllowed()) {
+                showToast('仅本地模式（未开启云同步）', 'warning');
+                return;
+            }
             setSyncPassword();
         } else {
             if (syncInFlight) return;
@@ -6597,7 +6622,13 @@ function bindGlobalEvent() {
                 .finally(() => { syncInFlight = false; });
         }
     });
-    el.syncBtn.addEventListener('dblclick', setSyncPassword);
+    el.syncBtn.addEventListener('dblclick', () => {
+        if (!isSyncPasswordInputAllowed()) {
+            showToast('当前版本未开放修改同步密码', 'warning');
+            return;
+        }
+        setSyncPassword();
+    });
     
     el.themeBtn.addEventListener('click', toggleTheme);
     const contactBtn = document.getElementById('contactBtn');
