@@ -111,11 +111,26 @@ export async function onRequestPost(context) {
 
     const page = clip(payload.page, 200);
     const ua = clip(payload.ua, 180);
-    const time = new Date().toISOString();
+    // 中国时区展示，避免 UTC 的 Z 后缀让人误解
+    let time;
+    try {
+      time = new Intl.DateTimeFormat('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      }).format(new Date());
+    } catch (e) {
+      time = new Date().toISOString();
+    }
 
     const text = [
       '【羊毛打卡管家 · 用户反馈】',
-      '时间: ' + time,
+      '时间: ' + time + ' (北京时间)',
       '联系方式: ' + (contact || '（未填）'),
       '意见:',
       message,
