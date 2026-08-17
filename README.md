@@ -20,7 +20,9 @@ A personal multi-device check-in tracker for daily promo / sign-in tasks. Data i
 
 - **今日打卡**：按分组查看进度，打卡 / 补卡
 - **任务管理**：名称、分组、天数、每日次数、连续打卡、现金或奖品、APP 跳转 / 网页链接
+- **分组**：新增/编辑时可从已有分组中选择，也可输入新分组（下次自动出现在列表）
 - **全部任务**：筛选进行中 / 已挂起 / 已完成、搜索、批量操作（置顶、挂起、改分类、归档、删除）
+- **复制任务**：全部任务中可将进行中任务复制为新任务（名称相同，默认不带历史，便于多账号并行）
 - **挂起**：暂时不打的任务可挂起（不出现在今日，历史保留，可随时恢复）
 - **日历**：按月查看打卡分布
 - **公告栏**：可编辑，多端同步
@@ -99,11 +101,19 @@ A personal multi-device check-in tracker for daily promo / sign-in tasks. Data i
 
 - 在 **全部任务** 中添加或编辑
 - 可填：名称、分组、开始日期、备注、目标天数、每天次数、是否连续、收益、APP / 网页链接
+- **分组**：可点选已有分组，也可输入新名称；新分组保存后下次可选
 - 表单可在弹窗内滚动
+
+#### 复制任务
+
+- 仅在 **全部任务**、**进行中** 的卡片上提供（已完成用「再开一轮」即可）
+- 点 **复制** → 打开编辑弹窗，**名称默认与原任务相同**
+- 不复制打卡历史；开始日期默认今天
+- 适合同一活动多个账号/分类并行；请改分类或备注后保存（同名同分类会提示重复）
 
 #### 挂起 / 恢复
 
-- 仅在 **全部任务** 卡片上操作（今日页无挂起按钮）
+- 仅在 **全部任务** 卡片上操作（今日页无挂起按钮；已完成也不显示挂起）
 - **挂起**：保留历史，不进今日
 - **恢复**：回到今日列表（若仍为进行中）
 - 批量管理中支持批量挂起 / 恢复
@@ -169,7 +179,7 @@ A personal multi-device check-in tracker for daily promo / sign-in tasks. Data i
 
 ### 许可与声明
 
-本项目采用仓库内 `LICENSE` 所述的限制性许可。未经作者书面许可，不得公开再发布、商业使用，或将本项目及其衍生版本作为自己的项目发布。
+本项目采用仓库内 [`LICENSE`](./LICENSE) 所述的限制性许可。未经作者书面许可，不得公开再发布、商业使用，或将本项目及其衍生版本作为自己的项目发布。
 
 与各 APP 官方活动无关，仅作个人打卡记录。
 
@@ -185,7 +195,9 @@ A personal multi-device check-in tracker for daily promo / sign-in tasks. Data i
 
 - **Today**: Grouped list, check-in / make-up check-in
 - **Tasks**: Name, category, target days, times per day, streak mode, cash or prize, app scheme / web link
+- **Categories**: Pick an existing group or type a new one (new names appear in the list next time)
 - **All tasks**: Filters (active / paused / finished), search, batch actions (pin, pause, category, archive, delete)
+- **Copy task**: Duplicate a task on All tasks (same name, no history) for multi-account use
 - **Pause**: Hide from Today without deleting history; resume anytime
 - **Calendar**: Monthly check-in overview
 - **Announcement**: Editable, synced across devices
@@ -254,9 +266,20 @@ KV key: `daka_main_data` (single document; fine for personal scale).
 - Check in or make up missed check-ins  
 - Paused tasks are hidden and excluded from today’s progress  
 
+#### Categories
+
+- When adding or editing, choose from existing groups or type a new name  
+- New groups are available in the suggestion list after you save a task with them  
+
+#### Copy task
+
+- On **All tasks** for **active** items (finished tasks use **Restart round** instead)  
+- Opens the edit form with the **same title**; history is not copied; start date defaults to today  
+- Change category/remark before saving (same name + same category is blocked)  
+
 #### Pause / resume
 
-- Only on **All tasks** (no pause button on Today)  
+- Only on **All tasks** (no pause on Today; hidden on finished cards)  
 - Pause keeps history; Resume brings the task back when still active  
 - Batch pause / resume supported; filter **Paused** available  
 
@@ -332,3 +355,4 @@ Not affiliated with any app’s official campaigns; for personal check-in loggin
 
 If this project is helpful to you, you're welcome to buy the author a coffee ☕  
 Sponsorship is entirely optional. Thank you for your support!
+
