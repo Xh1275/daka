@@ -2802,12 +2802,15 @@ const SYNC_LOG_MAX = 50;
 const SNAPSHOT_KEEP_DAYS = 2; // 仅本地保留最近 2 天，不上传云端
 const SYNC_PASSWORD_KEY = 'sync_password';
 /**
- * 是否允许在页面上输入 / 修改同步密码：
- * 1 = 允许（点击左上角可输入密码开启云同步）
- * 0 = 禁止输入（访客试不出密码；本机 localStorage 里已保存过密码的设备仍正常云同步）
- * 改完后重新部署 index.html 即可，不改 KV / Worker。
+ * 同步密码输入开关由 Pages Function 动态读取：
+ * 1 = 允许新设备输入 / 修改同步密码
+ * 0 = 禁止新设备输入 / 修改同步密码
+ * 已在本机 localStorage 保存过同步密码的设备仍可正常云同步。
+ * 如果配置接口读取失败，默认按 0 处理（更安全）。
  */
-const ALLOW_SYNC_PASSWORD_INPUT = 1;
+let allowSyncPasswordInput = 0;
+let syncPasswordInputConfigLoaded = false;
+let syncPasswordInputConfigPromise = null;
 const KEY_DEVICE_ID = 'daka_device_id';
 const KEY_DEVICE_NOTE = 'daka_device_note';
 const KEY_DEVICE_REGISTRY = 'daka_device_registry';
@@ -3122,8 +3125,45 @@ async function saveRemoteData() {
     }
 }
 
+async function loadSyncPasswordInputConfig() {
+    if (syncPasswordInputConfigPromise) return syncPasswordInputConfigPromise;
+
+    syncPasswordInputConfigPromise = (async () => {
+        try {
+            const res = await fetch('/api/sync-config', {
+                method: 'GET',
+                cache: 'no-store',
+                headers: { 'Accept': 'application/json' }
+            });
+
+            if (!res.ok) {
+                throw new Error(`sync-config HTTP ${res.status}`);
+            }
+
+            const data = await res.json();
+            allowSyncPasswordInput = Number(data && data.allowPasswordInput) === 1 ? 1 : 0;
+        } catch (e) {
+            console.error('读取同步密码开关失败:', e);
+            allowSyncPasswordInput = 0;
+        } finally {
+            syncPasswordInputConfigLoaded = true;
+        }
+
+        return allowSyncPasswordInput;
+    })();
+
+    return syncPasswordInputConfigPromise;
+}
+
 function isSyncPasswordInputAllowed() {
-    return Number(ALLOW_SYNC_PASSWORD_INPUT) === 1;
+    return syncPasswordInputConfigLoaded && allowSyncPasswordInput === 1;
+}
+
+async function ensureSyncPasswordInputConfig() {
+    if (!syncPasswordInputConfigLoaded) {
+        await loadSyncPasswordInputConfig();
+    }
+    return isSyncPasswordInputAllowed();
 }
 
 function setSyncPassword() {
@@ -6603,9 +6643,10 @@ function bindGlobalEvent() {
     el.todayEmpty.addEventListener('click', (e) => { if (e.target.closest('[data-empty-action]')) openAdd(); });
     el.allEmpty.addEventListener('click', (e) => { if (e.target.closest('[data-empty-action]')) openAdd(); });
     
-    el.syncBtn.addEventListener('click', () => {
+    el.syncBtn.addEventListener('click', async () => {
         if (!syncPassword) {
-            if (!isSyncPasswordInputAllowed()) {
+            const allowed = await ensureSyncPasswordInputConfig();
+            if (!allowed) {
                 showToast('仅本地模式（未开启云同步）', 'warning');
                 return;
             }
@@ -6622,8 +6663,9 @@ function bindGlobalEvent() {
                 .finally(() => { syncInFlight = false; });
         }
     });
-    el.syncBtn.addEventListener('dblclick', () => {
-        if (!isSyncPasswordInputAllowed()) {
+    el.syncBtn.addEventListener('dblclick', async () => {
+        const allowed = await ensureSyncPasswordInputConfig();
+        if (!allowed) {
             showToast('当前版本未开放修改同步密码', 'warning');
             return;
         }
@@ -6906,6 +6948,7 @@ function bindGlobalEvent() {
 window.onload = async function() {
     initThemeUI();
     initWidgetStates();
+    await loadSyncPasswordInputConfig();
     bindGlobalEvent();
     try {
         await loadStorage();
