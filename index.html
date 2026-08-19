@@ -5875,43 +5875,30 @@ function handleCardAction(e) {
 function restartTask(id) {
     const item = taskList.find(t => t.id === id);
     if (!item) return;
-    openConfirm("再开一轮", `确定要为「${item.name}」再开一轮吗？将生成一个全新的进行中任务，原任务记录保留不变。`, () => {
+    openConfirm("再开一轮", `确定要为「${item.name}」再开一轮吗？将打开编辑框，你可以修改任务名称、备注等信息后再保存；原任务记录不会被修改。`, () => {
         const roundMatch = /^(.*?)（第(\d+)轮）$/.exec(item.name);
         const baseName = roundMatch ? roundMatch[1] : item.name;
         const nextRound = roundMatch ? (Number(roundMatch[2]) + 1) : 2;
         let newName = `${baseName}（第${nextRound}轮）`;
-                let dedupeSuffix = 0;
+        let dedupeSuffix = 0;
         while (taskList.some(t => t.name === newName && getTaskCategoryText(t) === getTaskCategoryText(item))) {
             dedupeSuffix++;
             newName = `${baseName}（第${nextRound}轮${dedupeSuffix > 0 ? '-' + (dedupeSuffix + 1) : ''}）`;
         }
-        const nowStr = getNowDateTimeStr();
-        const newTask = {
-            id: Date.now(),
-            name: newName,
-            appScheme: item.appScheme,
-            webLink: item.webLink || '',
-            category: item.category,
-            remark: item.remark,
-            totalDay: item.totalDay,
-            timesPerDay: item.timesPerDay,
-            rewardType: item.rewardType,
-            rewardValue: item.rewardValue,
-            money: item.money,
-            startDate: getTodayStr(),
-            isContinuous: item.isContinuous,
-            isPinned: false,
-            isPaused: false,
-            history: [],
-            archives: [],
-            createdByDeviceId: deviceId || '',
-            createAt: nowStr,
-            updateAt: nowStr
-        };
-        taskList.push(normalizeTaskRecord(newTask));
-        saveStorage();
-        renderPage();
-        showToast(`已开启新一轮：${newName}`, 'success');
+
+        // 与“复制任务”共用现有编辑弹窗和 saveTask() 新增流程。
+        // editId 保持为 null，因此保存时生成新 ID，不会修改原任务。
+        editId = null;
+        fillTaskFormFromItem(item, {
+            title: '再开一轮',
+            startDate: getTodayStr()
+        });
+        el.inpName.value = newName;
+        el.inpContinuous.checked = !!item.isContinuous;
+        setTimeout(() => {
+            try { el.inpName.focus(); el.inpName.select && el.inpName.select(); } catch (e) {}
+        }, 100);
+        showToast('已生成新一轮草稿，请确认名称、备注等信息后保存', 'info');
     });
 }
 
