@@ -218,11 +218,31 @@ export async function onRequestPost(context) {
     });
   }
 
+  function normalizeAnnouncementShortcuts(raw) {
+    const src = Array.isArray(raw) ? raw : [];
+    const out = [];
+    for (let i = 0; i < 4; i++) {
+      const item = src[i] && typeof src[i] === 'object' ? src[i] : {};
+      let title = safeText(item.title || item.label || '').trim().slice(0, 12);
+      let url = safeText(item.url || item.href || '').trim();
+      if (url && !/^https?:\/\//i.test(url)) {
+        if (/^\/\//.test(url)) url = 'https:' + url;
+        else if (/^[\w.-]+\.[a-z]{2,}([\/?#].*)?$/i.test(url)) url = 'https://' + url;
+        else url = '';
+      }
+      if (!url) continue;
+      if (!title) title = '链接';
+      out.push({ title, url });
+    }
+    return out;
+  }
+
   function normalizeAnnouncementMeta(raw) {
     const source = raw && typeof raw === 'object' ? { ...raw } : {};
     return {
       updatedAt: toMs(source.updatedAt),
-      deviceId: safeText(source.deviceId).trim()
+      deviceId: safeText(source.deviceId).trim(),
+      shortcuts: normalizeAnnouncementShortcuts(source.shortcuts)
     };
   }
 
@@ -504,7 +524,10 @@ export async function onRequestPost(context) {
           : (existingData ? existingData.announcement : ''),
         announcementMeta: {
           updatedAt: incomingAt,
-          deviceId: incomingMeta.deviceId || existingMeta.deviceId || ''
+          deviceId: incomingMeta.deviceId || existingMeta.deviceId || '',
+          shortcuts: incomingMeta.shortcuts && incomingMeta.shortcuts.length
+            ? incomingMeta.shortcuts
+            : (existingMeta.shortcuts || [])
         }
       };
     }
@@ -516,7 +539,10 @@ export async function onRequestPost(context) {
           : (incomingData ? incomingData.announcement : ''),
         announcementMeta: {
           updatedAt: existingAt,
-          deviceId: existingMeta.deviceId || incomingMeta.deviceId || ''
+          deviceId: existingMeta.deviceId || incomingMeta.deviceId || '',
+          shortcuts: existingMeta.shortcuts && existingMeta.shortcuts.length
+            ? existingMeta.shortcuts
+            : (incomingMeta.shortcuts || [])
         }
       };
     }
@@ -527,7 +553,10 @@ export async function onRequestPost(context) {
         announcement: incomingData.announcement,
         announcementMeta: {
           updatedAt: incomingAt || existingAt || Date.now(),
-          deviceId: incomingMeta.deviceId || existingMeta.deviceId || ''
+          deviceId: incomingMeta.deviceId || existingMeta.deviceId || '',
+          shortcuts: incomingMeta.shortcuts && incomingMeta.shortcuts.length
+            ? incomingMeta.shortcuts
+            : (existingMeta.shortcuts || [])
         }
       };
     }
@@ -535,7 +564,10 @@ export async function onRequestPost(context) {
       announcement: existingData && existingData.announcement !== undefined ? existingData.announcement : '',
       announcementMeta: {
         updatedAt: existingAt || incomingAt || 0,
-        deviceId: existingMeta.deviceId || incomingMeta.deviceId || ''
+        deviceId: existingMeta.deviceId || incomingMeta.deviceId || '',
+        shortcuts: existingMeta.shortcuts && existingMeta.shortcuts.length
+          ? existingMeta.shortcuts
+          : (incomingMeta.shortcuts || [])
       }
     };
   }
