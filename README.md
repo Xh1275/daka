@@ -260,7 +260,7 @@ See the repository's `LICENSE` file, if present. The project is intended for per
 If you find this useful, you can buy the author a coffee.
 
 <p align="center">
-  <img src="docs/sponsor.png" alt="Sponsor QR" width="220" />
+  <img src="assets/sponsor.png" alt="Sponsor QR" width="220" />
 </p>
 
 感谢支持。Thank you.
