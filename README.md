@@ -4,9 +4,9 @@
   <a href="#zh">中文</a> · <a href="#en">English</a> · <a href="#sponsor">☕ 支持作者</a>
 </p>
 
-自用多端「羊毛 / 签到」打卡记录工具。数据优先保存在浏览器本地，可选同步到 Cloudflare KV，方便手机与电脑共用。
+自用多端「羊毛 / 签到」打卡工具。数据优先保存在浏览器本地，可选同步到 Cloudflare KV。
 
-A personal multi-device check-in tracker for daily promo / sign-in tasks. Data is stored locally first, with optional sync to Cloudflare KV.
+A personal multi-device check-in tracker. Local-first storage, with optional Cloudflare KV sync.
 
 ---
 
@@ -18,57 +18,67 @@ A personal multi-device check-in tracker for daily promo / sign-in tasks. Data i
 
 ### 功能概览
 
-- **今日打卡**：按分组查看进度，打卡 / 补卡
-- **任务管理**：名称、分组、天数、每日次数、连续打卡、现金或奖品、APP 跳转 / 网页链接
-- **分组**：新增/编辑时可从已有分组中选择，也可输入新分组（下次自动出现在列表）
-- **全部任务**：筛选进行中 / 已挂起 / 已完成、搜索、批量操作（置顶、挂起、改分类、归档、删除）
-- **复制任务**：全部任务中可将进行中任务复制为新任务（名称相同，默认不带历史，便于多账号并行）
-- **挂起**：暂时不打的任务可挂起（不出现在今日，历史保留，可随时恢复）
+- **今日打卡**：按分组查看进度，支持打卡 / 补卡
+- **任务管理**：名称、分组、目标天数、每日次数、连续打卡、现金或其它奖品、APP / 网页链接
+- **分组**：编辑时可从已有分组选择（输入联想），也可新建（下次自动出现）
+- **全部任务**：筛选进行中 / 已挂起 / 已完成；搜索；批量置顶、挂起、改分类、归档、删除
+- **复制任务**：进行中任务可复制为新任务（同名，弹编辑框改分类/备注；默认不带历史）
+- **再开一轮**：已完成任务可再开一轮（弹编辑框）
+- **挂起**：暂不打的任务可挂起（不出现在今日，历史保留，可恢复）
 - **日历**：按月查看打卡分布
-- **公告栏**：可编辑，多端同步
-- **多端同步**：密码保护；本地与云端合并，减少「上传失败导致进度被冲掉」
+- **公告栏**：可编辑正文，多端同步
+- **快捷入口**：公告下最多 4 个链接按钮（名称 + URL，只填链接才显示），与公告一起同步
+- **多端同步**：密码保护；本地与云端合并，降低「上传失败导致进度被冲掉」的风险
+- **仅本地模式**：未设置同步密码时显示「仅本地」
+- **同步密码开关**：可用环境变量控制是否允许在页面输入/修改同步密码（适合公开演示）
+- **联系作者**：页内表单提交意见（可选联系方式），由服务端转发，不写任务 KV
 - **备份**：导出 / 导入 JSON、CSV；同步日志；设备备注
-- **历史快照**：仅保存在本机，最近 2 天，不上传云端
+- **历史快照**：仅保存在本机最近 2 天，不上传云端
 - **深色模式**：跟随系统或手动切换
+
+可选独立 Worker：**每日提醒 + 奖励中心**（定时推送未完成任务、管理临期卡券），与主站解耦，见同账号 Workers 及对应说明。
 
 ### 在线使用
 
 1. 浏览器打开你的 Pages 地址  
-2. 可不设同步密码，数据只存在本机  
-3. 多设备同步：点击左上角同步区域 → 设置与服务端一致的同步密码  
+2. 可不设同步密码，数据只存在本机（状态为 **仅本地**）  
+3. 多设备同步：在允许输入密码的版本中，点击左上角 → 填写与服务端一致的同步密码  
 4. 之后打开页面会自动拉取、合并，有变更时写回云端  
+5. 公告点「编辑」可改正文，并配置最多 4 个快捷入口（例如奖励中心 `/panel` 地址）  
+6. 意见反馈：右上角信封图标 → 填写后提交  
 
-重要操作前后建议在「备份管理」中导出一份 JSON。
+重要操作前后，建议在「备份管理」中导出一份 JSON。
 
 ### 部署（Cloudflare Pages + KV）
 
-#### 需要的文件
-
-推荐单页结构：
+#### 文件结构
 
 ```text
 /
-├── index.html                 # 前端（可将 羊毛打卡管家.html 改名为 index.html）
+├── index.html                 # 前端
 └── functions/api/
     ├── get-data.js            # 读取云端数据
-    └── save-data.js           # 合并并写入云端
+    ├── save-data.js           # 合并并写入（含公告 shortcuts）
+    ├── contact.js             # 联系作者（不写任务 KV）
+    └── sync-config.js         # 是否允许前端输入同步密码
 ```
 
 #### 步骤
 
-1. Cloudflare Dashboard → **Workers & Pages** → 创建 Pages 项目（连接 Git 或直接上传）  
-2. 构建设置（纯静态）：Build command 留空；输出目录为站点根目录  
-3. 创建 KV 命名空间，在 Pages → **Settings → Functions → KV bindings** 中绑定：  
-   - **变量名必须为 `dk`**（与代码中 `env.dk` 一致）  
-4. **Settings → Environment variables**（Production）可选配置：  
+1. Cloudflare → **Workers & Pages** → 创建 Pages 项目（Git 或直接上传）  
+2. 纯静态：Build command 留空；输出目录为站点根目录  
+3. 创建 KV 命名空间，在 Pages → **Settings → Functions → KV bindings** 绑定：  
+   - **变量名必须为 `dk`**  
+4. **Settings → Environment variables（Production）**：
 
 | 变量名 | 说明 |
 |--------|------|
-| `SYNC_PASSWORD` | 同步密码，需与前端填写的一致 |
+| `SYNC_PASSWORD` | 同步密码（公网务必设置） |
+| `ALLOW_SYNC_PASSWORD_INPUT` | `1` 允许页面输入/修改密码；`0` 禁止输入（本机已保存密码的设备仍可同步） |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | 可选，联系表单转发到 Telegram |
+| `DINGTALK_WEBHOOK` / `DINGTALK_SECRET` | 可选，联系表单转发到钉钉 |
 
-不设置密码则接口不校验（仅适合个人测试，公网不建议）。
-
-5. 重新部署后打开站点，点同步，确认不再出现接口 404 或密码错误。
+5. 部署后打开站点，确认「仅本地」或同步状态正常。
 
 #### 接口
 
@@ -76,112 +86,43 @@ A personal multi-device check-in tracker for daily promo / sign-in tasks. Data i
 |------|------|------|
 | GET | `/api/get-data` | 读取云端整包 JSON |
 | POST | `/api/save-data` | 服务端合并后写回 |
+| GET | `/api/sync-config` | 返回 `{ allowPasswordInput: 0\|1 }` |
+| POST | `/api/contact` | 提交联系方式与意见（不写任务 KV） |
 
-请求头：`X-Sync-Password: 你的密码`（若配置了 `SYNC_PASSWORD`）。
+同步请求头：`X-Sync-Password: 你的密码`（若配置了 `SYNC_PASSWORD`）。
 
-#### 关于改代码时要不要动哪个文件
+#### 改代码时改哪个文件
 
-| 文件 | 职责 | 何时需要改 |
-|------|------|------------|
-| `index.html` | UI、本地存储、合并策略、是否上传快照等 | 功能与界面变更时 |
-| `save-data.js` | 服务端合并任务 / 账本 / 设备等并写入 KV | 合并规则、写库字段变更时 |
-| `get-data.js` | 校验密码后原样返回 `daka_main_data` | 一般**不用改**；除非换 key、鉴权或返回结构 |
+| 文件 | 职责 | 何时改 |
+|------|------|--------|
+| `index.html` | UI、本地存储、合并、公告与快捷入口 | 功能与界面 |
+| `save-data.js` | 服务端合并任务 / 账本 / 设备 / **公告 shortcuts** | 合并规则、写库字段 |
+| `get-data.js` | 校验密码后返回 `daka_main_data` | 一般不用改 |
+| `sync-config.js` | 读取 `ALLOW_SYNC_PASSWORD_INPUT` | 很少改 |
+| `contact.js` | 转发反馈到机器人 | 通知渠道变更时 |
 
-主数据在 KV 中的 key 为：`daka_main_data`（单个 key 存整包，适合个人体量）。
+主数据在 KV 中的 key：`daka_main_data`（单 key 存整包，适合个人体量）。
 
-### 日常使用
+批量操作（置顶、挂起、改分类、归档、删除）在本地改完选中项后 **只保存 / 上传一次**，不会按任务条数多次写 KV。
 
-#### 今日打卡
+### 日常使用摘要
 
-- 底部进入 **今日打卡**
-- 点 **打卡**；漏打可用 **补卡**（按规则补昨天等）
-- 已挂起的任务不会出现在今日，也不计入今日进度
+- **今日**：打卡 / 补卡；已挂起任务不出现在今日，也不计入今日进度  
+- **全部**：筛选、搜索、批量；复制 / 再开一轮会弹出编辑框  
+- **公告 + 快捷入口**：保存后多端同步；入口仅显示已填写链接的项  
+- **备份管理**：导出 JSON、查看同步日志、设备备注  
 
-#### 新增 / 编辑任务
+### 数据与安全
 
-- 在 **全部任务** 中添加或编辑
-- 可填：名称、分组、开始日期、备注、目标天数、每天次数、是否连续、收益、APP / 网页链接
-- **分组**：可点选已有分组，也可输入新名称；新分组保存后下次可选
-- 表单可在弹窗内滚动
+- 默认本地优先；云端同步使用密码保护  
+- 合并策略尽量保留本地进度，并在检测到异常回退时提示  
+- 历史快照仅本机，不上传  
+- 联系表单不经过任务 KV  
+- 公开演示可设 `ALLOW_SYNC_PASSWORD_INPUT=0`  
 
-#### 复制任务
+### 许可
 
-- 仅在 **全部任务**、**进行中** 的卡片上提供（已完成用「再开一轮」即可）
-- 点 **复制** → 打开编辑弹窗，**名称默认与原任务相同**
-- 不复制打卡历史；开始日期默认今天
-- 适合同一活动多个账号/分类并行；请改分类或备注后保存（同名同分类会提示重复）
-
-#### 挂起 / 恢复
-
-- 仅在 **全部任务** 卡片上操作（今日页无挂起按钮；已完成也不显示挂起）
-- **挂起**：保留历史，不进今日
-- **恢复**：回到今日列表（若仍为进行中）
-- 批量管理中支持批量挂起 / 恢复
-- 筛选中有 **已挂起**
-
-恢复后打卡、补卡逻辑与挂起前相同；挂起期间不会自动补记中间日期。若任务要求连续打卡，中间隔了多天，恢复后可能按原规则提示断签。
-
-#### 同步
-
-- 各设备使用同一同步密码
-- 打开页面自动同步；也可点左上角手动同步（**同步进行中请勿连点**）
-- 双击同步区域可重设密码
-- 下载时：本地与云端 **合并**（打卡记录取并集），不是简单覆盖
-- 合并后如有需要会写回云端
-- 若检测到可能丢进度，会弹出确认：  
-  - **保留本地并上传**：继续用本机并推到云端  
-  - **继续合并**：采用合并结果（可能含其他设备的删除）
-
-#### 备份管理（右上角更多）
-
-| 能力 | 说明 |
-|------|------|
-| 导出 JSON / CSV | 换机或大改前建议导出 JSON |
-| 导入 | 可覆盖或与本地合并 |
-| 历史快照 | **仅本机**最近 2 天，不上传云端；可恢复到某天 |
-| 同步日志 | 最近约 50 条上传/下载记录 |
-| 设备备注 | 给设备起名，云端共享 |
-
-清空数据前务必先导出。快照不能替代跨设备备份；换机请靠云端任务同步或 JSON 导出。
-
-#### 数据存在哪
-
-| 位置 | 内容 |
-|------|------|
-| 浏览器 localStorage | 任务、打卡、账本、同步日志、**本机快照**、设备、主题、公告等 |
-| Cloudflare KV（`dk` → `daka_main_data`） | 开启同步后的云端主数据（任务等；**不含**快照） |
-
-清除站点数据会丢掉该设备本地副本（含本机快照）；云端任务仍在，设同一密码同步可再拉取。
-
-### 免费额度说明
-
-面向个人、约数台设备、约百条任务设计。静态流量极低；每次打开约 1 次 KV 读，有变更时再写。一般可长期使用 Cloudflare 免费档。请勿把同步密码发给无关人员。
-
-### 常见问题
-
-**同步失败？**  
-检查网络、Functions 是否部署、`/api/get-data` 是否 404、KV 绑定名是否为 `dk`、密码是否与 `SYNC_PASSWORD` 一致。
-
-**A 设备打了卡，B 看不到？**  
-确认 A 上传成功；在 B 打开或点同步。可查看备份管理中的同步日志。
-
-**提示数据回退？**  
-优先看说明；多数会自动合并。弹窗时选「保留本地并上传」可避免丢掉本机进度。
-
-**编辑任务滑不动？**  
-请使用已修复弹层滚动的版本（表单区域 `.pop-body` 可滚）。
-
-**换手机？**  
-打开同一站点 → 同一同步密码 → 等待拉取；或从旧手机导出 JSON 再导入。
-
-**能否多人各记各的？**  
-当前是共享一份云端数据 + 同一密码，适合自己的多台设备，不适合多人独立账本。
-
-### 许可与声明
-
-本项目采用仓库内 [`LICENSE`](./LICENSE) 所述的限制性许可。未经作者书面许可，不得公开再发布、商业使用，或将本项目及其衍生版本作为自己的项目发布。
-
-与各 APP 官方活动无关，仅作个人打卡记录。
+见仓库 `LICENSE`（若有）。面向个人自用；公开部署请自行做好密码与访问控制。
 
 ---
 
@@ -193,166 +134,136 @@ A personal multi-device check-in tracker for daily promo / sign-in tasks. Data i
 
 ### Features
 
-- **Today**: Grouped list, check-in / make-up check-in
-- **Tasks**: Name, category, target days, times per day, streak mode, cash or prize, app scheme / web link
-- **Categories**: Pick an existing group or type a new one (new names appear in the list next time)
-- **All tasks**: Filters (active / paused / finished), search, batch actions (pin, pause, category, archive, delete)
-- **Copy task**: Duplicate a task on All tasks (same name, no history) for multi-account use
-- **Pause**: Hide from Today without deleting history; resume anytime
-- **Calendar**: Monthly check-in overview
-- **Announcement**: Editable, synced across devices
-- **Multi-device sync**: Password-protected; merge local and cloud to reduce rollback after failed uploads
-- **Backup**: Export / import JSON & CSV; sync log; device labels
-- **Snapshots**: **Local only**, last **2 days**, not uploaded to the cloud
-- **Dark mode**: System or manual
+- **Today**: view progress by category; support check-in and catch-up
+- **Task management**: task name, category, target days, times per day, continuous check-in, cash or custom rewards, and app / web links
+- **Categories**: choose from existing categories with autocomplete while editing, or create a new category that will appear in suggestions next time
+- **All tasks**: filter active / paused / completed tasks; search tasks; batch pin, pause, change category, archive, or delete
+- **Copy task**: copy an active task into a new task with the same name; an edit dialog lets you change category and notes, and history is not copied by default
+- **New round**: reopen a completed task as a new round through the edit dialog
+- **Pause**: temporarily hide a task from Today while keeping its history; paused tasks can be resumed later
+- **Calendar**: view check-in distribution by month
+- **Announcement**: edit the announcement text and sync it across devices
+- **Quick links**: up to 4 shortcut buttons under the announcement; each uses a name + URL, and only shortcuts with a URL are displayed. They are synced together with the announcement
+- **Multi-device sync**: password-protected synchronization; local and cloud data are merged to reduce the risk of progress being overwritten after a failed upload
+- **Local-only mode**: when no sync password is configured, the app runs in **Local-only** mode and data stays on the current device
+- **Sync password switch**: a server-side environment variable can control whether the page is allowed to enter or change the sync password, which is useful for public demonstrations
+- **Contact author**: submit feedback from the page with an optional contact method; the server forwards the message and does not write it to the task KV
+- **Backup & records**: export / import JSON and CSV, view sync logs, and store a device note
+- **Local snapshots**: the most recent 2 days of history are kept only on the current device and are not uploaded
+- **Dark mode**: follow the system setting or switch manually
 
-### Quick start
+Optional separate Worker: **Daily Reminder + Reward Center**. It can periodically push unfinished tasks and manage expiring coupons. It is decoupled from the main site; see the corresponding Worker README in the same account/project.
 
-1. Open your Pages URL in a browser  
-2. You can skip the sync password; data stays on-device only  
-3. For multi-device: tap the sync area (top-left) and set the same password as the server  
-4. Later opens will pull, merge, and write back when needed  
+### Online Use
 
-Export a JSON backup from **Backup** before major changes.
+1. Open your Cloudflare Pages URL in a browser.
+2. You can leave the sync password unset; the app will remain in **Local-only** mode and data will stay on the current device.
+3. For multi-device sync, on versions where password input is enabled, open the top-left menu and enter the same sync password configured on the server.
+4. After that, the page automatically pulls cloud data and merges it locally; when changes are detected, it writes the merged result back to the cloud.
+5. In the announcement area, click **Edit** to change the announcement text and configure up to 4 quick links, such as a Reward Center `/panel` URL.
+6. To send feedback, open the envelope icon in the top-right corner, fill in the form, and submit it.
 
-### Deploy (Cloudflare Pages + KV)
+For important operations or major changes, export a JSON backup from **Backup Management** first.
 
-#### Files
+### Deployment (Cloudflare Pages + KV)
+
+#### File Structure
 
 ```text
 /
-├── index.html
+├── index.html                 # Frontend
 └── functions/api/
-    ├── get-data.js
-    └── save-data.js
+    ├── get-data.js            # Read cloud data
+    ├── save-data.js           # Merge and write data, including announcement shortcuts
+    ├── contact.js             # Contact author / forward feedback; does not write task KV
+    └── sync-config.js         # Controls whether the frontend may enter the sync password
 ```
 
 #### Steps
 
-1. Create a Pages project (Git or direct upload)  
-2. Static site: empty build command; output = site root  
-3. Create a KV namespace; bind it under **Settings → Functions → KV bindings** with variable name **`dk`** (must match `env.dk`)  
-4. Optional Production env var:  
+1. In Cloudflare, go to **Workers & Pages** and create a Pages project, either from Git or by direct upload.
+2. For a static deployment, leave the **Build command** empty and use the site root as the output directory.
+3. Create a KV namespace and bind it in **Pages → Settings → Functions → KV bindings**:
+   - **Binding variable name must be `dk`**
+4. In **Settings → Environment variables → Production**, configure:
 
-| Name | Purpose |
-|------|---------|
-| `SYNC_PASSWORD` | Must match the password entered in the app |
+| Variable | Description |
+|----------|-------------|
+| `SYNC_PASSWORD` | Sync password. Strongly recommended for any public deployment. |
+| `ALLOW_SYNC_PASSWORD_INPUT` | `1` allows entering/changing the password on the page; `0` disables password input. Devices that already have a saved password can still sync. |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` | Optional. Forward contact-form messages to Telegram. |
+| `DINGTALK_WEBHOOK` / `DINGTALK_SECRET` | Optional. Forward contact-form messages to DingTalk. |
 
-5. Redeploy, open the site, sync once, and confirm no 404 / wrong password.
+5. After deployment, open the site and verify that the status correctly shows **Local-only** or normal sync.
 
 #### APIs
 
-| Method | Path | Role |
-|--------|------|------|
-| GET | `/api/get-data` | Read full cloud JSON |
-| POST | `/api/save-data` | Merge and write |
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/api/get-data` | Read the complete cloud JSON package |
+| POST | `/api/save-data` | Merge data on the server and write the result back to KV |
+| GET | `/api/sync-config` | Return `{ allowPasswordInput: 0\|1 }` |
+| POST | `/api/contact` | Submit contact information and feedback; does not write to task KV |
 
-Header: `X-Sync-Password: <password>` when `SYNC_PASSWORD` is set.
+When `SYNC_PASSWORD` is configured, sync requests use the header:
 
-#### Which file to edit
+```text
+X-Sync-Password: your-password
+```
 
-| File | Role | When to change |
-|------|------|----------------|
-| `index.html` | UI, local storage, merge policy, snapshots, etc. | Feature / UI changes |
-| `save-data.js` | Server-side merge and KV write | Merge rules / stored fields |
-| `get-data.js` | Auth + return `daka_main_data` as-is | Rarely; only if key, auth, or response shape changes |
+#### Which File Should You Edit?
 
-KV key: `daka_main_data` (single document; fine for personal scale).
+| File | Responsibility | When to edit |
+|------|----------------|--------------|
+| `index.html` | UI, local storage, merge logic, announcement, and quick links | Features and interface changes |
+| `save-data.js` | Server-side merge of tasks / ledger / devices / **announcement shortcuts** | Merge rules or cloud data fields |
+| `get-data.js` | Validate the password and return `daka_main_data` | Usually does not need changes |
+| `sync-config.js` | Read `ALLOW_SYNC_PASSWORD_INPUT` | Rarely changed |
+| `contact.js` | Forward feedback to notification bots | When notification channels change |
 
-### Daily use
+The main KV key is:
 
-#### Today
+```text
+daka_main_data
+```
 
-- Check in or make up missed check-ins  
-- Paused tasks are hidden and excluded from today’s progress  
+The application stores the complete main dataset under this single key, which is suitable for a personal-scale deployment.
 
-#### Categories
+Batch operations such as pin, pause, category change, archive, and delete are applied locally first and then saved / uploaded once for the selected items. They do not write to KV once per task.
 
-- When adding or editing, choose from existing groups or type a new name  
-- New groups are available in the suggestion list after you save a task with them  
+### Daily Use Summary
 
-#### Copy task
+- **Today**: check in or catch up; paused tasks do not appear in Today and are not counted toward today's progress
+- **All tasks**: filter and search; use Copy task / New round through the edit dialog
+- **Announcement + quick links**: save once to sync across devices; only shortcuts with a filled URL are displayed
+- **Backup Management**: export JSON, review sync logs, and set the device note
 
-- On **All tasks** for **active** items (finished tasks use **Restart round** instead)  
-- Opens the edit form with the **same title**; history is not copied; start date defaults to today  
-- Change category/remark before saving (same name + same category is blocked)  
+### Data & Security
 
-#### Pause / resume
+- The app is local-first by default; cloud synchronization is protected by the configured sync password
+- The merge strategy attempts to preserve local progress and warns when an abnormal rollback is detected
+- Local snapshots stay on the current device and are not uploaded
+- Contact-form submissions do not go through the task KV
+- For public demonstrations, `ALLOW_SYNC_PASSWORD_INPUT=0` can be used to prevent entering or changing the password from the page
 
-- Only on **All tasks** (no pause on Today; hidden on finished cards)  
-- Pause keeps history; Resume brings the task back when still active  
-- Batch pause / resume supported; filter **Paused** available  
+### License
 
-After resume, check-in rules are unchanged. Gap days are not auto-filled. Continuous tasks may show a streak-break prompt if days were skipped.
+See the repository's `LICENSE` file, if present. The project is intended for personal use; for public deployments, configure a proper sync password and apply appropriate access controls.
 
-#### Sync
-
-- Same password on every device  
-- Auto sync on open; manual sync via top-left (**don’t spam-click while syncing**)  
-- Double-tap sync area to reset password  
-- Download **merges** local and cloud (union of check-in history), then may upload  
-- Risk dialog: **Keep local & upload** vs **Continue merge**
-
-#### Backup
-
-| Item | Notes |
-|------|--------|
-| Export JSON / CSV | Prefer JSON before big changes |
-| Import | Overwrite or merge |
-| Snapshots | **This device only**, 2 days; not in the cloud |
-| Sync log | ~50 recent entries |
-| Device notes | Shared via cloud |
-
-Snapshots are not a cross-device backup. Use cloud task sync or JSON export when changing phones.
-
-#### Where data lives
-
-| Place | Content |
-|-------|---------|
-| `localStorage` | Tasks, history, ledgers, sync log, **local snapshots**, devices, theme, announcement |
-| KV (`dk` → `daka_main_data`) | Cloud main payload when sync is enabled (**no** snapshots) |
-
-### Free tier
-
-Designed for a few devices and ~100 tasks. Usually stays within Cloudflare free limits. Do not share your sync password.
-
-### FAQ
-
-**Sync fails?** Network, Functions deploy, `/api/get-data` 404, KV binding name `dk`, password mismatch.
-
-**Checked in on A, missing on B?** Confirm A uploaded; open or sync on B; check sync log.
-
-**Rollback warning?** Prefer merge; use **Keep local & upload** to protect local progress.
-
-**New phone?** Same URL + password, or import JSON from the old device.
-
-**Multi-user separate books?** No — one shared cloud dataset and one password, for your own devices only.
-
-### License & disclaimer
-
-Copyright © 2026 羊毛打卡管家项目作者。
-
-This repository is **not** released under an open-source license. The source code and original project materials are provided for viewing and learning only. Unless you have received separate written permission from the author, you may not copy, republish, redistribute, sublicense, commercially use, sell, or present this project or a modified version of it as your own.
-
-You may fork or download the repository for personal reference, but this does not grant permission to publish or distribute the project or derivative works. See [`LICENSE`](./LICENSE) for the full terms.
-
-Not affiliated with any app’s official campaigns; for personal check-in logging only.
-
----
 
 <a id="sponsor"></a>
 
-## 赞赏支持 / Support
+## 支持作者 / Sponsor
 
-如果这个项目对你有帮助，欢迎请作者喝杯咖啡 ☕  
-赞赏完全自愿，不影响项目的正常使用。感谢每一份支持！
+如果这个工具对你有帮助，欢迎请作者喝杯咖啡。
 
-<div align="center">
-  <img src="assets/sponsor.png" alt="赞赏码" width="420">
-  <br>
-  <sub>感谢你的支持 ❤️</sub>
-</div>
+If you find this useful, you can buy the author a coffee.
 
-If this project is helpful to you, you're welcome to buy the author a coffee ☕  
-Sponsorship is entirely optional. Thank you for your support!
+<!-- 将下面路径换成你仓库里的赞赏码图片，例如 docs/sponsor.png -->
+<!--
+<p align="center">
+  <img src="docs/sponsor.png" alt="Sponsor QR" width="220" />
+</p>
+-->
 
+感谢支持。Thank you.
