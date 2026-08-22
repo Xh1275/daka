@@ -250,17 +250,18 @@ Batch operations such as pin, pause, category change, archive, and delete are ap
 
 See the repository's `LICENSE` file, if present. The project is intended for personal use; for public deployments, configure a proper sync password and apply appropriate access controls.
 
-
 <a id="sponsor"></a>
 
-## 支持作者 / Sponsor
+## 赞赏支持 / Support
 
-如果这个工具对你有帮助，欢迎请作者喝杯咖啡。
+如果这个项目对你有帮助，欢迎请作者喝杯咖啡 ☕  
+赞赏完全自愿，不影响项目的正常使用。感谢每一份支持！
 
-If you find this useful, you can buy the author a coffee.
+<div align="center">
+  <img src="assets/sponsor.png" alt="赞赏码" width="420">
+  <br>
+  <sub>感谢你的支持 ❤️</sub>
+</div>
 
-<p align="center">
-  <img src="assets/sponsor.png" alt="Sponsor QR" width="220" />
-</p>
-
-感谢支持。Thank you.
+If this project is helpful to you, you're welcome to buy the author a coffee ☕  
+Sponsorship is entirely optional. Thank you for your support!
