@@ -259,11 +259,8 @@ See the repository's `LICENSE` file, if present. The project is intended for per
 
 If you find this useful, you can buy the author a coffee.
 
-<!-- 将下面路径换成你仓库里的赞赏码图片，例如 docs/sponsor.png -->
-<!--
 <p align="center">
   <img src="docs/sponsor.png" alt="Sponsor QR" width="220" />
 </p>
--->
 
 感谢支持。Thank you.
