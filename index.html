@@ -5325,45 +5325,84 @@ function jumpToTaskFromCalendar(taskId) {
         showToast('无法定位任务');
         return;
     }
+
+    // 先从当前真实任务列表确认目标，避免仅依赖当前 DOM 的筛选/渲染状态。
+    const targetTask = Array.isArray(taskList)
+        ? taskList.find(t => String(t && t.id) === raw)
+          || taskList.find(t => String(getTaskNameText(t) || '').trim() === raw)
+        : null;
+
+    if (!targetTask) {
+        showToast('未找到对应任务');
+        return;
+    }
+
+    const targetId = String(targetTask.id);
+    const targetName = String(getTaskNameText(targetTask) || '').trim();
+
     try { closeCalendarDetail(); } catch (e) {}
+
+    // 强制进入“全部任务”，清除搜索和状态筛选，确保进行中任务/今日已打任务也可见。
     currentPage = 'all';
     if (batchMode) {
-        try { toggleBatchMode(); } catch (e) {}
+        try { toggleBatchMode(); } catch (e) {
+            batchMode = false;
+            selectedTaskIds.clear();
+            if (el.batchBar) el.batchBar.classList.remove('show');
+        }
     }
+
     try {
         if (el.searchAllInput) el.searchAllInput.value = '';
-        if (typeof filterType !== 'undefined') filterType = 'all';
+        filterType = 'all';
         document.querySelectorAll('.filter-item').forEach(f => {
             f.classList.toggle('active', f.dataset.filter === 'all');
         });
     } catch (e) {}
+
     document.querySelectorAll('.tab-item').forEach(tab => {
         tab.classList.toggle('active', tab.dataset.page === 'all');
     });
-    renderPage();
-    const tryFind = () => {
-        let card = document.querySelector(`.task-card[data-id="${raw}"]`);
-        if (!card) {
-            card = Array.from(document.querySelectorAll('.task-card')).find(
-                c => String(c.getAttribute('data-id')) === raw
-            );
-        }
-        if (card) {
-            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            card.classList.add('card-just-checked');
-            setTimeout(() => card.classList.remove('card-just-checked'), 900);
-            return true;
-        }
-        return false;
-    };
-    setTimeout(() => {
-        if (tryFind()) return;
-        setTimeout(() => {
-            if (!tryFind()) showToast('未找到对应任务（可能已删除或被筛选隐藏）');
-        }, 200);
-    }, 120);
-}
 
+    renderPage();
+
+    const findTargetCard = () => {
+        if (!el.allListWrap) return null;
+
+        let card = Array.from(el.allListWrap.querySelectorAll('.task-card')).find(
+            c => String(c.getAttribute('data-id')) === targetId
+        );
+
+        // 极端旧数据没有稳定 id 时，以任务名称作为最后兜底。
+        if (!card && targetName) {
+            card = Array.from(el.allListWrap.querySelectorAll('.task-card')).find(c => {
+                const nameEl = c.querySelector('.task-name');
+                return nameEl && String(nameEl.textContent || '').trim() === targetName;
+            });
+        }
+
+        return card || null;
+    };
+
+    const locate = () => {
+        const card = findTargetCard();
+        if (!card) return false;
+
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.classList.add('card-just-checked');
+        setTimeout(() => card.classList.remove('card-just-checked'), 900);
+        return true;
+    };
+
+    // renderPage 同步完成列表构建；再留一帧兼容移动端重排/分类展开。
+    if (locate()) return;
+    requestAnimationFrame(() => {
+        if (locate()) return;
+        setTimeout(() => {
+            if (!locate()) showToast('未找到对应任务（可能已删除或当前数据尚未刷新）');
+        }, 160);
+    });
+}
 
 /** 弹层防底层滚动穿透 */
 let __bodyScrollLockCount = 0;
@@ -5461,14 +5500,35 @@ function openCalendarDetail(dateString, taskEntries) {
             } else if (item.time && item.time.length >= 19) {
                 timeText = item.time.slice(11, 16);
             }
+            const tid = item.taskId != null && item.taskId !== ''
+                ? String(item.taskId)
+                : (item.id != null && item.id !== '' ? String(item.id) : '');
+            const nameCls = tid ? 'calendar-detail-name is-link' : 'calendar-detail-name';
+            const jumpAttr = tid ? ` data-jump-task="${escapeHTML(tid)}"` : '';
             return `
-            <div class="calendar-detail-item">
+            <div class="calendar-detail-item"${jumpAttr}>
                 <div class="calendar-detail-index">${idx + 1}</div>
-                <div class="calendar-detail-name">${escapeHTML(item.name || '')}</div>
+                <div class="${nameCls}">${escapeHTML(item.name || '')}</div>
                 <div class="calendar-detail-time">${escapeHTML(timeText)}</div>
                 <div class="calendar-detail-tag">已打卡</div>
             </div>`;
         }).join('');
+
+        // 与“本月现金/奖品入账明细”统一：有 taskId 的当天记录可直接跳转到对应任务。
+        try {
+            const list = el.calendarDetailList;
+            if (list) {
+                list.querySelectorAll('[data-jump-task]').forEach(node => {
+                    node.style.cursor = 'pointer';
+                    node.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const id = node.getAttribute('data-jump-task');
+                        if (id) jumpToTaskFromCalendar(id);
+                    });
+                });
+            }
+        } catch (e) {}
     } else {
         el.calendarDetailList.innerHTML = emptyStateHTML({ icon: `<span class="empty-soft"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 3.4V7M16 3.4V7M3.5 10h17" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`, title: '当天没有打卡记录', desc: '继续坚持保持习惯' });
     }
