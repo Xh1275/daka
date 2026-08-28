@@ -5120,8 +5120,9 @@ function getMonthCompletionStats(year, month0) {
             }
         }
     }
-    moneyItems.sort((a, b) => b.amount - a.amount || String(a.name).localeCompare(String(b.name)));
-    prizeItems.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    const byFinishDateDesc = (a, b) => String(b.finishDate || '').localeCompare(String(a.finishDate || '')) || String(a.name).localeCompare(String(b.name));
+    moneyItems.sort(byFinishDateDesc);
+    prizeItems.sort(byFinishDateDesc);
     return { money, prizeCount, finishCount, yearMonth: ym, moneyItems, prizeItems };
 }
 function formatMonthCompletionSummaryHTML(stats) {
