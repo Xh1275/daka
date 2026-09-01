@@ -480,8 +480,6 @@ button.btn-busy, .btn-busy{ opacity:0.65; pointer-events:none; }
 .history-list span { background: var(--border-color); padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: 0.1s; }
 .history-list span:hover { background: var(--danger); color: #fff; }
 .archive-tag { background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-sub); padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
-.archive-day-tag { background: var(--border-color); padding: 2px 8px; border-radius: 4px; font-size: 11px; color: var(--text-sub); cursor: default; opacity: 0.9; }
-html[data-theme="dark"] .archive-day-tag { background: #2a2a2a; color: #a0a0a0; }
 .calendar-card { background: var(--card-bg); margin: 10px 16px; padding: 14px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
 .calendar-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .calendar-title { font-size: 14px; font-weight: bold; color: var(--text-main); }
@@ -3420,13 +3418,18 @@ function mergeArchiveLists(a, b) {
             const leftTs = parseUpdateAtMs(existed.ts || existed.updateAt);
             const rightTs = parseUpdateAtMs(item.ts || item.updateAt);
             const prefer = rightTs >= leftTs ? item : existed;
+            const times = Array.from(new Set([
+                ...(Array.isArray(existed.times) ? existed.times : []),
+                ...(Array.isArray(item.times) ? item.times : [])
+            ])).filter(v => typeof v === 'string').sort();
             map.set(month, {
                 ...prefer,
                 month,
-                count: Math.max(Number(existed.count) || 0, Number(item.count) || 0, dates.length),
+                count: Math.max(Number(existed.count) || 0, Number(item.count) || 0, dates.length, completedDates.length),
                 days: Math.max(Number(existed.days) || 0, Number(item.days) || 0, completedDates.length),
                 dates,
-                completedDates
+                completedDates,
+                times
             });
         });
     };
@@ -3459,7 +3462,7 @@ function mergeTasksForSync(localList, remoteList) {
             const remoteTime = parseUpdateAtMs(remoteItem.updateAt);
             const baseTask = localTime >= remoteTime ? { ...localItem } : { ...remoteItem };
             baseTask.archives = mergeArchiveLists(localItem.archives, remoteItem.archives);
-            // 先并集 history，再去掉「已在 archives 月份内」的记录，避免跨月归档后被同步再次灌回
+            // 并集后去掉已在 archives 月份内的 history，防止跨月归档后再被同步灌回
             const archivedMonths = new Set(
                 (Array.isArray(baseTask.archives) ? baseTask.archives : [])
                     .map(a => a && a.month ? String(a.month).substring(0, 7) : '')
@@ -3470,22 +3473,9 @@ function mergeTasksForSync(localList, remoteList) {
                 ...(Array.isArray(remoteItem.history) ? remoteItem.history : [])
             ].filter(v => typeof v === 'string'))).filter(h => {
                 if (h.length < 7) return true;
-                const ym = h.substring(0, 7);
-                return !archivedMonths.has(ym);
+                return !archivedMonths.has(h.substring(0, 7));
             }).sort();
             baseTask.history = mergedHistory;
-            // 纠正归档 count 虚高（仅影响展示/体积，不改 dates）
-            const tpd = Math.max(1, Number(baseTask.timesPerDay) || 1);
-            (baseTask.archives || []).forEach(arc => {
-                if (!arc) return;
-                const dlen = Array.isArray(arc.dates) ? arc.dates.length : 0;
-                const clen = Array.isArray(arc.completedDates) ? arc.completedDates.length : 0;
-                const days = Math.max(Number(arc.days) || 0, clen, dlen);
-                if (clen > 0) arc.days = clen;
-                else if (days > 0) arc.days = days;
-                const maxC = Math.max(days, 1) * tpd;
-                if (Number(arc.count) > maxC * 1.2) arc.count = maxC;
-            });
             // 补齐较旧一侧有、较新一侧缺失的字段
             const older = localTime >= remoteTime ? remoteItem : localItem;
             Object.keys(older).forEach(key => {
@@ -4393,10 +4383,9 @@ function detectSyncRisk(oldList, newList, deletionRecords = taskDeletionRecords,
         }
         const oldHist = Array.isArray(oldT.history) ? oldT.history : [];
         const newHist = Array.isArray(newT.history) ? newT.history : [];
-        // 仅统计「非 tombstone」导致的 history 变少，主动删打卡不弹风险
         const oldEffective = oldHist.filter(h => typeof h === 'string' && !histDeletedSet.has(historyDeletionKey(oldT.id, h)));
         const newEffective = newHist.filter(h => typeof h === 'string' && !histDeletedSet.has(historyDeletionKey(oldT.id, h)));
-        // 新数据 archives 已覆盖的日期/月份：视为「迁入归档」而非回退
+        // archives 已覆盖的日期/月份视为「迁入归档」，不算回退（避免跨月后反复弹风险窗）
         const newArcMonths = new Set();
         const newArcDays = new Set();
         (Array.isArray(newT.archives) ? newT.archives : []).forEach(a => {
@@ -4413,10 +4402,10 @@ function detectSyncRisk(oldList, newList, deletionRecords = taskDeletionRecords,
         });
         const trulyLost = oldEffective.filter(h => {
             if (typeof h !== 'string' || h.length < 10) return true;
+            if (newEffective.includes(h)) return false;
             const day = h.substring(0, 10);
             const ym = h.substring(0, 7);
-            if (newEffective.includes(h)) return false;
-            if (newArcDays.has(day) || newArcMonths.has(ym)) return false; // 已进归档，不算丢失
+            if (newArcDays.has(day) || newArcMonths.has(ym)) return false;
             return true;
         });
         if (trulyLost.length > 0 && newEffective.length < oldEffective.length) {
@@ -4424,7 +4413,6 @@ function detectSyncRisk(oldList, newList, deletionRecords = taskDeletionRecords,
         }
         const oldHasToday = oldEffective.some(h => h.startsWith(todayStr));
         const newHasToday = newEffective.some(h => h.startsWith(todayStr));
-        // 今日记录若已在新 archives 中也不算撤销
         const todayInNewArc = newArcDays.has(todayStr) || newArcMonths.has(todayStr.substring(0, 7));
         if (oldHasToday && !newHasToday && !todayInNewArc) {
             const todayRemoved = oldEffective.filter(h => h.startsWith(todayStr) && !newEffective.includes(h));
@@ -4704,127 +4692,11 @@ async function doUploadRemoteData(beforeUploadSnapshot) {
 }
 
 function archiveOldHistory(isManual = false) {
-    const currentYM = getTodayStr().substring(0, 7);
-    let archivedTotalCount = 0;
-    let healedCount = 0;
-    if (!Array.isArray(taskList)) taskList = [];
-    taskList.forEach(item => {
-        if (!Array.isArray(item.history)) item.history = [];
-        if (!Array.isArray(item.archives)) item.archives = [];
-        if (item.history.length === 0 && item.archives.length === 0) return;
-
-        const oldEntries = [];
-        const keepEntries = [];
-        item.history.forEach(h => {
-            const ym = typeof h === 'string' && h.length >= 7 ? h.substring(0, 7) : '';
-            if (ym && ym < currentYM) { oldEntries.push(h); }
-            else { keepEntries.push(h); }
-        });
-
-        if (oldEntries.length > 0) {
-            const monthGroups = {};
-            oldEntries.forEach(h => {
-                const ym = h.substring(0, 7);
-                if (!monthGroups[ym]) monthGroups[ym] = [];
-                monthGroups[ym].push(h);
-            });
-            const tPerDay = Number(item.timesPerDay) || 1;
-            for (let ym in monthGroups) {
-                const entries = monthGroups[ym];
-                const count = entries.length;
-
-                const dateCounts = {};
-                entries.forEach(e => {
-                    const d = e.substring(0, 10);
-                    dateCounts[d] = (dateCounts[d] || 0) + 1;
-                });
-
-                const dates = Object.keys(dateCounts).sort();
-                const completedDates = dates.filter(d => dateCounts[d] >= tPerDay);
-
-                const existingArchive = item.archives.find(a => a && a.month === ym);
-                if (existingArchive) {
-                    // count 取较大值，避免同步回灌后重复累加
-                    existingArchive.count = Math.max(Number(existingArchive.count) || 0, count, dates.length);
-                    const existingDates = Array.isArray(existingArchive.dates) ? existingArchive.dates : [];
-                    const existingComp = Array.isArray(existingArchive.completedDates)
-                        ? existingArchive.completedDates
-                        : (tPerDay === 1 ? existingDates : []);
-
-                    const mergedDates = Array.from(new Set([...existingDates, ...dates])).sort();
-                    const mergedComp = Array.from(new Set([...existingComp, ...completedDates])).sort();
-
-                    existingArchive.dates = mergedDates;
-                    existingArchive.completedDates = mergedComp;
-                    existingArchive.days = mergedComp.length;
-                } else {
-                    item.archives.push({
-                        month: ym,
-                        count: count,
-                        days: completedDates.length,
-                        dates: dates,
-                        completedDates: completedDates
-                    });
-                }
-                archivedTotalCount += count;
-            }
-            item.history = keepEntries;
-            item.updateAt = getNowDateTimeStr();
-        }
-
-        // 自愈：去掉 history 中「已归档月份」或「已在 archives 日期集合内」的记录（同步并集回灌时常见）
-        if (item.archives.length > 0 && item.history.length > 0) {
-            const archivedMonths = new Set();
-            const archivedDateSet = new Set();
-            item.archives.forEach(arc => {
-                if (!arc) return;
-                if (arc.month) archivedMonths.add(String(arc.month).substring(0, 7));
-                (Array.isArray(arc.completedDates) ? arc.completedDates : []).forEach(d => {
-                    const k = typeof d === 'string' ? d.substring(0, 10) : '';
-                    if (k) archivedDateSet.add(k);
-                });
-                (Array.isArray(arc.dates) ? arc.dates : []).forEach(d => {
-                    const k = typeof d === 'string' ? d.substring(0, 10) : '';
-                    if (k) archivedDateSet.add(k);
-                });
-            });
-            const before = item.history.length;
-            item.history = item.history.filter(h => {
-                if (typeof h !== 'string' || h.length < 10) return true;
-                const ym = h.substring(0, 7);
-                const day = h.substring(0, 10);
-                if (ym && archivedMonths.has(ym)) return false;
-                if (day && archivedDateSet.has(day)) return false;
-                return true;
-            });
-            const removed = before - item.history.length;
-            if (removed > 0) {
-                healedCount += removed;
-                item.updateAt = getNowDateTimeStr();
-            }
-            // 修正归档 count：不超过 dates 规模，避免历史累加出 186 次这种虚高
-            item.archives.forEach(arc => {
-                if (!arc) return;
-                const dateLen = Array.isArray(arc.dates) ? arc.dates.length : 0;
-                const compLen = Array.isArray(arc.completedDates) ? arc.completedDates.length : 0;
-                const tpd = Number(item.timesPerDay) || 1;
-                const maxReasonable = Math.max(dateLen, compLen) * Math.max(tpd, 1);
-                if (maxReasonable > 0 && Number(arc.count) > maxReasonable) {
-                    arc.count = maxReasonable;
-                }
-                if (compLen > 0) arc.days = compLen;
-                else if (dateLen > 0 && (!arc.days || arc.days > dateLen)) arc.days = dateLen;
-            });
-        }
-    });
-    if (archivedTotalCount > 0 || healedCount > 0) {
-        saveStorage();
-        if (isManual) {
-            if (archivedTotalCount > 0) showToast(`已归档 ${archivedTotalCount} 条旧历史记录`, 'success');
-            else showToast(`已清理 ${healedCount} 条重复历史记录`, 'success');
-        }
-    } else if (isManual) {
-        showToast("暂无需要归档的上月历史数据");
+    // 已取消「按月自动归档」：历史打卡全部保留在 history（含具体时间），
+    // 明细默认只展示最近 10 条，其余点「加载更多」。
+    // 仍兼容旧数据里已有的 archives（完成天数按去重日期，不会双计）。
+    if (isManual) {
+        showToast('已关闭按月归档：历史保留完整时间，明细默认显示最近10条', 'info');
     }
 }
 
@@ -4858,46 +4730,42 @@ function getYesterdayCheckCount(item) {
 }
 
 function getCompletedDaysCount(item) {
-    // 统一按「去重后的完成日期」计数，避免 history 与 archives 重叠时双计
-    // （跨月归档 + 同步并集 history 时最容易触发，表现为进度 66/53、30/15 等虚高）
+    // 跨月安全：按去重后的完成日期计数，避免 history 与 archives 重叠双计
+    if (!item || typeof item !== 'object') return 0;
     if (typeof collectTaskCompletedDates === 'function') {
         return collectTaskCompletedDates(item).length;
     }
-    // 兜底：旧逻辑（仅在 collectTaskCompletedDates 不可用时）
-    let archiveDays = 0;
-    if (Array.isArray(item.archives) && item.archives.length > 0) {
-        archiveDays = item.archives.reduce((sum, a) => {
-            if (!a) return sum;
-            let days = 0;
-            if (typeof a.days === 'number') {
-                days = a.days;
-            } else if (a.days !== undefined && a.days !== null && !isNaN(Number(a.days))) {
-                days = Number(a.days);
-            } else if (a.count !== undefined && a.count !== null && !isNaN(Number(a.count))) {
-                days = Number(a.count);
-            }
-            return sum + days;
-        }, 0);
-    }
-    if (!Array.isArray(item.history) || item.history.length === 0) return archiveDays;
-    const tPerDay = Number(item.timesPerDay) || 1;
-    let currentDays = 0;
-    if (tPerDay === 1) {
-        const uniqueDates = new Set(item.history.filter(h => typeof h === 'string' && h.length >= 10).map(h => h.substring(0, 10)));
-        currentDays = uniqueDates.size;
-    } else {
-        const dateCounts = {};
+    const tPerDay = Math.max(1, Number(item.timesPerDay) || 1);
+    const set = new Set();
+    const counts = {};
+    if (Array.isArray(item.history)) {
         item.history.forEach(h => {
-            if (typeof h === 'string' && h.length >= 10) {
-                const d = h.substring(0, 10);
-                dateCounts[d] = (dateCounts[d] || 0) + 1;
+            if (typeof h !== 'string' || h.length < 10) return;
+            const d = h.substring(0, 10);
+            counts[d] = (counts[d] || 0) + 1;
+        });
+    }
+    Object.keys(counts).forEach(d => { if (counts[d] >= tPerDay) set.add(d); });
+    if (Array.isArray(item.archives)) {
+        item.archives.forEach(arc => {
+            if (!arc) return;
+            let used = false;
+            if (Array.isArray(arc.completedDates) && arc.completedDates.length) {
+                arc.completedDates.forEach(x => {
+                    const s = String(x || '');
+                    if (/^\d{4}-\d{2}-\d{2}/.test(s)) set.add(s.substring(0, 10));
+                });
+                used = true;
+            }
+            if (!used && Array.isArray(arc.dates)) {
+                arc.dates.forEach(x => {
+                    const s = String(x || '');
+                    if (/^\d{4}-\d{2}-\d{2}/.test(s)) set.add(s.substring(0, 10));
+                });
             }
         });
-        for (let d in dateCounts) {
-            if (dateCounts[d] >= tPerDay) currentDays++;
-        }
     }
-    return currentDays + archiveDays;
+    return set.size;
 }
 
 function getTaskStatus(item) {
@@ -5062,64 +4930,30 @@ function renderTaskCard(item, isTodayPage = false) {
         rewardDisplay = `目标奖品: ${escapeHTML(rValue)}`;
     }
     const limit = historyLimits[item.id] || 10;
-    // 展示层再挡一层：已有归档月份的明细不再重复列在「近期」里
-    const archivedMonthSet = new Set(
-        (Array.isArray(item.archives) ? item.archives : [])
-            .map(a => a && a.month ? String(a.month).substring(0, 7) : '')
-            .filter(Boolean)
-    );
-    const historyArr = (Array.isArray(item.history) ? item.history : []).filter(h => {
-        if (typeof h !== 'string' || h.length < 7) return true;
-        const ym = h.substring(0, 7);
-        return !archivedMonthSet.has(ym);
-    });
+    const historyArr = Array.isArray(item.history) ? item.history : [];
+    // 新到旧；默认最近 10 条，其余「加载更多」（不再按月归档抽走，时间一直可查）
     const sortedHistory = [...historyArr].sort().reverse();
     const visibleHistory = sortedHistory.slice(0, limit);
     const hasMoreHistory = sortedHistory.length > limit;
     const archives = Array.isArray(item.archives) ? item.archives : [];
-    const tPerDayForArc = Number(item.timesPerDay) || 1;
-    let archiveBlocksHtml = "";
-    let archiveDayTotal = 0;
+    let archiveTagsHtml = "";
     if (archives.length > 0) {
-        // 按月份倒序展示归档，并列出日期（解决「归档后看不到 8 月明细」）
-        const sortedArcs = [...archives].sort((a, b) => String(b && b.month || '').localeCompare(String(a && a.month || '')));
-        archiveBlocksHtml = sortedArcs.map(a => {
-            if (!a) return '';
-            const month = escapeHTML(String(a.month || ''));
-            const dateList = (Array.isArray(a.completedDates) && a.completedDates.length > 0)
-                ? a.completedDates
-                : (Array.isArray(a.dates) ? a.dates : []);
-            const uniqDays = Array.from(new Set(dateList.map(d => String(d || '').substring(0, 10)).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)))).sort().reverse();
-            const days = Math.max(0, Number(a.days) || uniqDays.length || 0);
-            archiveDayTotal += days;
-            // 次数：优先用「完成天数 × 每天次数」，避免历史 count 被同步累加虚高（如 161 次）
-            const approxTimes = days * tPerDayForArc;
-            const rawCount = Number(a.count) || 0;
-            const timesShow = (rawCount > 0 && rawCount <= approxTimes * 1.2) ? rawCount : approxTimes;
-            const timesPart = tPerDayForArc > 1
-                ? `（${timesShow}次 · ${tPerDayForArc}次/天）`
-                : (timesShow > 0 ? `（${timesShow}次）` : '');
-            const daysHtml = uniqDays.length
-                ? `<div class="history-list" style="margin-top:6px;">${uniqDays.map(d => `<span class="archive-day-tag" title="已归档，仅供查看">${escapeHTML(d)}</span>`).join('')}</div>`
-                : `<div style="font-size:11px;color:var(--text-light);margin-top:4px;">该月仅有汇总，无逐日明细</div>`;
-            return `<div class="archive-month-block" style="margin-bottom:10px;padding:8px 10px;border:1px solid var(--border-color);border-radius:10px;background:var(--bg-color);">
-                <div class="archive-tag" style="display:inline-block;">${month} 累计完成 ${days} 天${timesPart}</div>
-                ${daysHtml}
-            </div>`;
-        }).join('');
+        archiveTagsHtml = archives.map(a => `<div class="archive-tag">${a.month} 月汇总 ${a.days || 0} 天（旧归档）</div>`).join("");
     }
     let historyHtml = "";
     if (sortedHistory.length > 0 || archives.length > 0) {
+        const moreHint = sortedHistory.length > 10
+            ? `，默认最近${Math.min(limit, sortedHistory.length)}条`
+            : '';
         historyHtml = `
         <details class="history-details">
-            <summary>查看打卡明细 (近期${sortedHistory.length}条${archives.length > 0 ? ` + ${archives.length}个月归档` : ''}) - 近期记录可点 ✕ 删除</summary>
+            <summary>查看打卡明细（共${sortedHistory.length}条${moreHint}${archives.length > 0 ? ` · 另有${archives.length}个月旧归档` : ''}）— 点击记录可删除</summary>
             <div style="margin-top:8px;">
-                ${archiveBlocksHtml || ''}
-                ${sortedHistory.length > 0 ? `<div style="font-size:12px;color:var(--text-sub);margin:6px 0 4px;">近期（未归档）</div>
+                ${archiveTagsHtml ? `<div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">${archiveTagsHtml}</div>` : ''}
                 <div class="history-list">
                     ${visibleHistory.map(d => `<span class="history-date-tag" data-task-id="${item.id}" data-record="${escapeHTML(d)}">${escapeHTML(d)} ✕</span>`).join("")}
                 </div>
-                ${hasMoreHistory ? `<div style="text-align:center; margin-top:10px;"><button class="btn-more-history" data-more-history="${item.id}" style="background:var(--border-color); border:none; padding:4px 12px; border-radius:12px; font-size:11px; color:var(--text-sub); cursor:pointer;">加载更多 (剩余 ${sortedHistory.length - limit} 条)</button></div>` : ''}` : (archives.length > 0 ? `<div style="font-size:11px;color:var(--text-light);">当前月份暂无未归档记录</div>` : '')}
+                ${hasMoreHistory ? `<div style="text-align:center; margin-top:10px;"><button class="btn-more-history" data-more-history="${item.id}" style="background:var(--border-color); border:none; padding:4px 12px; border-radius:12px; font-size:11px; color:var(--text-sub); cursor:pointer;">加载更多（剩余 ${sortedHistory.length - limit} 条）</button></div>` : ''}
             </div>
         </details>`;
     }
@@ -5200,16 +5034,13 @@ function collectTaskCompletedDates(item) {
     if (Array.isArray(item.archives)) {
         item.archives.forEach(arc => {
             if (!arc) return;
-            let usedCompleted = false;
-            if (Array.isArray(arc.completedDates) && arc.completedDates.length > 0) {
+            if (Array.isArray(arc.completedDates)) {
                 arc.completedDates.forEach(d => {
                     const k = extractDateKey(d);
                     if (k) set.add(k);
                 });
-                usedCompleted = true;
             }
-            // 无 completedDates 时回退用 dates（兼容旧归档；与 history 去重，不会双计）
-            if (!usedCompleted && Array.isArray(arc.dates)) {
+            if (tPerDay === 1 && Array.isArray(arc.dates)) {
                 arc.dates.forEach(d => {
                     const k = extractDateKey(d);
                     if (k) set.add(k);
@@ -5791,80 +5622,7 @@ function batchUpdateCategory() {
     showToast('批量修改分类成功');
 }
 function batchArchiveHistory() {
-    if (selectedTaskIds.size === 0) return showToast('请先选择任务');
-    const currentYM = getTodayStr().substring(0, 7);
-    let archivedCount = 0;
-    const nowStr = getNowDateTimeStr();
-    
-    taskList.forEach(item => {
-        if (selectedTaskIds.has(item.id)) {
-            if (!Array.isArray(item.history) || item.history.length === 0) return;
-            if (!Array.isArray(item.archives)) item.archives = [];
-            
-            const oldEntries = [];
-            const keepEntries = [];
-            item.history.forEach(h => {
-                const ym = typeof h === 'string' && h.length >= 7 ? h.substring(0, 7) : '';
-                if (ym && ym < currentYM) { oldEntries.push(h); } 
-                else { keepEntries.push(h); }
-            });
-            
-            if (oldEntries.length > 0) {
-                const monthGroups = {};
-                oldEntries.forEach(h => {
-                    const ym = h.substring(0, 7);
-                    if (!monthGroups[ym]) monthGroups[ym] = [];
-                    monthGroups[ym].push(h);
-                });
-                
-                const tPerDay = Number(item.timesPerDay) || 1;
-                for (let ym in monthGroups) {
-                    const entries = monthGroups[ym];
-                    const count = entries.length;
-                    
-                    const dateCounts = {};
-                    entries.forEach(e => {
-                        const d = e.substring(0, 10);
-                        dateCounts[d] = (dateCounts[d] || 0) + 1;
-                    });
-                    
-                    const dates = Object.keys(dateCounts).sort();
-                    const completedDates = dates.filter(d => dateCounts[d] >= tPerDay);
-                    
-                    const existingArchive = item.archives.find(a => a && a.month === ym);
-                    if (existingArchive) {
-                        existingArchive.count = Math.max(Number(existingArchive.count) || 0, count, dates.length);
-                        const existingDates = Array.isArray(existingArchive.dates) ? existingArchive.dates : [];
-                        const existingComp = Array.isArray(existingArchive.completedDates) 
-                            ? existingArchive.completedDates 
-                            : (tPerDay === 1 ? existingDates : []);
-                            
-                        const mergedDates = Array.from(new Set([...existingDates, ...dates])).sort();
-                        const mergedComp = Array.from(new Set([...existingComp, ...completedDates])).sort();
-                        
-                        existingArchive.dates = mergedDates;
-                        existingArchive.completedDates = mergedComp;
-                        existingArchive.days = mergedComp.length;
-                    } else {
-                        item.archives.push({ 
-                            month: ym, 
-                            count: count, 
-                            days: completedDates.length, 
-                            dates: dates,
-                            completedDates: completedDates 
-                        });
-                    }
-                    archivedCount += count;
-                }
-                item.history = keepEntries;
-                item.updateAt = nowStr;
-            }
-        }
-    });
-    
-    saveStorage();
-    renderPage();
-    showToast(`已归档 ${archivedCount} 条历史记录`);
+    showToast('已关闭按月归档，无需批量归档。历史在明细中查看（默认最近10条）', 'info');
 }
 function batchDeleteTasks() {
     if (selectedTaskIds.size === 0) return showToast('请先选择任务');
