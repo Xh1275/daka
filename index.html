@@ -3462,19 +3462,12 @@ function mergeTasksForSync(localList, remoteList) {
             const remoteTime = parseUpdateAtMs(remoteItem.updateAt);
             const baseTask = localTime >= remoteTime ? { ...localItem } : { ...remoteItem };
             baseTask.archives = mergeArchiveLists(localItem.archives, remoteItem.archives);
-            // 并集后去掉已在 archives 月份内的 history，防止跨月归档后再被同步灌回
-            const archivedMonths = new Set(
-                (Array.isArray(baseTask.archives) ? baseTask.archives : [])
-                    .map(a => a && a.month ? String(a.month).substring(0, 7) : '')
-                    .filter(Boolean)
-            );
+            // 不自动归档模式下：history 只做并集，不再因 archives 有某月就删 history
+            // （否则云端一旦被脏设备写入「8月归档」，干净设备一同步就会丢掉带时间的 8 月明细）
             const mergedHistory = Array.from(new Set([
                 ...(Array.isArray(localItem.history) ? localItem.history : []),
                 ...(Array.isArray(remoteItem.history) ? remoteItem.history : [])
-            ].filter(v => typeof v === 'string'))).filter(h => {
-                if (h.length < 7) return true;
-                return !archivedMonths.has(h.substring(0, 7));
-            }).sort();
+            ].filter(v => typeof v === 'string'))).sort();
             baseTask.history = mergedHistory;
             // 补齐较旧一侧有、较新一侧缺失的字段
             const older = localTime >= remoteTime ? remoteItem : localItem;
