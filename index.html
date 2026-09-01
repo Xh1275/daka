@@ -4725,11 +4725,13 @@ function archiveOldHistory(isManual = false) {
             item.updateAt = getNowDateTimeStr();
         }
 
-        // 自愈：history 里若仍残留「已在 archives 中的日期」（同步并集回灌），去掉避免明细重复与天数干扰
+        // 自愈：去掉 history 中「已归档月份」或「已在 archives 日期集合内」的记录（同步并集回灌时常见）
         if (item.archives.length > 0 && item.history.length > 0) {
+            const archivedMonths = new Set();
             const archivedDateSet = new Set();
             item.archives.forEach(arc => {
                 if (!arc) return;
+                if (arc.month) archivedMonths.add(String(arc.month).substring(0, 7));
                 (Array.isArray(arc.completedDates) ? arc.completedDates : []).forEach(d => {
                     const k = typeof d === 'string' ? d.substring(0, 10) : '';
                     if (k) archivedDateSet.add(k);
@@ -4739,18 +4741,33 @@ function archiveOldHistory(isManual = false) {
                     if (k) archivedDateSet.add(k);
                 });
             });
-            if (archivedDateSet.size > 0) {
-                const before = item.history.length;
-                item.history = item.history.filter(h => {
-                    if (typeof h !== 'string' || h.length < 10) return true;
-                    return !archivedDateSet.has(h.substring(0, 10));
-                });
-                const removed = before - item.history.length;
-                if (removed > 0) {
-                    healedCount += removed;
-                    item.updateAt = getNowDateTimeStr();
-                }
+            const before = item.history.length;
+            item.history = item.history.filter(h => {
+                if (typeof h !== 'string' || h.length < 10) return true;
+                const ym = h.substring(0, 7);
+                const day = h.substring(0, 10);
+                if (ym && archivedMonths.has(ym)) return false;
+                if (day && archivedDateSet.has(day)) return false;
+                return true;
+            });
+            const removed = before - item.history.length;
+            if (removed > 0) {
+                healedCount += removed;
+                item.updateAt = getNowDateTimeStr();
             }
+            // 修正归档 count：不超过 dates 规模，避免历史累加出 186 次这种虚高
+            item.archives.forEach(arc => {
+                if (!arc) return;
+                const dateLen = Array.isArray(arc.dates) ? arc.dates.length : 0;
+                const compLen = Array.isArray(arc.completedDates) ? arc.completedDates.length : 0;
+                const tpd = Number(item.timesPerDay) || 1;
+                const maxReasonable = Math.max(dateLen, compLen) * Math.max(tpd, 1);
+                if (maxReasonable > 0 && Number(arc.count) > maxReasonable) {
+                    arc.count = maxReasonable;
+                }
+                if (compLen > 0) arc.days = compLen;
+                else if (dateLen > 0 && (!arc.days || arc.days > dateLen)) arc.days = dateLen;
+            });
         }
     });
     if (archivedTotalCount > 0 || healedCount > 0) {
@@ -4998,7 +5015,17 @@ function renderTaskCard(item, isTodayPage = false) {
         rewardDisplay = `目标奖品: ${escapeHTML(rValue)}`;
     }
     const limit = historyLimits[item.id] || 10;
-    const historyArr = Array.isArray(item.history) ? item.history : [];
+    // 展示层再挡一层：已有归档月份的明细不再重复列在「近期」里
+    const archivedMonthSet = new Set(
+        (Array.isArray(item.archives) ? item.archives : [])
+            .map(a => a && a.month ? String(a.month).substring(0, 7) : '')
+            .filter(Boolean)
+    );
+    const historyArr = (Array.isArray(item.history) ? item.history : []).filter(h => {
+        if (typeof h !== 'string' || h.length < 7) return true;
+        const ym = h.substring(0, 7);
+        return !archivedMonthSet.has(ym);
+    });
     const sortedHistory = [...historyArr].sort().reverse();
     const visibleHistory = sortedHistory.slice(0, limit);
     const hasMoreHistory = sortedHistory.length > limit;
