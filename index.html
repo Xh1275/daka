@@ -480,6 +480,8 @@ button.btn-busy, .btn-busy{ opacity:0.65; pointer-events:none; }
 .history-list span { background: var(--border-color); padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: 0.1s; }
 .history-list span:hover { background: var(--danger); color: #fff; }
 .archive-tag { background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-sub); padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+.archive-day-tag { background: var(--border-color); padding: 2px 8px; border-radius: 4px; font-size: 11px; color: var(--text-sub); cursor: default; opacity: 0.9; }
+html[data-theme="dark"] .archive-day-tag { background: #2a2a2a; color: #a0a0a0; }
 .calendar-card { background: var(--card-bg); margin: 10px 16px; padding: 14px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
 .calendar-header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .calendar-title { font-size: 14px; font-weight: bold; color: var(--text-main); }
@@ -3453,16 +3455,37 @@ function mergeTasksForSync(localList, remoteList) {
     normalizedLocal.forEach(localItem => {
         if (mergedMap.has(localItem.id)) {
             const remoteItem = mergedMap.get(localItem.id);
-            const mergedHistory = Array.from(new Set([
-                ...(Array.isArray(localItem.history) ? localItem.history : []),
-                ...(Array.isArray(remoteItem.history) ? remoteItem.history : [])
-            ].filter(v => typeof v === 'string'))).sort();
-
             const localTime = parseUpdateAtMs(localItem.updateAt);
             const remoteTime = parseUpdateAtMs(remoteItem.updateAt);
             const baseTask = localTime >= remoteTime ? { ...localItem } : { ...remoteItem };
-            baseTask.history = mergedHistory;
             baseTask.archives = mergeArchiveLists(localItem.archives, remoteItem.archives);
+            // 先并集 history，再去掉「已在 archives 月份内」的记录，避免跨月归档后被同步再次灌回
+            const archivedMonths = new Set(
+                (Array.isArray(baseTask.archives) ? baseTask.archives : [])
+                    .map(a => a && a.month ? String(a.month).substring(0, 7) : '')
+                    .filter(Boolean)
+            );
+            const mergedHistory = Array.from(new Set([
+                ...(Array.isArray(localItem.history) ? localItem.history : []),
+                ...(Array.isArray(remoteItem.history) ? remoteItem.history : [])
+            ].filter(v => typeof v === 'string'))).filter(h => {
+                if (h.length < 7) return true;
+                const ym = h.substring(0, 7);
+                return !archivedMonths.has(ym);
+            }).sort();
+            baseTask.history = mergedHistory;
+            // 纠正归档 count 虚高（仅影响展示/体积，不改 dates）
+            const tpd = Math.max(1, Number(baseTask.timesPerDay) || 1);
+            (baseTask.archives || []).forEach(arc => {
+                if (!arc) return;
+                const dlen = Array.isArray(arc.dates) ? arc.dates.length : 0;
+                const clen = Array.isArray(arc.completedDates) ? arc.completedDates.length : 0;
+                const days = Math.max(Number(arc.days) || 0, clen, dlen);
+                if (clen > 0) arc.days = clen;
+                else if (days > 0) arc.days = days;
+                const maxC = Math.max(days, 1) * tpd;
+                if (Number(arc.count) > maxC * 1.2) arc.count = maxC;
+            });
             // 补齐较旧一侧有、较新一侧缺失的字段
             const older = localTime >= remoteTime ? remoteItem : localItem;
             Object.keys(older).forEach(key => {
@@ -5030,21 +5053,49 @@ function renderTaskCard(item, isTodayPage = false) {
     const visibleHistory = sortedHistory.slice(0, limit);
     const hasMoreHistory = sortedHistory.length > limit;
     const archives = Array.isArray(item.archives) ? item.archives : [];
-    let archiveTagsHtml = "";
+    const tPerDayForArc = Number(item.timesPerDay) || 1;
+    let archiveBlocksHtml = "";
+    let archiveDayTotal = 0;
     if (archives.length > 0) {
-        archiveTagsHtml = archives.map(a => `<div class="archive-tag">${a.month} 累计打卡 ${a.days || 0} 天 (${a.count || 0}次)</div>`).join("");
+        // 按月份倒序展示归档，并列出日期（解决「归档后看不到 8 月明细」）
+        const sortedArcs = [...archives].sort((a, b) => String(b && b.month || '').localeCompare(String(a && a.month || '')));
+        archiveBlocksHtml = sortedArcs.map(a => {
+            if (!a) return '';
+            const month = escapeHTML(String(a.month || ''));
+            const dateList = (Array.isArray(a.completedDates) && a.completedDates.length > 0)
+                ? a.completedDates
+                : (Array.isArray(a.dates) ? a.dates : []);
+            const uniqDays = Array.from(new Set(dateList.map(d => String(d || '').substring(0, 10)).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)))).sort().reverse();
+            const days = Math.max(0, Number(a.days) || uniqDays.length || 0);
+            archiveDayTotal += days;
+            // 次数：优先用「完成天数 × 每天次数」，避免历史 count 被同步累加虚高（如 161 次）
+            const approxTimes = days * tPerDayForArc;
+            const rawCount = Number(a.count) || 0;
+            const timesShow = (rawCount > 0 && rawCount <= approxTimes * 1.2) ? rawCount : approxTimes;
+            const timesPart = tPerDayForArc > 1
+                ? `（${timesShow}次 · ${tPerDayForArc}次/天）`
+                : (timesShow > 0 ? `（${timesShow}次）` : '');
+            const daysHtml = uniqDays.length
+                ? `<div class="history-list" style="margin-top:6px;">${uniqDays.map(d => `<span class="archive-day-tag" title="已归档，仅供查看">${escapeHTML(d)}</span>`).join('')}</div>`
+                : `<div style="font-size:11px;color:var(--text-light);margin-top:4px;">该月仅有汇总，无逐日明细</div>`;
+            return `<div class="archive-month-block" style="margin-bottom:10px;padding:8px 10px;border:1px solid var(--border-color);border-radius:10px;background:var(--bg-color);">
+                <div class="archive-tag" style="display:inline-block;">${month} 累计完成 ${days} 天${timesPart}</div>
+                ${daysHtml}
+            </div>`;
+        }).join('');
     }
     let historyHtml = "";
     if (sortedHistory.length > 0 || archives.length > 0) {
         historyHtml = `
         <details class="history-details">
-            <summary>查看打卡明细 (近期${sortedHistory.length}条${archives.length > 0 ? ` + ${archives.length}个月归档` : ''}) - 点击记录可删除该次打卡</summary>
+            <summary>查看打卡明细 (近期${sortedHistory.length}条${archives.length > 0 ? ` + ${archives.length}个月归档` : ''}) - 近期记录可点 ✕ 删除</summary>
             <div style="margin-top:8px;">
-                ${archiveTagsHtml ? `<div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">${archiveTagsHtml}</div>` : ''}
+                ${archiveBlocksHtml || ''}
+                ${sortedHistory.length > 0 ? `<div style="font-size:12px;color:var(--text-sub);margin:6px 0 4px;">近期（未归档）</div>
                 <div class="history-list">
-                    ${visibleHistory.map(d => `<span class="history-date-tag" data-task-id="${item.id}" data-record="${d}">${d} ✕</span>`).join("")}
+                    ${visibleHistory.map(d => `<span class="history-date-tag" data-task-id="${item.id}" data-record="${escapeHTML(d)}">${escapeHTML(d)} ✕</span>`).join("")}
                 </div>
-                ${hasMoreHistory ? `<div style="text-align:center; margin-top:10px;"><button class="btn-more-history" data-more-history="${item.id}" style="background:var(--border-color); border:none; padding:4px 12px; border-radius:12px; font-size:11px; color:var(--text-sub); cursor:pointer;">加载更多 (剩余 ${sortedHistory.length - limit} 条)</button></div>` : ''}
+                ${hasMoreHistory ? `<div style="text-align:center; margin-top:10px;"><button class="btn-more-history" data-more-history="${item.id}" style="background:var(--border-color); border:none; padding:4px 12px; border-radius:12px; font-size:11px; color:var(--text-sub); cursor:pointer;">加载更多 (剩余 ${sortedHistory.length - limit} 条)</button></div>` : ''}` : (archives.length > 0 ? `<div style="font-size:11px;color:var(--text-light);">当前月份暂无未归档记录</div>` : '')}
             </div>
         </details>`;
     }
