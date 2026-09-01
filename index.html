@@ -4396,13 +4396,37 @@ function detectSyncRisk(oldList, newList, deletionRecords = taskDeletionRecords,
         // 仅统计「非 tombstone」导致的 history 变少，主动删打卡不弹风险
         const oldEffective = oldHist.filter(h => typeof h === 'string' && !histDeletedSet.has(historyDeletionKey(oldT.id, h)));
         const newEffective = newHist.filter(h => typeof h === 'string' && !histDeletedSet.has(historyDeletionKey(oldT.id, h)));
-        if (newEffective.length < oldEffective.length) {
+        // 新数据 archives 已覆盖的日期/月份：视为「迁入归档」而非回退
+        const newArcMonths = new Set();
+        const newArcDays = new Set();
+        (Array.isArray(newT.archives) ? newT.archives : []).forEach(a => {
+            if (!a) return;
+            if (a.month) newArcMonths.add(String(a.month).substring(0, 7));
+            (Array.isArray(a.completedDates) ? a.completedDates : []).forEach(d => {
+                const s = String(d || '');
+                if (s.length >= 10) newArcDays.add(s.substring(0, 10));
+            });
+            (Array.isArray(a.dates) ? a.dates : []).forEach(d => {
+                const s = String(d || '');
+                if (s.length >= 10) newArcDays.add(s.substring(0, 10));
+            });
+        });
+        const trulyLost = oldEffective.filter(h => {
+            if (typeof h !== 'string' || h.length < 10) return true;
+            const day = h.substring(0, 10);
+            const ym = h.substring(0, 7);
+            if (newEffective.includes(h)) return false;
+            if (newArcDays.has(day) || newArcMonths.has(ym)) return false; // 已进归档，不算丢失
+            return true;
+        });
+        if (trulyLost.length > 0 && newEffective.length < oldEffective.length) {
             historyShrunk.push({ name: oldT.name || '未命名任务', from: oldEffective.length, to: newEffective.length });
         }
         const oldHasToday = oldEffective.some(h => h.startsWith(todayStr));
         const newHasToday = newEffective.some(h => h.startsWith(todayStr));
-        if (oldHasToday && !newHasToday) {
-            // 今日被撤销且对应记录在 history 删除账本中：intentional，不报警
+        // 今日记录若已在新 archives 中也不算撤销
+        const todayInNewArc = newArcDays.has(todayStr) || newArcMonths.has(todayStr.substring(0, 7));
+        if (oldHasToday && !newHasToday && !todayInNewArc) {
             const todayRemoved = oldEffective.filter(h => h.startsWith(todayStr) && !newEffective.includes(h));
             const allIntentional = todayRemoved.length > 0 && todayRemoved.every(h => histDeletedSet.has(historyDeletionKey(oldT.id, h)));
             if (!allIntentional) {
