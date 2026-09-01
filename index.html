@@ -4659,17 +4659,21 @@ async function doUploadRemoteData(beforeUploadSnapshot) {
 function archiveOldHistory(isManual = false) {
     const currentYM = getTodayStr().substring(0, 7);
     let archivedTotalCount = 0;
+    let healedCount = 0;
     if (!Array.isArray(taskList)) taskList = [];
     taskList.forEach(item => {
-        if (!Array.isArray(item.history) || item.history.length === 0) return;
+        if (!Array.isArray(item.history)) item.history = [];
         if (!Array.isArray(item.archives)) item.archives = [];
+        if (item.history.length === 0 && item.archives.length === 0) return;
+
         const oldEntries = [];
         const keepEntries = [];
         item.history.forEach(h => {
             const ym = typeof h === 'string' && h.length >= 7 ? h.substring(0, 7) : '';
-            if (ym && ym < currentYM) { oldEntries.push(h); } 
+            if (ym && ym < currentYM) { oldEntries.push(h); }
             else { keepEntries.push(h); }
         });
+
         if (oldEntries.length > 0) {
             const monthGroups = {};
             oldEntries.forEach(h => {
@@ -4681,37 +4685,38 @@ function archiveOldHistory(isManual = false) {
             for (let ym in monthGroups) {
                 const entries = monthGroups[ym];
                 const count = entries.length;
-                
+
                 const dateCounts = {};
                 entries.forEach(e => {
                     const d = e.substring(0, 10);
                     dateCounts[d] = (dateCounts[d] || 0) + 1;
                 });
-                
+
                 const dates = Object.keys(dateCounts).sort();
                 const completedDates = dates.filter(d => dateCounts[d] >= tPerDay);
 
                 const existingArchive = item.archives.find(a => a && a.month === ym);
                 if (existingArchive) {
-                    existingArchive.count = (Number(existingArchive.count) || 0) + count;
+                    // count 取较大值，避免同步回灌后重复累加
+                    existingArchive.count = Math.max(Number(existingArchive.count) || 0, count, dates.length);
                     const existingDates = Array.isArray(existingArchive.dates) ? existingArchive.dates : [];
-                    const existingComp = Array.isArray(existingArchive.completedDates) 
-                        ? existingArchive.completedDates 
+                    const existingComp = Array.isArray(existingArchive.completedDates)
+                        ? existingArchive.completedDates
                         : (tPerDay === 1 ? existingDates : []);
-                        
+
                     const mergedDates = Array.from(new Set([...existingDates, ...dates])).sort();
                     const mergedComp = Array.from(new Set([...existingComp, ...completedDates])).sort();
-                    
+
                     existingArchive.dates = mergedDates;
                     existingArchive.completedDates = mergedComp;
                     existingArchive.days = mergedComp.length;
                 } else {
-                    item.archives.push({ 
-                        month: ym, 
-                        count: count, 
-                        days: completedDates.length, 
+                    item.archives.push({
+                        month: ym,
+                        count: count,
+                        days: completedDates.length,
                         dates: dates,
-                        completedDates: completedDates 
+                        completedDates: completedDates
                     });
                 }
                 archivedTotalCount += count;
@@ -4719,10 +4724,41 @@ function archiveOldHistory(isManual = false) {
             item.history = keepEntries;
             item.updateAt = getNowDateTimeStr();
         }
+
+        // 自愈：history 里若仍残留「已在 archives 中的日期」（同步并集回灌），去掉避免明细重复与天数干扰
+        if (item.archives.length > 0 && item.history.length > 0) {
+            const archivedDateSet = new Set();
+            item.archives.forEach(arc => {
+                if (!arc) return;
+                (Array.isArray(arc.completedDates) ? arc.completedDates : []).forEach(d => {
+                    const k = typeof d === 'string' ? d.substring(0, 10) : '';
+                    if (k) archivedDateSet.add(k);
+                });
+                (Array.isArray(arc.dates) ? arc.dates : []).forEach(d => {
+                    const k = typeof d === 'string' ? d.substring(0, 10) : '';
+                    if (k) archivedDateSet.add(k);
+                });
+            });
+            if (archivedDateSet.size > 0) {
+                const before = item.history.length;
+                item.history = item.history.filter(h => {
+                    if (typeof h !== 'string' || h.length < 10) return true;
+                    return !archivedDateSet.has(h.substring(0, 10));
+                });
+                const removed = before - item.history.length;
+                if (removed > 0) {
+                    healedCount += removed;
+                    item.updateAt = getNowDateTimeStr();
+                }
+            }
+        }
     });
-    if (archivedTotalCount > 0) {
+    if (archivedTotalCount > 0 || healedCount > 0) {
         saveStorage();
-        if (isManual) showToast(`已归档 ${archivedTotalCount} 条旧历史记录`, 'success');
+        if (isManual) {
+            if (archivedTotalCount > 0) showToast(`已归档 ${archivedTotalCount} 条旧历史记录`, 'success');
+            else showToast(`已清理 ${healedCount} 条重复历史记录`, 'success');
+        }
     } else if (isManual) {
         showToast("暂无需要归档的上月历史数据");
     }
@@ -4758,6 +4794,12 @@ function getYesterdayCheckCount(item) {
 }
 
 function getCompletedDaysCount(item) {
+    // 统一按「去重后的完成日期」计数，避免 history 与 archives 重叠时双计
+    // （跨月归档 + 同步并集 history 时最容易触发，表现为进度 66/53、30/15 等虚高）
+    if (typeof collectTaskCompletedDates === 'function') {
+        return collectTaskCompletedDates(item).length;
+    }
+    // 兜底：旧逻辑（仅在 collectTaskCompletedDates 不可用时）
     let archiveDays = 0;
     if (Array.isArray(item.archives) && item.archives.length > 0) {
         archiveDays = item.archives.reduce((sum, a) => {
@@ -5056,13 +5098,16 @@ function collectTaskCompletedDates(item) {
     if (Array.isArray(item.archives)) {
         item.archives.forEach(arc => {
             if (!arc) return;
-            if (Array.isArray(arc.completedDates)) {
+            let usedCompleted = false;
+            if (Array.isArray(arc.completedDates) && arc.completedDates.length > 0) {
                 arc.completedDates.forEach(d => {
                     const k = extractDateKey(d);
                     if (k) set.add(k);
                 });
+                usedCompleted = true;
             }
-            if (tPerDay === 1 && Array.isArray(arc.dates)) {
+            // 无 completedDates 时回退用 dates（兼容旧归档；与 history 去重，不会双计）
+            if (!usedCompleted && Array.isArray(arc.dates)) {
                 arc.dates.forEach(d => {
                     const k = extractDateKey(d);
                     if (k) set.add(k);
@@ -5686,7 +5731,7 @@ function batchArchiveHistory() {
                     
                     const existingArchive = item.archives.find(a => a && a.month === ym);
                     if (existingArchive) {
-                        existingArchive.count = (Number(existingArchive.count) || 0) + count;
+                        existingArchive.count = Math.max(Number(existingArchive.count) || 0, count, dates.length);
                         const existingDates = Array.isArray(existingArchive.dates) ? existingArchive.dates : [];
                         const existingComp = Array.isArray(existingArchive.completedDates) 
                             ? existingArchive.completedDates 
