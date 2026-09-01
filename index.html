@@ -4036,7 +4036,13 @@ function ensureDeviceIdentity() {
     if (!deviceRegistry[deviceId].noteUpdatedAt && deviceRegistry[deviceId].note) {
         deviceRegistry[deviceId].noteUpdatedAt = now;
     }
-    deviceNote = safeText(deviceNote || deviceRegistry[deviceId].note || '').trim();
+    // 本地已有明确备注（含空字符串写入后的清空）时，以 deviceNote / KEY 为准
+    if (!deviceNote) {
+        const fromReg = safeText(deviceRegistry[deviceId].note).trim();
+        deviceNote = fromReg;
+    } else {
+        deviceNote = safeText(deviceNote).trim();
+    }
     deviceRegistry[deviceId].note = deviceNote;
     pruneStaleDevices(now, { keepCurrent: true, persist: false });
     localStorage.setItem(KEY_DEVICE_NOTE, deviceNote);
@@ -4058,11 +4064,16 @@ function touchCurrentDeviceRegistry(markUpload = false) {
     }
     const entry = deviceRegistry[deviceId];
     entry.deviceId = deviceId;
-    entry.note = safeText(deviceNote || entry.note || '').trim();
+    // 以当前 deviceNote 为准（允许空字符串清空备注，不能再用 || entry.note 回填）
+    const nextNote = safeText(deviceNote).trim();
+    const prevNote = safeText(entry.note).trim();
+    entry.note = nextNote;
+    deviceNote = nextNote;
     if (!entry.firstSeenAt) entry.firstSeenAt = now;
     entry.lastSeenAt = now;
     if (markUpload) entry.lastUploadAt = now;
-    if (entry.note && !entry.noteUpdatedAt) entry.noteUpdatedAt = now;
+    if (nextNote !== prevNote) entry.noteUpdatedAt = now;
+    else if (entry.note && !entry.noteUpdatedAt) entry.noteUpdatedAt = now;
     deviceRegistry[deviceId] = entry;
     localStorage.setItem(KEY_DEVICE_ID, deviceId);
     localStorage.setItem(KEY_DEVICE_NOTE, deviceNote);
@@ -4080,9 +4091,13 @@ function mergeDeviceRegistry(localRegistry, remoteRegistry) {
             return;
         }
         const preferRemoteNote = Number(remoteEntry.noteUpdatedAt || 0) >= Number(localEntry.noteUpdatedAt || 0);
+        // 以 noteUpdatedAt 较新的一侧为准，允许备注被清空（空字符串也要保留，不能 || 回落到另一侧）
+        const pickedNote = preferRemoteNote
+            ? safeText(remoteEntry.note).trim()
+            : safeText(localEntry.note).trim();
         merged[id] = {
             deviceId: id,
-            note: preferRemoteNote ? remoteEntry.note || localEntry.note || '' : localEntry.note || remoteEntry.note || '',
+            note: pickedNote,
             firstSeenAt: Math.min(Number(localEntry.firstSeenAt) || remoteEntry.firstSeenAt || Date.now(), Number(remoteEntry.firstSeenAt) || localEntry.firstSeenAt || Date.now()),
             lastSeenAt: Math.max(Number(localEntry.lastSeenAt) || 0, Number(remoteEntry.lastSeenAt) || 0),
             lastUploadAt: Math.max(Number(localEntry.lastUploadAt) || 0, Number(remoteEntry.lastUploadAt) || 0),
@@ -4094,6 +4109,19 @@ function mergeDeviceRegistry(localRegistry, remoteRegistry) {
 
 function setCurrentDeviceNote(nextNote, { syncToCloud = true } = {}) {
     deviceNote = safeText(nextNote).trim();
+    if (!deviceRegistry[deviceId]) {
+        deviceRegistry[deviceId] = {
+            deviceId,
+            note: deviceNote,
+            firstSeenAt: Date.now(),
+            lastSeenAt: Date.now(),
+            lastUploadAt: 0,
+            noteUpdatedAt: Date.now()
+        };
+    } else {
+        deviceRegistry[deviceId].note = deviceNote;
+        deviceRegistry[deviceId].noteUpdatedAt = Date.now();
+    }
     touchCurrentDeviceRegistry(true);
     syncCurrentDeviceForm();
     renderDeviceList();
