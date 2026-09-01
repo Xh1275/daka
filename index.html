@@ -3177,6 +3177,8 @@ function buildRemotePayload() {
             deviceId,
             deviceNote,
             updatedAt: Date.now(),
+            // 备注版本与 registry 一致，避免每次同步用新 updatedAt 把「已清空的备注」又盖回去
+            noteUpdatedAt: (deviceRegistry[deviceId] && Number(deviceRegistry[deviceId].noteUpdatedAt)) || 0,
             label: getDeviceLabel(deviceId, deviceNote)
         }
     };
@@ -4583,20 +4585,31 @@ function applyDownloadedRemoteData(remoteData, localBeforeSync, riskConfirmed, p
     pruneSnapshots();
     deviceRegistry = mergeDeviceRegistry(deviceRegistry, remoteData.devices);
     pruneStaleDevices(Date.now(), { keepCurrent: true, persist: false });
-    if (remoteData.deviceMeta && remoteData.deviceMeta.deviceId && remoteData.deviceMeta.deviceNote !== undefined) {
+    if (remoteData.deviceMeta && remoteData.deviceMeta.deviceId) {
+        const metaId = String(remoteData.deviceMeta.deviceId);
+        const existing = deviceRegistry[metaId] || {};
+        const metaNoteTs = Number(remoteData.deviceMeta.noteUpdatedAt != null
+            ? remoteData.deviceMeta.noteUpdatedAt
+            : remoteData.deviceMeta.updatedAt) || 0;
+        const localNoteTs = Number(existing.noteUpdatedAt) || 0;
+        const metaSeen = Number(remoteData.deviceMeta.updatedAt) || Date.now();
+        // 仅当 meta 的备注版本更新时才采纳备注（含空字符串清空）；否则只更新在线时间
+        const takeNote = remoteData.deviceMeta.deviceNote !== undefined && metaNoteTs >= localNoteTs;
         const remoteCurrent = normalizeDeviceEntry({
-            deviceId: remoteData.deviceMeta.deviceId,
-            note: remoteData.deviceMeta.deviceNote,
-            firstSeenAt: remoteData.deviceMeta.updatedAt,
-            lastSeenAt: remoteData.deviceMeta.updatedAt,
-            noteUpdatedAt: remoteData.deviceMeta.updatedAt
-        }, remoteData.deviceMeta.deviceId);
-        deviceRegistry[remoteCurrent.deviceId] = mergeDeviceRegistry(
-            { [remoteCurrent.deviceId]: deviceRegistry[remoteCurrent.deviceId] },
-            { [remoteCurrent.deviceId]: remoteCurrent }
-        )[remoteCurrent.deviceId];
+            deviceId: metaId,
+            note: takeNote ? remoteData.deviceMeta.deviceNote : (existing.note || ''),
+            firstSeenAt: existing.firstSeenAt || metaSeen,
+            lastSeenAt: Math.max(Number(existing.lastSeenAt) || 0, metaSeen),
+            lastUploadAt: Math.max(Number(existing.lastUploadAt) || 0, metaSeen),
+            noteUpdatedAt: takeNote ? metaNoteTs : localNoteTs
+        }, metaId);
+        deviceRegistry[metaId] = mergeDeviceRegistry(
+            { [metaId]: existing },
+            { [metaId]: remoteCurrent }
+        )[metaId];
         pruneStaleDevices(Date.now(), { keepCurrent: true, persist: false });
     }
+    // 当前设备备注：registry 合并结果为准（已支持空备注）
     if (deviceRegistry[deviceId] && deviceRegistry[deviceId].note !== undefined) {
         deviceNote = safeText(deviceRegistry[deviceId].note).trim();
         localStorage.setItem(KEY_DEVICE_NOTE, deviceNote);
