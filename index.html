@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>羊毛打卡管家</title>
+<link rel="icon" href="/assets/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/assets/icon-192.png">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<meta name="theme-color" content="#b8e0d2">
 <script>
 (function(){
     const savedTheme = localStorage.getItem('daka_theme');
@@ -2983,6 +2988,7 @@ const DEVICE_STALE_DAYS = 3;
 const DEVICE_STALE_MS = DEVICE_STALE_DAYS * 24 * 60 * 60 * 1000;
 const KEY_TASK_DELETIONS = 'daka_task_deletions';
 const KEY_HISTORY_DELETIONS = 'daka_history_deletions';
+const KEY_DEVICE_DELETIONS = 'daka_device_deletions';
 const KEY_ANNOUNCEMENT_META = 'persistent_announcement_meta_v3';
 const ANNOUNCE_SHORTCUT_SLOTS = 4;
 let announcementShortcuts = null;
@@ -2995,6 +3001,7 @@ let syncLog = [];
 let snapshots = [];
 let taskDeletionRecords = [];
 let historyDeletionRecords = [];
+let deviceDeletionRecords = [];
 let announcementUpdatedAt = 0;
 let currentPage = "today";
 let filterType = "doing";
@@ -3172,6 +3179,7 @@ function buildRemotePayload() {
         snapshots: [],
         taskDeletionRecords,
         historyDeletionRecords,
+        deviceDeletionRecords,
         devices: deviceRegistry,
         deviceMeta: {
             deviceId,
@@ -3867,6 +3875,10 @@ function loadLocalStorage() {
         const rawHistDel = localStorage.getItem(KEY_HISTORY_DELETIONS);
         historyDeletionRecords = normalizeHistoryDeletionList(rawHistDel ? JSON.parse(rawHistDel) : []);
     } catch (e) { historyDeletionRecords = []; }
+    try {
+        const rawDevDel = localStorage.getItem(KEY_DEVICE_DELETIONS);
+        deviceDeletionRecords = normalizeDeviceDeletionList(rawDevDel ? JSON.parse(rawDevDel) : []);
+    } catch (e) { deviceDeletionRecords = []; }
     loadAnnouncementMeta();
     try {
         const rawLog = localStorage.getItem(KEY_SYNC_LOG);
@@ -3881,6 +3893,7 @@ function loadLocalStorage() {
     try {
         const rawDeviceRegistry = localStorage.getItem(KEY_DEVICE_REGISTRY);
         deviceRegistry = normalizeDeviceRegistry(rawDeviceRegistry ? JSON.parse(rawDeviceRegistry) : {});
+        deviceRegistry = applyDeviceDeletionLedger(deviceRegistry, deviceDeletionRecords);
     } catch (e) { deviceRegistry = {}; }
     const savedDeviceId = safeText(localStorage.getItem(KEY_DEVICE_ID)).trim();
     const savedDeviceNote = safeText(localStorage.getItem(KEY_DEVICE_NOTE)).trim();
@@ -3899,6 +3912,7 @@ function saveLocalStorage() {
         localStorage.setItem(KEY, JSON.stringify(taskList));
         localStorage.setItem(KEY_TASK_DELETIONS, JSON.stringify(taskDeletionRecords));
         localStorage.setItem(KEY_HISTORY_DELETIONS, JSON.stringify(historyDeletionRecords));
+        localStorage.setItem(KEY_DEVICE_DELETIONS, JSON.stringify(deviceDeletionRecords));
         localStorage.setItem(KEY_SYNC_LOG, JSON.stringify(syncLog));
         localStorage.setItem(KEY_SNAPSHOTS, JSON.stringify(snapshots));
         pruneStaleDevices(now, { keepCurrent: true, persist: false });
@@ -3954,6 +3968,105 @@ function normalizeDeviceRegistry(raw) {
         if (normalized.deviceId) registry[normalized.deviceId] = normalized;
     });
     return registry;
+}
+
+
+function normalizeDeviceDeletionRecord(raw) {
+    const item = raw && typeof raw === 'object' ? { ...raw } : {};
+    const id = safeText(item.deviceId || item.id).trim();
+    if (!id) return null;
+    const deletedAt = Number.isFinite(Number(item.deletedAt)) ? Number(item.deletedAt) : 0;
+    const restoredAt = Number.isFinite(Number(item.restoredAt)) ? Number(item.restoredAt) : 0;
+    const updatedAt = Math.max(deletedAt, restoredAt, Number.isFinite(Number(item.updatedAt)) ? Number(item.updatedAt) : 0);
+    return { deviceId: id, deletedAt, restoredAt, updatedAt, byDeviceId: safeText(item.byDeviceId).trim() };
+}
+
+function normalizeDeviceDeletionList(list) {
+    if (!Array.isArray(list)) return [];
+    const map = new Map();
+    list.forEach(item => {
+        const normalized = normalizeDeviceDeletionRecord(item);
+        if (!normalized) return;
+        const existed = map.get(normalized.deviceId);
+        if (!existed) {
+            map.set(normalized.deviceId, normalized);
+            return;
+        }
+        map.set(normalized.deviceId, {
+            deviceId: normalized.deviceId,
+            deletedAt: Math.max(Number(existed.deletedAt) || 0, Number(normalized.deletedAt) || 0),
+            restoredAt: Math.max(Number(existed.restoredAt) || 0, Number(normalized.restoredAt) || 0),
+            updatedAt: Math.max(Number(existed.updatedAt) || 0, Number(normalized.updatedAt) || 0),
+            byDeviceId: normalized.updatedAt >= existed.updatedAt ? normalized.byDeviceId : existed.byDeviceId
+        });
+    });
+    return Array.from(map.values()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+}
+
+function mergeDeviceDeletionLists(localList, remoteList) {
+    return normalizeDeviceDeletionList([...(Array.isArray(localList) ? localList : []), ...(Array.isArray(remoteList) ? remoteList : [])]);
+}
+
+function getDeviceDeletionRecordMap(records = deviceDeletionRecords) {
+    const map = new Map();
+    normalizeDeviceDeletionList(records).forEach(r => map.set(r.deviceId, r));
+    return map;
+}
+
+function isDeviceDeletedByLedger(id, recordMap = getDeviceDeletionRecordMap()) {
+    const key = safeText(id).trim();
+    if (!key) return false;
+    const record = recordMap.get(key);
+    if (!record) return false;
+    return (Number(record.deletedAt) || 0) > (Number(record.restoredAt) || 0);
+}
+
+function applyDeviceDeletionLedger(registry, records = deviceDeletionRecords) {
+    const map = getDeviceDeletionRecordMap(records);
+    const src = registry && typeof registry === 'object' ? registry : {};
+    const out = {};
+    Object.keys(src).forEach(id => {
+        if (isDeviceDeletedByLedger(id, map)) return;
+        out[id] = src[id];
+    });
+    return out;
+}
+
+function touchDeviceDeletionRecord(id, { restore = false } = {}) {
+    const key = safeText(id).trim();
+    if (!key) return;
+    const now = Date.now();
+    const map = new Map(normalizeDeviceDeletionList(deviceDeletionRecords).map(item => [item.deviceId, item]));
+    const existing = map.get(key) || { deviceId: key, deletedAt: 0, restoredAt: 0, updatedAt: 0, byDeviceId: deviceId || '' };
+    if (restore) {
+        existing.restoredAt = Math.max(Number(existing.restoredAt) || 0, now);
+        existing.updatedAt = Math.max(Number(existing.updatedAt) || 0, existing.restoredAt);
+    } else {
+        existing.deletedAt = Math.max(Number(existing.deletedAt) || 0, now);
+        existing.updatedAt = Math.max(Number(existing.updatedAt) || 0, existing.deletedAt);
+    }
+    existing.byDeviceId = deviceId || existing.byDeviceId || '';
+    map.set(key, existing);
+    deviceDeletionRecords = Array.from(map.values()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+    try { localStorage.setItem(KEY_DEVICE_DELETIONS, JSON.stringify(deviceDeletionRecords)); } catch (e) {}
+}
+
+function deleteDeviceFromRegistry(id) {
+    const key = safeText(id).trim();
+    if (!key) return;
+    if (key === deviceId) {
+        showToast('不能删除当前设备', 'warning');
+        return;
+    }
+    openConfirm('删除设备', '确定从设备列表中删除该记录？同步后其它设备也会移除；该设备若再次打开页面会重新出现。', () => {
+        touchDeviceDeletionRecord(key, { restore: false });
+        if (deviceRegistry && deviceRegistry[key]) delete deviceRegistry[key];
+        deviceRegistry = applyDeviceDeletionLedger(deviceRegistry, deviceDeletionRecords);
+        renderDeviceList();
+        saveLocalStorage();
+        if (syncPassword) saveStorage(false);
+        showToast('设备已删除', 'success');
+    }, true);
 }
 
 function pruneStaleDevices(referenceTime = Date.now(), { keepCurrent = true, persist = true } = {}) {
@@ -4013,6 +4126,10 @@ function ensureDeviceIdentity() {
     const savedId = safeText(localStorage.getItem(KEY_DEVICE_ID)).trim();
     deviceId = savedId || deviceId || generateDeviceId();
     localStorage.setItem(KEY_DEVICE_ID, deviceId);
+    // 当前设备若曾被列表删除，本机再次打开视为恢复
+    if (deviceId && isDeviceDeletedByLedger(deviceId)) {
+        touchDeviceDeletionRecord(deviceId, { restore: true });
+    }
 
     const savedNote = safeText(localStorage.getItem(KEY_DEVICE_NOTE)).trim();
     if (!deviceNote) deviceNote = savedNote || '';
@@ -4106,7 +4223,7 @@ function mergeDeviceRegistry(localRegistry, remoteRegistry) {
             noteUpdatedAt: Math.max(Number(localEntry.noteUpdatedAt) || 0, Number(remoteEntry.noteUpdatedAt) || 0)
         };
     });
-    return merged;
+    return applyDeviceDeletionLedger(merged, deviceDeletionRecords);
 }
 
 function setCurrentDeviceNote(nextNote, { syncToCloud = true } = {}) {
@@ -4180,6 +4297,7 @@ function renderDeviceList() {
                 </div>
                 <div class="device-card-actions">
                     <button type="button" class="backup-action-btn device-save-btn" data-device-save="${escapeHTML(item.deviceId)}">保存备注</button>
+                    ${active ? '' : `<button type="button" class="backup-action-btn" data-device-delete="${escapeHTML(item.deviceId)}" style="color:var(--danger);border-color:var(--danger);">删除</button>`}
                 </div>
             </div>
         `;
@@ -4583,7 +4701,9 @@ function applyDownloadedRemoteData(remoteData, localBeforeSync, riskConfirmed, p
     syncLog = mergeSyncLog(syncLog, remoteData.syncLog);
     // 快照仅本地：不合并云端 snapshots，只整理本机份
     pruneSnapshots();
+    deviceDeletionRecords = mergeDeviceDeletionLists(deviceDeletionRecords, remoteData.deviceDeletionRecords || []);
     deviceRegistry = mergeDeviceRegistry(deviceRegistry, remoteData.devices);
+    deviceRegistry = applyDeviceDeletionLedger(deviceRegistry, deviceDeletionRecords);
     pruneStaleDevices(Date.now(), { keepCurrent: true, persist: false });
     if (remoteData.deviceMeta && remoteData.deviceMeta.deviceId) {
         const metaId = String(remoteData.deviceMeta.deviceId);
@@ -6433,7 +6553,8 @@ function exportBackup() {
         exportedAt: Date.now(),
         tasks: taskList,
         taskDeletionRecords: taskDeletionRecords,
-        historyDeletionRecords: historyDeletionRecords
+        historyDeletionRecords: historyDeletionRecords,
+        deviceDeletionRecords: deviceDeletionRecords
     }, null, 2);
     const blob = new Blob([str], { type: "application/json" });
     const a = document.createElement("a");
@@ -6480,7 +6601,8 @@ function normalizeImportedBackupPackage(raw) {
         return {
             tasks: normalizeTaskList(raw),
             taskDeletionRecords: [],
-            historyDeletionRecords: []
+            historyDeletionRecords: [],
+            deviceDeletionRecords: []
         };
     }
     const source = raw && typeof raw === 'object' ? raw : {};
@@ -6492,6 +6614,12 @@ function normalizeImportedBackupPackage(raw) {
             || source.deletedIds
             || source.tombstones
             || source.taskDeletions
+            || []
+        ),
+        deviceDeletionRecords: normalizeDeviceDeletionList(
+            source.deviceDeletionRecords
+            || source.deletedDevices
+            || source.deviceTombstones
             || []
         ),
         historyDeletionRecords: normalizeHistoryDeletionList(
@@ -6534,6 +6662,7 @@ el.importOverwriteBtn.onclick = () => {
             taskList = normalizeTaskList(tempImportData.tasks || []);
             taskDeletionRecords = normalizeTaskDeletionList(tempImportData.taskDeletionRecords || []);
             historyDeletionRecords = normalizeHistoryDeletionList(tempImportData.historyDeletionRecords || []);
+            deviceDeletionRecords = normalizeDeviceDeletionList(tempImportData.deviceDeletionRecords || []);
             taskList = applyHistoryDeletionLedger(taskList, historyDeletionRecords);
             saveStorage(true); renderPage();
             showToast("已覆盖本地数据", "success");
@@ -6547,6 +6676,8 @@ el.importMergeBtn.onclick = () => {
         taskList = mergeImportedTasks(taskList, tempImportData.tasks || []);
         taskDeletionRecords = mergeTaskDeletionLists(taskDeletionRecords, tempImportData.taskDeletionRecords || []);
         historyDeletionRecords = mergeHistoryDeletionLists(historyDeletionRecords, tempImportData.historyDeletionRecords || []);
+        deviceDeletionRecords = mergeDeviceDeletionLists(deviceDeletionRecords, tempImportData.deviceDeletionRecords || []);
+        deviceRegistry = applyDeviceDeletionLedger(deviceRegistry, deviceDeletionRecords);
         taskList = applyTaskDeletionLedger(taskList, taskDeletionRecords);
         taskList = applyHistoryDeletionLedger(taskList, historyDeletionRecords);
         saveStorage(); 
@@ -6991,6 +7122,11 @@ function bindGlobalEvent() {
     }
     if (el.deviceList) {
         el.deviceList.addEventListener('click', (e) => {
+            const delBtn = e.target.closest('[data-device-delete]');
+            if (delBtn) {
+                deleteDeviceFromRegistry(delBtn.getAttribute('data-device-delete'));
+                return;
+            }
             const btn = e.target.closest('[data-device-save]');
             if (!btn) return;
             const id = btn.getAttribute('data-device-save');
