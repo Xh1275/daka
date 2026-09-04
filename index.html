@@ -2168,7 +2168,6 @@ html.body-scroll-locked .batch-bar {
                 <span class="tool-btn more-trigger" id="moreBtn" aria-label="更多操作"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="6.5" cy="12" r="1.35" fill="currentColor"/><circle cx="12" cy="12" r="1.35" fill="currentColor"/><circle cx="17.5" cy="12" r="1.35" fill="currentColor"/></svg></span>
                 <div class="more-menu" id="moreMenu">
                     <button type="button" class="more-item" id="backupManageBtn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.5 8.5A2 2 0 0 1 8.5 6.5h2.2l1.2 1.4H17A2 2 0 0 1 19 9.9v6.6A2 2 0 0 1 17 18.5H8.5A2 2 0 0 1 6.5 16.5Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 11v4.2M10.2 13.1H13.8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 备份管理</button>
-                    <button type="button" class="more-item" id="archiveBtn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16v12.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19.5Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 4.5h18V7H3Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 12h5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 归档上月</button>
                     <div class="more-sep"></div>
                     <button type="button" class="more-item danger" id="clearAllBtn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M9.5 7V5h5v2M8 7l.7 12h6.6L16 7M10 11v5M14 11v5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 清空所有本地数据</button>
                 </div>
@@ -2246,7 +2245,7 @@ html.body-scroll-locked .batch-bar {
         <div class="filter-tab">
             <span data-filter="doing" class="filter-item active">进行中</span>
             <span data-filter="paused" class="filter-item">已挂起</span>
-            <span data-filter="finish" class="filter-item">已归档/完成</span>
+            <span data-filter="finish" class="filter-item">已完成</span>
             <span data-filter="all" class="filter-item">全部</span>
             <button class="sort-btn" id="batchModeBtn" style="margin-left: auto;">批量管理</button>
         </div>
@@ -2274,7 +2273,6 @@ html.body-scroll-locked .batch-bar {
             <button class="batch-btn" id="batchPinBtn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 16.5V21" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.2 4h7.6l-1.2 6.2h3.1L12 16.2 6.3 10.2h3.1L8.2 4Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 批量置顶</button>
             <button class="batch-btn" id="batchPauseBtn">批量挂起</button>
             <button class="batch-btn" id="batchCategoryBtn">改分类</button>
-            <button class="batch-btn" id="batchArchiveBtn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16v12.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19.5Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 4.5h18V7H3Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M9.5 12h5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 归档</button>
             <button class="batch-btn danger" id="batchDeleteBtn"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14M9.5 7V5h5v2M8 7l.7 12h6.6L16 7M10 11v5M14 11v5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 删除</button>
             <button class="batch-btn" id="batchCancelBtn">取消</button>
         </div>
@@ -7095,7 +7093,7 @@ function bindGlobalEvent() {
     el.batchPinBtn.addEventListener('click', batchTogglePin);
     if (el.batchPauseBtn) el.batchPauseBtn.addEventListener('click', batchTogglePause);
     el.batchCategoryBtn.addEventListener('click', batchUpdateCategory);
-    el.batchArchiveBtn.addEventListener('click', batchArchiveHistory);
+    if (el.batchArchiveBtn) el.batchArchiveBtn.addEventListener('click', batchArchiveHistory);
     el.batchDeleteBtn.addEventListener('click', batchDeleteTasks);
     el.batchCancelBtn.addEventListener('click', toggleBatchMode);
 
@@ -7107,7 +7105,7 @@ function bindGlobalEvent() {
     });
     el.popSave.onclick = saveTask;
     el.addTaskBtn.onclick = openAdd;
-    el.archiveBtn.onclick = () => archiveOldHistory(true);
+    if (el.archiveBtn) el.archiveBtn.onclick = () => archiveOldHistory(true);
     el.backupManageBtn.onclick = () => { el.moreMenu.classList.remove('show'); openBackupManage(); };
     el.backupManageClose.onclick = closeBackupManage;
     el.backupManagePopWrap.addEventListener('click', (e) => {
@@ -7305,7 +7303,7 @@ window.onload = async function() {
         updateSyncStatus('error');
         showToast(`${e && e.message ? e.message : '启动同步失败'}`, 'error');
     }
-    archiveOldHistory(false);
+    // 已取消按月自动归档，onload 不再调用 archiveOldHistory
     renderPage();
     try {
         if (sessionStorage.getItem(KEY_RESTORE_TOAST_FLAG) === '1') {
