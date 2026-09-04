@@ -3025,8 +3025,10 @@ let deviceId = '';
 let deviceNote = '';
 let deviceRegistry = {};
 let lastUploadedRemotePayload = '';
+let lastUploadedTasksSnapshot = null; // 最近一次「实际上传成功」的任务快照，作下一批 diff 基准
 let remoteSaveInFlightPromise = null;
-let remoteSaveInFlightPayload = '';
+let remoteSaveInFlightPkg = null; // 正在 HTTP 发送的包 { payloadStr, uploadDiff, reason }
+let remoteSavePendingPkg = null;  // 等待发送/覆盖合并的包
 let batchMode = false;
 let selectedTaskIds = new Set();
 let todayGroupOpenState = {};
@@ -3261,43 +3263,113 @@ async function fetchRemoteData() {
     }, '拉取云端数据');
 }
 
-async function saveRemoteData() {
+function tasksFromPayloadString(payloadStr) {
+    try {
+        const parsed = JSON.parse(payloadStr);
+        return cloneTasks(parsed && Array.isArray(parsed.tasks) ? parsed.tasks : []);
+    } catch (e) {
+        return null;
+    }
+}
+
+/** 计算「这一包将要上传」相对基准的变化；基准优先：在飞包 > 待发送包 > 上次成功上传快照 > lastSyncedSnapshot */
+function getUploadDiffBaselineTasks() {
+    if (remoteSaveInFlightPkg && remoteSaveInFlightPkg.payloadStr) {
+        const t = tasksFromPayloadString(remoteSaveInFlightPkg.payloadStr);
+        if (t) return t;
+    }
+    if (remoteSavePendingPkg && remoteSavePendingPkg.payloadStr) {
+        const t = tasksFromPayloadString(remoteSavePendingPkg.payloadStr);
+        if (t) return t;
+    }
+    if (Array.isArray(lastUploadedTasksSnapshot)) return cloneTasks(lastUploadedTasksSnapshot);
+    if (Array.isArray(lastSyncedSnapshot)) return cloneTasks(lastSyncedSnapshot);
+    return [];
+}
+
+function freezeUploadPackage(reason = null) {
     touchCurrentDeviceRegistry(true);
     const payloadStr = getRemotePayloadString();
-    if (payloadStr === lastUploadedRemotePayload && !remoteSaveInFlightPromise && !remoteSaveInFlightPayload) {
+    const baseline = getUploadDiffBaselineTasks();
+    // 若仅覆盖「还没发出的 pending」，基准应回到更早一层，避免用自己当基准导致 diff 为空
+    let baselineForDiff = baseline;
+    if (remoteSavePendingPkg && !remoteSaveInFlightPkg) {
+        baselineForDiff = Array.isArray(lastUploadedTasksSnapshot)
+            ? cloneTasks(lastUploadedTasksSnapshot)
+            : (Array.isArray(lastSyncedSnapshot) ? cloneTasks(lastSyncedSnapshot) : []);
+    }
+    const uploadDiff = normalizeSyncDiff(diffTaskLists(baselineForDiff, taskList));
+    return { payloadStr, uploadDiff, reason: reason || null };
+}
+
+/**
+ * 整包上传（逻辑不变），但每个真正进入发送队列的包在入队时冻结 uploadDiff。
+ * HTTP 成功后用冻结明细写 ↑ 日志，不再用「此刻的 taskList」事后反推。
+ */
+async function saveRemoteData(options = {}) {
+    const reason = options && options.reason ? options.reason : null;
+    const pkg = freezeUploadPackage(reason);
+
+    if (
+        pkg.payloadStr === lastUploadedRemotePayload
+        && !remoteSaveInFlightPromise
+        && !remoteSavePendingPkg
+        && !remoteSaveInFlightPkg
+    ) {
         return { skipped: true, reason: 'unchanged' };
     }
 
-    remoteSaveInFlightPayload = payloadStr;
+    // 入队/覆盖 pending：连续触发时只保留最新一包，diff 相对正确基准重新冻结
+    remoteSavePendingPkg = pkg;
+
     if (remoteSaveInFlightPromise) {
         return remoteSaveInFlightPromise;
     }
 
     const requestPromise = (async () => {
         let sentAny = false;
-        while (remoteSaveInFlightPayload) {
-            const currentPayload = remoteSaveInFlightPayload;
-            remoteSaveInFlightPayload = '';
+        while (remoteSavePendingPkg) {
+            const current = remoteSavePendingPkg;
+            remoteSavePendingPkg = null;
+            remoteSaveInFlightPkg = current;
 
-            if (currentPayload === lastUploadedRemotePayload) {
+            if (current.payloadStr === lastUploadedRemotePayload) {
+                remoteSaveInFlightPkg = null;
                 continue;
             }
 
-            const result = await fetchJsonWithTimeout('/api/save-data', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Sync-Password': syncPassword
-                },
-                body: currentPayload
-            }, '上传云端数据');
-            if (result && result.error) {
-                const err = new Error(String(result.error));
-                err.syncReason = String(result.error);
-                throw err;
+            try {
+                const result = await fetchJsonWithTimeout('/api/save-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Sync-Password': syncPassword
+                    },
+                    body: current.payloadStr
+                }, '上传云端数据');
+                if (result && result.error) {
+                    const err = new Error(String(result.error));
+                    err.syncReason = String(result.error);
+                    throw err;
+                }
+                lastUploadedRemotePayload = current.payloadStr;
+                const uploadedTasks = tasksFromPayloadString(current.payloadStr);
+                if (uploadedTasks) {
+                    lastUploadedTasksSnapshot = uploadedTasks;
+                    lastSyncedSnapshot = cloneTasks(uploadedTasks);
+                } else {
+                    lastSyncedSnapshot = cloneTasks(taskList);
+                    lastUploadedTasksSnapshot = cloneTasks(taskList);
+                }
+                // 仅在有任务层变化时写上传日志；用入队时冻结的明细
+                if (diffHasChange(current.uploadDiff)) {
+                    addSyncLog('upload', true, current.reason || null, current.uploadDiff);
+                }
+                try { saveLocalStorage(); } catch (e) {}
+                sentAny = true;
+            } finally {
+                remoteSaveInFlightPkg = null;
             }
-            lastUploadedRemotePayload = currentPayload;
-            sentAny = true;
         }
         return sentAny ? { skipped: false, ok: true } : { skipped: true, reason: 'unchanged' };
     })();
@@ -4792,13 +4864,12 @@ function applyDownloadedRemoteData(remoteData, localBeforeSync, riskConfirmed, p
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     updateSyncStatus('success', timeStr);
 
-    const localAhead = diffHasChange(diffTaskLists(
-        applyHistoryDeletionLedger(
-            applyTaskDeletionLedger(normalizeTaskList(remoteData.tasks || []), taskDeletionRecords),
-            historyDeletionRecords
-        ),
-        taskList
-    ));
+    // 下载合并后的回写：由 saveRemoteData 入队时冻结 diff 并在成功后写日志（无变化不写空上传）
+    const remoteBaseline = applyHistoryDeletionLedger(
+        applyTaskDeletionLedger(normalizeTaskList(remoteData.tasks || []), taskDeletionRecords),
+        historyDeletionRecords
+    );
+    const localAhead = diffHasChange(diffTaskLists(remoteBaseline, taskList));
     showToast(
         riskConfirmed
             ? '已确认并完成同步'
@@ -4806,16 +4877,15 @@ function applyDownloadedRemoteData(remoteData, localBeforeSync, riskConfirmed, p
         'success'
     );
 
-    // 合并后始终尝试上传：把本地多出来的打卡推上云端，避免下次再冲突
-    lastSyncedSnapshot = cloneTasks(taskList);
-    saveRemoteData()
+    // 以刚合并后的云端视角为「已对齐」基准，再入队上传；本地多出的打卡会体现在冻结 diff 里
+    lastSyncedSnapshot = cloneTasks(remoteBaseline);
+    lastUploadedTasksSnapshot = cloneTasks(remoteBaseline);
+    try {
+        lastUploadedRemotePayload = JSON.stringify({ tasks: remoteBaseline });
+    } catch (e) { /* ignore */ }
+
+    saveRemoteData({ reason: localAhead ? '合并后回写云端' : null })
         .then((result) => {
-            if (result && !result.skipped) {
-                // 与紧前下载是同一份合并结果，不重复展示打卡/新增明细
-                addSyncLog('upload', true, '与上次下载相同', null);
-                lastSyncedSnapshot = cloneTasks(taskList);
-                saveLocalStorage();
-            }
             const t = new Date();
             updateSyncStatus('success', `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')}`);
         })
@@ -4840,8 +4910,7 @@ function saveStorage(riskCheck) {
             updateSyncStatus('paused');
             showSyncRiskModal(beforeUploadSnapshot, taskList, risk,
                 () => {
-                    addSyncLog('upload', true, '已确认风险后继续同步', diffTaskLists(beforeUploadSnapshot, taskList), true);
-                    doUploadRemoteData(beforeUploadSnapshot);
+                    doUploadRemoteData(beforeUploadSnapshot, { reason: '已确认风险后继续同步' });
                 },
                 () => {
                     addSyncLog('upload', false, '用户取消（检测到数据回退风险）', null, true);
@@ -4856,17 +4925,15 @@ function saveStorage(riskCheck) {
     doUploadRemoteData(beforeUploadSnapshot);
 }
 
-async function doUploadRemoteData(beforeUploadSnapshot) {
+async function doUploadRemoteData(beforeUploadSnapshot, options = {}) {
     updateSyncStatus('syncing');
     try {
+        // 仍先保护 history；明细不在这里事后反推，而在 saveRemoteData 入队时冻结
         await protectHistoryBeforeUpload();
-
-        const result = await saveRemoteData();
-        if (result && !result.skipped) {
-            addSyncLog('upload', true, null, diffTaskLists(beforeUploadSnapshot, taskList));
-            lastSyncedSnapshot = cloneTasks(taskList);
-            saveLocalStorage();
+        if (Array.isArray(beforeUploadSnapshot) && !Array.isArray(lastUploadedTasksSnapshot)) {
+            lastUploadedTasksSnapshot = cloneTasks(beforeUploadSnapshot);
         }
+        await saveRemoteData({ reason: (options && options.reason) || null });
         const now = new Date();
         const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
         updateSyncStatus('success', timeStr);
