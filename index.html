@@ -1911,6 +1911,15 @@ html[data-theme="dark"] .calendar-header-bar{
     text-overflow:ellipsis;
     white-space:nowrap;
 }
+.sync-log-chip-detail,
+.sync-log-chip-warn{
+    white-space:normal;
+    overflow:visible;
+    text-overflow:unset;
+    line-height:1.4;
+    border-radius:10px;
+    max-width:100%;
+}
 .sync-log-stats{
     display:flex;
     flex-wrap:wrap;
@@ -3788,13 +3797,28 @@ function diffTaskLists(oldList, newList) {
 }
 
 function diffHasChange(diff) {
-    if (!diff) return false;
-    return (diff.added.length + diff.removed.length + diff.modified.length + diff.checkins.length + diff.uncheckins.length) > 0;
+    if (!diff || typeof diff !== 'object') return false;
+    const n = (a) => Array.isArray(a) ? a.length : 0;
+    return (n(diff.added) + n(diff.removed) + n(diff.modified) + n(diff.checkins) + n(diff.uncheckins)) > 0;
+}
+
+function normalizeSyncDiff(detail) {
+    if (!detail || typeof detail !== 'object') {
+        return { added: [], removed: [], modified: [], checkins: [], uncheckins: [] };
+    }
+    return {
+        added: Array.isArray(detail.added) ? detail.added : [],
+        removed: Array.isArray(detail.removed) ? detail.removed : [],
+        modified: Array.isArray(detail.modified) ? detail.modified : [],
+        checkins: Array.isArray(detail.checkins) ? detail.checkins : [],
+        uncheckins: Array.isArray(detail.uncheckins) ? detail.uncheckins : []
+    };
 }
 
 // 把差异对象渲染成同步详情里的可读列表
 function renderSyncDetailHTML(diff) {
-    if (!diff) return `<div class="sync-detail-empty">无详细变化记录</div>`;
+    diff = normalizeSyncDiff(diff);
+    if (!diffHasChange(diff)) return `<div class="sync-detail-empty">无详细变化记录</div>`;
     let html = '';
     diff.checkins.forEach(c => {
         html += `<div class="sync-detail-block" data-sync-block="checkin">
@@ -4338,14 +4362,26 @@ function addSyncLog(type, ok, reason, detail, localOnly) {
 
 function mergeSyncLog(localLog, remoteLog) {
     const all = [...(Array.isArray(localLog) ? localLog : []), ...(Array.isArray(remoteLog) ? remoteLog : [])];
-    const seen = new Set();
-    const merged = [];
+    const map = new Map();
     all.sort((a, b) => (Number(b.ts) || 0) - (Number(a.ts) || 0) || (b.t || '').localeCompare(a.t || ''));
     all.forEach(item => {
-        const key = `${item.t}_${item.type}_${item.ok}_${item.reason || ''}_${item.deviceId || ''}_${item.deviceNote || ''}`;
-        if (!seen.has(key)) { seen.add(key); merged.push(item); }
+        if (!item) return;
+        // 用 ts 区分同一秒内多次同步，避免互相覆盖
+        const key = `${item.ts || item.t || ''}_${item.type}_${item.ok}_${item.reason || ''}_${item.deviceId || ''}`;
+        const prev = map.get(key);
+        if (!prev) {
+            map.set(key, item);
+            return;
+        }
+        // 同一 key 时优先保留带完整 diff 的那条
+        const prevScore = prev.detail && diffHasChange(prev.detail) ? 2 : (prev.detail ? 1 : 0);
+        const nextScore = item.detail && diffHasChange(item.detail) ? 2 : (item.detail ? 1 : 0);
+        if (nextScore > prevScore) map.set(key, item);
+        else if (nextScore === prevScore && (Number(item.ts) || 0) > (Number(prev.ts) || 0)) map.set(key, item);
     });
-    return merged.slice(0, SYNC_LOG_MAX);
+    return Array.from(map.values())
+        .sort((a, b) => (Number(b.ts) || 0) - (Number(a.ts) || 0) || (b.t || '').localeCompare(a.t || ''))
+        .slice(0, SYNC_LOG_MAX);
 }
 
 function maybeCreateDailySnapshot() {
@@ -6755,15 +6791,21 @@ function renderSyncLogList() {
         const resultText = item.ok ? '成功' : '失败';
         const cls = item.ok ? 'ok' : 'fail';
         const sameAsDownload = item.ok && item.type === 'upload' && item.reason === '与上次下载相同';
-        const hasChange = item.ok && !sameAsDownload && diffHasChange(item.detail);
+        const detailNorm = normalizeSyncDiff(item.detail);
+        const hasChange = item.ok && !sameAsDownload && diffHasChange(detailNorm);
         const sourceLabel = getDeviceLabel(item.deviceId, item.deviceNote || item.deviceLabel || '');
         const timeText = escapeHTML(item.t);
         const sourceText = escapeHTML(sourceLabel);
-        const reasonText = !item.ok && item.reason ? `<span class="sync-log-chip">原因：${escapeHTML(item.reason)}</span>` : '';
-        const detailText = !item.ok && item.detail ? `<span class="sync-log-chip sync-log-chip-detail">详情：${escapeHTML(formatSyncLogDetail(item.detail)).slice(0, 200)}</span>` : '';
+        // 成功时的说明（如风险确认）也展示，避免信息被吃掉
+        const reasonText = item.reason
+            ? `<span class="sync-log-chip ${item.ok ? '' : 'sync-log-chip-warn'}">${item.ok ? '' : '原因：'}${escapeHTML(item.reason)}</span>`
+            : '';
+        const detailText = !item.ok && item.detail
+            ? `<span class="sync-log-chip sync-log-chip-detail">详情：${escapeHTML(formatSyncLogDetail(item.detail)).slice(0, 280)}</span>`
+            : '';
         let statsLine = '';
         if (item.ok && hasChange) {
-            const d = item.detail;
+            const d = detailNorm;
             const checkinTotal = d.checkins.length + d.uncheckins.length;
             const mkStat = (type, label, count) => {
                 const n = Number(count) || 0;
@@ -6803,7 +6845,7 @@ function renderSyncLogList() {
             </div>
             ${item.ok ? `<div class="sync-log-summary ${hasChange ? 'changed' : ''}">${summaryLabel}</div>` : ''}
             ${statsLine}
-            ${canExpand ? `<div class="sync-log-detail">${renderSyncDetailHTML(item.detail)}</div>` : ''}
+            ${canExpand ? `<div class="sync-log-detail">${renderSyncDetailHTML(detailNorm)}</div>` : ''}
         </div>`;
     }).join('');
 }
