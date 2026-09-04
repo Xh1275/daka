@@ -1,12 +1,24 @@
 # 羊毛打卡管家 / Wool Check-in Manager
 
 <p align="center">
-  <a href="#zh">中文</a> · <a href="#en">English</a> · <a href="#sponsor">☕ 支持作者</a>
+  <a href="https://daka-uwc.pages.dev/"><strong>🌐 在线演示 Online Demo</strong></a>
+  &nbsp;·&nbsp;
+  <a href="#zh">中文</a>
+  &nbsp;·&nbsp;
+  <a href="#en">English</a>
+  &nbsp;·&nbsp;
+  <a href="#sponsor">☕ 支持作者</a>
+</p>
+
+<p align="center">
+  <a href="https://daka-uwc.pages.dev/">https://daka-uwc.pages.dev/</a>
 </p>
 
 自用多端「羊毛 / 签到」打卡工具。数据优先保存在浏览器本地，可选同步到 Cloudflare KV。
 
 A personal multi-device check-in tracker. Local-first storage, with optional Cloudflare KV sync.
+
+> **演示站说明：** 打开即可体验界面与本地打卡。多端同步需自行配置同步密码；公开演示环境可能限制在页面输入密码，请以实际部署配置为准。建议体验前先导出备份，勿在演示站存放重要隐私数据。
 
 ---
 
@@ -15,6 +27,14 @@ A personal multi-device check-in tracker. Local-first storage, with optional Clo
 ## 中文说明
 
 [English version ↓](#en)
+
+### 在线演示
+
+| | |
+|--|--|
+| **地址** | [https://daka-uwc.pages.dev/](https://daka-uwc.pages.dev/) |
+| **用途** | 快速体验主站界面、今日打卡、任务管理、日历、备份等 |
+| **建议** | 重要数据请用自建实例；演示站仅作功能预览 |
 
 ### 功能概览
 
@@ -25,22 +45,27 @@ A personal multi-device check-in tracker. Local-first storage, with optional Clo
 - **复制任务**：进行中任务可复制为新任务（同名，弹编辑框改分类/备注；默认不带历史）
 - **再开一轮**：已完成任务可再开一轮（弹编辑框）
 - **挂起**：暂不打的任务可挂起（不出现在今日，历史保留，可恢复）
-- **日历**：按月查看打卡分布
+- **打卡明细**：默认展示最近 10 条，支持「加载更多」；保留完整时间戳
+- **不自动按月归档**：历史保留在 `history`，避免跨月归档导致时间丢失或进度双计；仍兼容旧归档字段（完成天数按日期去重）
+- **日历**：按月查看打卡分布，可点日期看当天明细
 - **公告栏**：可编辑正文，多端同步
 - **快捷入口**：公告下最多 4 个链接按钮（名称 + URL，只填链接才显示），与公告一起同步
 - **多端同步**：密码保护；本地与云端合并，降低「上传失败导致进度被冲掉」的风险
 - **仅本地模式**：未设置同步密码时显示「仅本地」
 - **同步密码开关**：可用环境变量控制是否允许在页面输入/修改同步密码（适合公开演示）
+- **同步记录**：上传/下载日志，可展开查看打卡、新增、修改、删除等变化摘要
+- **设备管理**：设备备注（可清空）；可删除设备记录（带删除账本）；无备注设备约 3 天未活跃自动清理
 - **联系作者**：页内表单提交意见（可选联系方式），由服务端转发，不写任务 KV
 - **备份**：导出 / 导入 JSON、CSV；同步日志；设备备注
 - **历史快照**：仅保存在本机最近 2 天，不上传云端
+- **站点图标**：支持 favicon / 苹果主屏幕图标（`assets/`）
 - **深色模式**：跟随系统或手动切换
 
 可选独立 Worker：**每日提醒 + 奖励中心**（定时推送未完成任务、管理临期卡券），与主站解耦，见同账号 Workers 及对应说明。
 
 ### 在线使用
 
-1. 浏览器打开你的 Pages 地址  
+1. 打开 [在线演示](https://daka-uwc.pages.dev/) 或你自己的 Pages 地址  
 2. 可不设同步密码，数据只存在本机（状态为 **仅本地**）  
 3. 多设备同步：在允许输入密码的版本中，点击左上角 → 填写与服务端一致的同步密码  
 4. 之后打开页面会自动拉取、合并，有变更时写回云端  
@@ -56,6 +81,12 @@ A personal multi-device check-in tracker. Local-first storage, with optional Clo
 ```text
 /
 ├── index.html                 # 前端
+├── assets/                    # 可选：站点图标、赞赏码等
+│   ├── favicon.ico
+│   ├── favicon.png
+│   ├── icon-192.png
+│   ├── apple-touch-icon.png
+│   └── sponsor.png
 └── functions/api/
     ├── get-data.js            # 读取云端数据
     ├── save-data.js           # 合并并写入（含公告 shortcuts）
@@ -95,11 +126,12 @@ A personal multi-device check-in tracker. Local-first storage, with optional Clo
 
 | 文件 | 职责 | 何时改 |
 |------|------|--------|
-| `index.html` | UI、本地存储、合并、公告与快捷入口 | 功能与界面 |
+| `index.html` | UI、本地存储、合并、公告与快捷入口、设备与同步日志 | 功能与界面 |
 | `save-data.js` | 服务端合并任务 / 账本 / 设备 / **公告 shortcuts** | 合并规则、写库字段 |
 | `get-data.js` | 校验密码后返回 `daka_main_data` | 一般不用改 |
 | `sync-config.js` | 读取 `ALLOW_SYNC_PASSWORD_INPUT` | 很少改 |
 | `contact.js` | 转发反馈到机器人 | 通知渠道变更时 |
+| `assets/*` | 图标、赞赏码等静态资源 | 换图时 |
 
 主数据在 KV 中的 key：`daka_main_data`（单 key 存整包，适合个人体量）。
 
@@ -110,7 +142,7 @@ A personal multi-device check-in tracker. Local-first storage, with optional Clo
 - **今日**：打卡 / 补卡；已挂起任务不出现在今日，也不计入今日进度  
 - **全部**：筛选、搜索、批量；复制 / 再开一轮会弹出编辑框  
 - **公告 + 快捷入口**：保存后多端同步；入口仅显示已填写链接的项  
-- **备份管理**：导出 JSON、查看同步日志、设备备注  
+- **备份管理**：导出 JSON、查看同步日志、设备备注与删除  
 
 ### 数据与安全
 
@@ -132,6 +164,12 @@ A personal multi-device check-in tracker. Local-first storage, with optional Clo
 
 [中文说明 ↑](#zh)
 
+### Live demo
+
+**https://daka-uwc.pages.dev/**
+
+Try the UI in a browser. Use your own deployment for real multi-device data. Prefer not to store sensitive data on the public demo.
+
 ### Features
 
 - **Today**: view progress by category; support check-in and catch-up
@@ -141,22 +179,27 @@ A personal multi-device check-in tracker. Local-first storage, with optional Clo
 - **Copy task**: copy an active task into a new task with the same name; an edit dialog lets you change category and notes, and history is not copied by default
 - **New round**: reopen a completed task as a new round through the edit dialog
 - **Pause**: temporarily hide a task from Today while keeping its history; paused tasks can be resumed later
+- **Check-in history**: last 10 entries by default with load-more; full timestamps kept
+- **No auto monthly archive**: avoids cross-month double-counting and lost times; legacy archive fields still supported with unique-date progress
 - **Calendar**: view check-in distribution by month
 - **Announcement**: edit the announcement text and sync it across devices
 - **Quick links**: up to 4 shortcut buttons under the announcement; each uses a name + URL, and only shortcuts with a URL are displayed. They are synced together with the announcement
 - **Multi-device sync**: password-protected synchronization; local and cloud data are merged to reduce the risk of progress being overwritten after a failed upload
 - **Local-only mode**: when no sync password is configured, the app runs in **Local-only** mode and data stays on the current device
 - **Sync password switch**: a server-side environment variable can control whether the page is allowed to enter or change the sync password, which is useful for public demonstrations
+- **Sync log**: upload/download history with expandable change summary
+- **Devices**: clearable notes, delete with tombstone ledger, stale auto-clean
 - **Contact author**: submit feedback from the page with an optional contact method; the server forwards the message and does not write it to the task KV
 - **Backup & records**: export / import JSON and CSV, view sync logs, and store a device note
 - **Local snapshots**: the most recent 2 days of history are kept only on the current device and are not uploaded
+- **Site icons** under `assets/`
 - **Dark mode**: follow the system setting or switch manually
 
 Optional separate Worker: **Daily Reminder + Reward Center**. It can periodically push unfinished tasks and manage expiring coupons. It is decoupled from the main site; see the corresponding Worker README in the same account/project.
 
 ### Online Use
 
-1. Open your Cloudflare Pages URL in a browser.
+1. Open [the live demo](https://daka-uwc.pages.dev/) or your Cloudflare Pages URL in a browser.
 2. You can leave the sync password unset; the app will remain in **Local-only** mode and data will stay on the current device.
 3. For multi-device sync, on versions where password input is enabled, open the top-left menu and enter the same sync password configured on the server.
 4. After that, the page automatically pulls cloud data and merges it locally; when changes are detected, it writes the merged result back to the cloud.
@@ -172,6 +215,7 @@ For important operations or major changes, export a JSON backup from **Backup Ma
 ```text
 /
 ├── index.html                 # Frontend
+├── assets/                    # Optional icons / sponsor QR
 └── functions/api/
     ├── get-data.js            # Read cloud data
     ├── save-data.js           # Merge and write data, including announcement shortcuts
@@ -249,6 +293,8 @@ Batch operations such as pin, pause, category change, archive, and delete are ap
 ### License
 
 See the repository's `LICENSE` file, if present. The project is intended for personal use; for public deployments, configure a proper sync password and apply appropriate access controls.
+
+---
 
 <a id="sponsor"></a>
 
