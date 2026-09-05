@@ -2068,9 +2068,17 @@ html[data-theme="dark"] .sync-log-result.fail{
 .pin .ui-icon,.open-app .ui-icon{margin-right:3px}
 .open-app{display:inline-flex;align-items:center;gap:3px}
 .empty-state-icon .ui-icon{width:28px;height:28px}
-.today-glance{font-size:13px;color:var(--text-sub);line-height:1.5}
+.today-glance{font-size:13px;color:var(--text-sub);line-height:1.5;flex:1;min-width:0}
 .today-glance b{color:var(--primary);font-weight:700}
 .today-glance .glance-money{color:var(--success);font-weight:700}
+.today-detail-btn{
+    flex-shrink:0;margin-left:auto;width:34px;height:34px;padding:0;border:none;
+    border-radius:10px;background:var(--bg-gray);color:var(--primary);
+    display:inline-flex;align-items:center;justify-content:center;cursor:pointer;
+}
+.today-detail-btn:active{opacity:.75}
+.today-detail-btn .ui-icon{width:18px;height:18px}
+html[data-theme="dark"] .today-detail-btn{background:rgba(255,255,255,.08)}
 .calendar-month-progress{margin:6px 0 10px;padding:10px 12px;border-radius:12px;background:var(--bg-color);border:1px solid var(--border-color);font-size:12.5px;color:var(--text-sub);line-height:1.55}
 .calendar-month-progress b{color:var(--text-main)}
 .check-success-float .ui-icon{width:48px;height:48px}
@@ -2174,7 +2182,7 @@ html.body-scroll-locked .batch-bar {
             </div>
         </div>
     </div>
-    <div class="announcement-bar">
+    <div class="announcement-bar" id="announcementBar">
         <div class="announcement-head">
             <span class="announcement-prefix"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 10.5v3a2 2 0 0 0 2 2H8l5 3.5V5L8 8.5H6.5a2 2 0 0 0-2 2Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M16.5 9.2a3.2 3.2 0 0 1 0 5.6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 公告</span>
             <div class="announce-quick-links" id="announceQuickLinks" aria-label="快捷入口"></div>
@@ -2198,6 +2206,7 @@ html.body-scroll-locked .batch-bar {
         </div>
         <div class="top-tip" id="todayTipWrap">
             <span class="tip-text today-glance" id="todayGlanceText">今日 <b>0</b>/<b>0</b> 已完成 · 剩余 <b id="todayCount">0</b> 项</span>
+            <button type="button" class="today-detail-btn" id="todayDetailBtn" title="今日打卡明细" aria-label="今日打卡明细"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 3.4V7M16 3.4V7M3.5 10h17" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         </div>
         <div class="today-progress-card">
             <div class="today-progress-title">
@@ -5728,6 +5737,52 @@ function setOverlayDisplay(node, display) {
     else if (wasOpen && !nowOpen) unlockBodyScroll();
 }
 
+/** 收集某一天的打卡明细（与日历格子同一套规则） */
+function collectDayCheckRecords(dateString) {
+    const dayKey = String(dateString || '').substring(0, 10);
+    const records = [];
+    if (!dayKey || !Array.isArray(taskList)) return records;
+    taskList.forEach(task => {
+        if (!task) return;
+        const taskId = Number(task.id);
+        const taskName = getTaskNameText(task) || '未命名任务';
+        const idStr = (task.id != null && task.id !== '') ? String(task.id) : String(taskName);
+        if (Array.isArray(task.history)) {
+            task.history.forEach(hStr => {
+                if (typeof hStr !== 'string' || hStr.length < 10) return;
+                if (hStr.substring(0, 10) !== dayKey) return;
+                const timeFull = hStr.length >= 16 ? hStr : null;
+                records.push({ taskId: idStr, name: taskName, time: timeFull, source: 'history' });
+            });
+        }
+        if (Array.isArray(task.archives)) {
+            task.archives.forEach(arc => {
+                if (!arc || !Array.isArray(arc.dates)) return;
+                arc.dates.forEach(dStr => {
+                    if (typeof dStr !== 'string' || dStr.length < 10) return;
+                    if (dStr.substring(0, 10) !== dayKey) return;
+                    const already = records.some(r => String(r.taskId) === idStr && r.source === 'history');
+                    if (already) return;
+                    records.push({ taskId: idStr, name: taskName, time: null, source: 'archive' });
+                });
+            });
+        }
+    });
+    // 时间新到旧
+    records.sort((a, b) => String(b.time || '').localeCompare(String(a.time || '')));
+    return records;
+}
+
+function openTodayCheckDetail() {
+    const todayStr = getTodayStr();
+    const dayRecords = collectDayCheckRecords(todayStr);
+    if (!dayRecords.length) {
+        showToast(`${todayStr} 暂无打卡记录`);
+        return;
+    }
+    openCalendarDetail(todayStr, dayRecords);
+}
+
 function openCalendarDetail(dateString, taskEntries) {
     // 恢复日历详情统计格文案（可能被「本月入账明细」改过）
     const countLabel = document.querySelector('#calendarDetailCount') && document.querySelector('#calendarDetailCount').parentElement
@@ -5949,6 +6004,22 @@ function renderPage() {
     if (!Array.isArray(taskList)) taskList = [];
     el.pageToday.style.display = currentPage === "today" ? "block" : "none";
     el.pageAll.style.display = currentPage === "all" ? "block" : "none";
+    // 公告+快捷入口仅今日页展示（数据仍多端同步，全部页不重复占位）
+    const announcementBar = document.getElementById('announcementBar');
+    if (announcementBar) {
+        announcementBar.style.display = currentPage === 'today' ? '' : 'none';
+    }
+    // 切到全部页时若正在编辑公告，退出编辑，避免隐藏后仍 contenteditable
+    if (currentPage !== 'today') {
+        const contentDiv = document.getElementById('announcementContent');
+        const editBtn = document.getElementById('editAnnounceBtn');
+        const shortcutsEdit = document.getElementById('announceShortcutsEdit');
+        if (contentDiv && contentDiv.getAttribute('contenteditable') === 'true') {
+            contentDiv.setAttribute('contenteditable', 'false');
+            if (editBtn) editBtn.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.2 6.3 17.7 10.8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 16.8 4.2 20.2 7.6 19.4 18.8 8.2a2.4 2.4 0 0 0-3.4-3.4Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 编辑';
+            if (shortcutsEdit) shortcutsEdit.classList.remove('show');
+        }
+    }
     try { updateBackToTopBtn(); } catch (e) {}
     
     document.querySelectorAll(".tab-item").forEach(tab => {
@@ -7322,6 +7393,14 @@ function bindGlobalEvent() {
         }
     };
 
+    const todayDetailBtn = document.getElementById('todayDetailBtn');
+    if (todayDetailBtn) {
+        todayDetailBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openTodayCheckDetail();
+        });
+    }
     if (el.calendarDetailClose && el.calendarDetailPopWrap) {
         el.calendarDetailClose.onclick = closeCalendarDetail;
         el.calendarDetailPopWrap.addEventListener('click', (e) => {
