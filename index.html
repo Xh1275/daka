@@ -3035,6 +3035,7 @@ let todayGroupOpenState = {};
 let lastSyncedSnapshot = null;
 let toastTimer = null;
 let syncInFlight = false;
+let loadStoragePromise = null; // 全局互斥：避免 onload / 点同步 / 设密码并发跑两次下载
 let syncRecoveryPoint = null;
 let pendingSyncRisk = null;
 
@@ -4430,6 +4431,20 @@ function addSyncLog(type, ok, reason, detail, localOnly) {
     if (syncLog.length > SYNC_LOG_MAX) syncLog = syncLog.slice(0, SYNC_LOG_MAX);
 }
 
+function syncLogDetailFingerprint(detail) {
+    if (!detail || typeof detail !== 'object') return '';
+    try {
+        const n = (a) => Array.isArray(a) ? a.length : 0;
+        // 用数量 + 打卡日期列表做弱指纹，足够去掉「同秒双胞胎下载」
+        const checks = Array.isArray(detail.checkins)
+            ? detail.checkins.map(c => `${c && c.taskName || ''}|${c && c.date || ''}`).sort().join(';')
+            : '';
+        return `${n(detail.added)}_${n(detail.removed)}_${n(detail.modified)}_${n(detail.checkins)}_${n(detail.uncheckins)}_${checks}`;
+    } catch (e) {
+        return '';
+    }
+}
+
 function mergeSyncLog(localLog, remoteLog) {
     const all = [...(Array.isArray(localLog) ? localLog : []), ...(Array.isArray(remoteLog) ? remoteLog : [])];
     const map = new Map();
@@ -4449,9 +4464,18 @@ function mergeSyncLog(localLog, remoteLog) {
         if (nextScore > prevScore) map.set(key, item);
         else if (nextScore === prevScore && (Number(item.ts) || 0) > (Number(prev.ts) || 0)) map.set(key, item);
     });
-    return Array.from(map.values())
+    // 二次折叠：同一设备、同一秒、同类型成功/失败、明细指纹相同 → 只留一条（消除双胞胎下载）
+    const collapsed = [];
+    const softSeen = new Set();
+    Array.from(map.values())
         .sort((a, b) => (Number(b.ts) || 0) - (Number(a.ts) || 0) || (b.t || '').localeCompare(a.t || ''))
-        .slice(0, SYNC_LOG_MAX);
+        .forEach(item => {
+            const softKey = `${item.t || ''}_${item.type}_${item.ok}_${item.reason || ''}_${item.deviceId || ''}_${syncLogDetailFingerprint(item.detail)}`;
+            if (softSeen.has(softKey)) return;
+            softSeen.add(softKey);
+            collapsed.push(item);
+        });
+    return collapsed.slice(0, SYNC_LOG_MAX);
 }
 
 function maybeCreateDailySnapshot() {
@@ -4718,6 +4742,9 @@ function renderSyncUndoEntry() {
 }
 
 async function loadStorage() {
+    if (loadStoragePromise) return loadStoragePromise;
+    loadStoragePromise = (async () => {
+    try {
     loadLocalStorage();
     loadSyncRecoveryPoint();
     const localAnnounce = localStorage.getItem('persistent_announcement_v3');
@@ -4788,6 +4815,11 @@ async function loadStorage() {
     }
     lastSyncedSnapshot = cloneTasks(taskList);
     renderPage();
+    } finally {
+        loadStoragePromise = null;
+    }
+    })();
+    return loadStoragePromise;
 }
 
 function applyDownloadedRemoteData(remoteData, localBeforeSync, riskConfirmed, preMergedTasks, preMergedTaskDel, preMergedHistDel) {
@@ -7060,7 +7092,7 @@ function bindGlobalEvent() {
             }
             setSyncPassword();
         } else {
-            if (syncInFlight) return;
+            if (loadStoragePromise || syncInFlight) return;
             syncInFlight = true;
             Promise.resolve(loadStorage())
                 .catch((e) => {
