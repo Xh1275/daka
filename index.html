@@ -1474,32 +1474,6 @@ html[data-theme="dark"] .calendar-header-bar{
     cursor:pointer;
     flex:0 0 auto;
 }
-.calendar-detail-stats{
-    display:grid;
-    grid-template-columns:repeat(3,minmax(0,1fr));
-    gap:8px;
-    margin-bottom:12px;
-    flex:0 0 auto;
-}
-.calendar-detail-stat{
-    padding:10px 8px;
-    border-radius:14px;
-    background:linear-gradient(180deg, rgba(25,137,250,.05), transparent), var(--bg-color);
-    border:1px solid var(--border-color);
-    text-align:center;
-}
-.calendar-detail-stat b{
-    display:block;
-    font-size:17px;
-    color:var(--primary);
-    line-height:1.1;
-}
-.calendar-detail-stat span{
-    display:block;
-    margin-top:4px;
-    font-size:11px;
-    color:var(--text-light);
-}
 .calendar-detail-list{
     display:flex;
     flex-direction:column;
@@ -2001,9 +1975,6 @@ html[data-theme="dark"] .calendar-detail-pop{
 html[data-theme="dark"] .calendar-detail-item{
     background:rgba(255,255,255,.03);
 }
-html[data-theme="dark"] .calendar-detail-stat{
-    background:rgba(255,255,255,.03);
-}
 
 html[data-theme="dark"] .sync-log-item{
     background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01));
@@ -2046,9 +2017,6 @@ html[data-theme="dark"] .sync-log-result.fail{
         width:calc(100vw - 18px);
         padding:14px;
         border-radius:18px;
-    }
-    .calendar-detail-stats{
-        grid-template-columns:repeat(2,minmax(0,1fr));
     }
 }
 </style>
@@ -2550,20 +2518,6 @@ html.body-scroll-locked .batch-bar {
                     <div class="calendar-detail-sub" id="calendarDetailTitle">当天打卡明细</div>
                 </div>
                 <button type="button" class="calendar-detail-close" id="calendarDetailClose">×</button>
-            </div>
-            <div class="calendar-detail-stats">
-                <div class="calendar-detail-stat">
-                    <b id="calendarDetailCount">0</b>
-                    <span>次打卡</span>
-                </div>
-                <div class="calendar-detail-stat">
-                    <b id="calendarDetailDayType">有记录</b>
-                    <span>日期状态</span>
-                </div>
-                <div class="calendar-detail-stat">
-                    <b id="calendarDetailMonthText">本月</b>
-                    <span>查看范围</span>
-                </div>
             </div>
             <div class="calendar-detail-list" id="calendarDetailList"></div>
         </div>
@@ -3148,9 +3102,6 @@ const el = {
     calendarDetailClose: document.getElementById("calendarDetailClose"),
     calendarDetailDate: document.getElementById("calendarDetailDate"),
     calendarDetailTitle: document.getElementById("calendarDetailTitle"),
-    calendarDetailCount: document.getElementById("calendarDetailCount"),
-    calendarDetailDayType: document.getElementById("calendarDetailDayType"),
-    calendarDetailMonthText: document.getElementById("calendarDetailMonthText"),
     calendarDetailList: document.getElementById("calendarDetailList"),
 
     batchModeBtn: document.getElementById('batchModeBtn'),
@@ -5448,20 +5399,13 @@ function openMonthCompletionDetail(kind) {
     const monthLabel = `${currentCalYear}年${currentCalMonth + 1}月`;
     if (el.calendarDetailDate) el.calendarDetailDate.textContent = monthLabel;
     if (el.calendarDetailTitle) {
-        el.calendarDetailTitle.textContent = isMoney ? '本月现金入账明细' : '本月奖品入账明细';
+        // 合计写在副标题，不再使用统计格
+        if (isMoney) {
+            el.calendarDetailTitle.textContent = `本月现金入账明细 · ¥${formatMoney(stats.money)} · ${items.length} 项`;
+        } else {
+            el.calendarDetailTitle.textContent = `本月奖品入账明细 · ${stats.prizeCount} 件 · ${items.length} 项`;
+        }
     }
-    if (el.calendarDetailCount) {
-        el.calendarDetailCount.textContent = isMoney ? (`¥${formatMoney(stats.money)}`) : String(stats.prizeCount);
-    }
-    // 复用三个统计格：总数 / 类型 / 月份
-    const countLabel = document.querySelector('#calendarDetailCount')?.parentElement?.querySelector('span');
-    if (countLabel) countLabel.textContent = isMoney ? '合计金额' : '奖品件数';
-    if (el.calendarDetailDayType) el.calendarDetailDayType.textContent = isMoney ? '现金' : '奖品';
-    const dayTypeLabel = document.querySelector('#calendarDetailDayType')?.parentElement?.querySelector('span');
-    if (dayTypeLabel) dayTypeLabel.textContent = '类型';
-    if (el.calendarDetailMonthText) el.calendarDetailMonthText.textContent = stats.yearMonth || monthLabel;
-    const monthLabelEl = document.querySelector('#calendarDetailMonthText')?.parentElement?.querySelector('span');
-    if (monthLabelEl) monthLabelEl.textContent = '月份';
 
     if (el.calendarDetailList) {
         el.calendarDetailList.innerHTML = items.map((item, idx) => {
@@ -5808,17 +5752,6 @@ function openTodayCheckDetail() {
 }
 
 function openCalendarDetail(dateString, taskEntries) {
-    // 恢复日历详情统计格文案（可能被「本月入账明细」改过）
-    const countLabel = document.querySelector('#calendarDetailCount') && document.querySelector('#calendarDetailCount').parentElement
-        ? document.querySelector('#calendarDetailCount').parentElement.querySelector('span') : null;
-    if (countLabel) countLabel.textContent = '次打卡';
-    const dayTypeLabel = document.querySelector('#calendarDetailDayType') && document.querySelector('#calendarDetailDayType').parentElement
-        ? document.querySelector('#calendarDetailDayType').parentElement.querySelector('span') : null;
-    if (dayTypeLabel) dayTypeLabel.textContent = '日期状态';
-    const monthLabelEl = document.querySelector('#calendarDetailMonthText') && document.querySelector('#calendarDetailMonthText').parentElement
-        ? document.querySelector('#calendarDetailMonthText').parentElement.querySelector('span') : null;
-    if (monthLabelEl) monthLabelEl.textContent = '查看范围';
-
     const cleanList = Array.isArray(taskEntries) ? taskEntries.filter(t => t && t.name) : [];
     cleanList.sort((a, b) => {
         if (a.time && b.time) return a.time.localeCompare(b.time);
@@ -5834,9 +5767,6 @@ function openCalendarDetail(dateString, taskEntries) {
     el.calendarDetailTitle.innerText = dayCount
         ? `当天打卡明细 · ${taskCount} 个任务 · ${dayCount} 次`
         : '当天暂无记录';
-    el.calendarDetailCount.innerText = String(dayCount);
-    el.calendarDetailDayType.innerText = dayCount ? '有记录' : '空白';
-    el.calendarDetailMonthText.innerText = `${dateString.slice(0, 7)}`;
     if (dayCount > 0) {
         el.calendarDetailList.innerHTML = cleanList.map((item, idx) => {
             let timeText = '--:--';
