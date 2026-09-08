@@ -2079,6 +2079,11 @@ html[data-theme="dark"] .sync-log-result.fail{
 .today-detail-btn:active{opacity:.75}
 .today-detail-btn .ui-icon{width:18px;height:18px}
 html[data-theme="dark"] .today-detail-btn{background:rgba(255,255,255,.08)}
+.task-template-hint{margin-top:8px;padding:10px 12px;border-radius:10px;background:rgba(22,119,255,.08);color:var(--text-sub);font-size:12px;line-height:1.55;display:none}
+.task-template-hint.show{display:block}
+html[data-theme="dark"] .task-template-hint{background:rgba(22,119,255,.15)}
+.tag-cuan{background:rgba(250,140,22,.15);color:#d46b08}
+html[data-theme="dark"] .tag-cuan{background:rgba(250,140,22,.25);color:#ffc069}
 .calendar-month-progress{margin:6px 0 10px;padding:10px 12px;border-radius:12px;background:var(--bg-color);border:1px solid var(--border-color);font-size:12.5px;color:var(--text-sub);line-height:1.55}
 .calendar-month-progress b{color:var(--text-main)}
 .check-success-float .ui-icon{width:48px;height:48px}
@@ -2327,6 +2332,21 @@ html.body-scroll-locked .batch-bar {
                         <div class="form-item">
                             <label>每天次数</label>
                             <input id="inpTimesPerDay" type="number" value="1" min="1" inputmode="numeric">
+                        </div>
+                    </div>
+                    <div class="form-item">
+                        <label class="form-label">任务模板</label>
+                        <div class="seg-group" id="taskTemplateGroup">
+                            <label class="seg-item active"><input type="radio" name="taskTemplate" value="normal" checked> 普通任务</label>
+                            <label class="seg-item"><input type="radio" name="taskTemplate" value="taobao_cuan_dan"> 淘宝攒单</label>
+                        </div>
+                        <div class="task-template-hint" id="taskTemplateHint">
+                            <b>淘宝攒单（3 日一轮）</b><br>
+                            · 以「开始日期」为第 1 天，之后自动轮回<br>
+                            · 第 1 天：仅 <b>20:00 之后</b>可打卡<br>
+                            · 第 2 天：<b>全天</b>可打卡<br>
+                            · 第 3 天：仅 <b>13:00 之前</b>可打卡<br>
+                            · 仍是普通任务：今日未打卡会被现有提醒推送
                         </div>
                     </div>
                     <label class="switch-row" for="inpContinuous">
@@ -2664,6 +2684,7 @@ function normalizeTaskRecord(rawTask) {
     item.isContinuous = !!item.isContinuous;
     item.isPinned = !!item.isPinned;
     item.isPaused = !!item.isPaused;
+    item.taskTemplate = item.taskTemplate === 'taobao_cuan_dan' ? 'taobao_cuan_dan' : 'normal';
     item.history = Array.isArray(item.history) ? item.history.filter(v => typeof v === 'string') : [];
     item.archives = Array.isArray(item.archives) ? item.archives.map(a => {
         const arc = a && typeof a === 'object' ? { ...a } : {};
@@ -5180,6 +5201,9 @@ function renderTaskCard(item, isTodayPage = false) {
     }
     let extraTagsHtml = "";
     if (isPinned) extraTagsHtml += `<span class="tag tag-doing">${ICON_PIN} 置顶</span>`;
+    if (isTaobaoCuanDanTask(item) && !isPaused) {
+        extraTagsHtml += `<span class="tag tag-cuan">${escapeHTML(getCuanDanWindowLabel(item))}</span>`;
+    }
     if (!isPaused && broken && status === "doing") {
         extraTagsHtml += `<span class="tag tag-danger">已断签</span>`;
         barColor = "var(--danger)";
@@ -6438,6 +6462,63 @@ function retroCheck(id) {
 }
 
 
+function isTaobaoCuanDanTask(item) {
+    return !!(item && item.taskTemplate === 'taobao_cuan_dan');
+}
+
+function getCuanDanCycleDay(item, dateStr) {
+    const dayStr = (dateStr || getTodayStr()).substring(0, 10);
+    const start = (item && item.startDate ? String(item.startDate) : dayStr).substring(0, 10);
+    const d0 = new Date(start + 'T12:00:00');
+    const d1 = new Date(dayStr + 'T12:00:00');
+    if (isNaN(d0.getTime()) || isNaN(d1.getTime())) return 1;
+    let diff = Math.floor((d1 - d0) / 86400000);
+    if (diff < 0) diff = 0;
+    return (diff % 3) + 1;
+}
+
+function getCuanDanWindowLabel(item, dateStr) {
+    const day = getCuanDanCycleDay(item, dateStr);
+    if (day === 1) return `淘宝攒单第${day}天 · 20:00后可打`;
+    if (day === 2) return `淘宝攒单第${day}天 · 全天可打`;
+    return `淘宝攒单第${day}天 · 13:00前可打`;
+}
+
+function canCheckTaobaoCuanDanNow(item) {
+    if (!isTaobaoCuanDanTask(item)) return { ok: true, msg: '' };
+    const day = getCuanDanCycleDay(item, getTodayStr());
+    const now = new Date();
+    const mins = now.getHours() * 60 + now.getMinutes();
+    if (day === 1) {
+        if (mins < 20 * 60) return { ok: false, msg: '淘宝攒单第1天：请在今天 20:00 之后再打卡' };
+        return { ok: true, msg: '' };
+    }
+    if (day === 2) return { ok: true, msg: '' };
+    if (mins >= 13 * 60) return { ok: false, msg: '淘宝攒单第3天：请在今天 13:00 前打卡（已过窗口）' };
+    return { ok: true, msg: '' };
+}
+
+function setTaskTemplateUI(template) {
+    const val = template === 'taobao_cuan_dan' ? 'taobao_cuan_dan' : 'normal';
+    document.querySelectorAll('input[name="taskTemplate"]').forEach(r => {
+        r.checked = (r.value === val);
+        const lab = r.closest('.seg-item');
+        if (lab) lab.classList.toggle('active', r.checked);
+    });
+    const hint = document.getElementById('taskTemplateHint');
+    if (hint) hint.classList.toggle('show', val === 'taobao_cuan_dan');
+}
+
+function bindTaskTemplateUI() {
+    const group = document.getElementById('taskTemplateGroup');
+    if (!group || group.dataset.bound === '1') return;
+    group.dataset.bound = '1';
+    group.addEventListener('change', () => {
+        const sel = document.querySelector('input[name="taskTemplate"]:checked');
+        setTaskTemplateUI(sel ? sel.value : 'normal');
+    });
+}
+
 function toggleCheck(id) {
     const item = taskList.find(t => t.id === id);
     if(!item) return;
@@ -6478,6 +6559,10 @@ function toggleCheck(id) {
             showToast("进度已重置并完成打卡", "success");
         }, true);
         return;
+    }
+    if (isTaobaoCuanDanTask(item)) {
+        const win = canCheckTaobaoCuanDanNow(item);
+        if (!win.ok) return showToast(win.msg, 'warning');
     }
     if(!Array.isArray(item.history)) item.history = [];
     item.history.push(getNowDateTimeStr());
@@ -6591,6 +6676,7 @@ function openAdd() {
     el.inpCustom.value = "";
     el.inpStart.value = getTodayStr();
     el.inpContinuous.checked = false;
+    setTaskTemplateUI('normal');
     
     toggleRewardInputForm('money');
     refreshCategoryDatalist();
@@ -6628,6 +6714,7 @@ function fillTaskFormFromItem(item, options = {}) {
     el.inpTimesPerDay.value = item.timesPerDay || 1;
     el.inpStart.value = startDate || item.startDate || getTodayStr();
     el.inpContinuous.checked = !!item.isContinuous;
+    setTaskTemplateUI(item.taskTemplate || 'normal');
 
     const rType = item.rewardType || "money";
     const rValue = item.rewardValue !== undefined ? item.rewardValue : item.money;
@@ -6713,6 +6800,8 @@ function saveTask() {
             money: rewardType === "money" ? Number(finalRewardValue) : 0,
             startDate: el.inpStart.value || getTodayStr(),
             isContinuous: el.inpContinuous.checked,
+            taskTemplate: (document.querySelector('input[name="taskTemplate"]:checked') || {}).value === 'taobao_cuan_dan'
+                ? 'taobao_cuan_dan' : 'normal',
             isPinned: existingTask ? !!existingTask.isPinned : false,
             isPaused: existingTask ? !!existingTask.isPaused : false,
             history: existingTask && Array.isArray(existingTask.history) ? [...existingTask.history] : [],
@@ -7472,6 +7561,7 @@ function bindGlobalEvent() {
 window.onload = async function() {
     initThemeUI();
     initWidgetStates();
+    bindTaskTemplateUI();
     await loadSyncPasswordInputConfig();
     bindGlobalEvent();
     try {
