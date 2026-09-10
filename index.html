@@ -5200,6 +5200,9 @@ function renderTaskCard(item, isTodayPage = false) {
         extraTagsHtml += `<span class="tag tag-danger">已断签</span>`;
         barColor = "var(--danger)";
     }
+    // 进度展示仍需要（改到期标签时勿删）
+    const totalD = Number(item.totalDay) || 1;
+    const completedD = getCompletedDaysCount(item);
     if (!isPaused && status === "doing") {
         const expiry = getTaskExpiryInfo(item);
         if (expiry && (expiry.kind === 'today' || expiry.kind === 'tomorrow' || expiry.kind === 'day_after' || expiry.left <= 3)) {
