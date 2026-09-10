@@ -2047,6 +2047,46 @@ html[data-theme="dark"] .sync-log-result.fail{
 .today-detail-btn:active{opacity:.75}
 .today-detail-btn .ui-icon{width:18px;height:18px}
 html[data-theme="dark"] .today-detail-btn{background:rgba(255,255,255,.08)}
+.today-expiry-banner{
+    margin:0 16px 12px;
+    padding:12px 14px;
+    border-radius:14px;
+    background:linear-gradient(180deg, rgba(250,173,20,.12), rgba(250,173,20,.04));
+    border:1px solid rgba(250,173,20,.35);
+    color:var(--text-main);
+    font-size:13px;
+    line-height:1.55;
+}
+.today-expiry-banner-title{
+    display:flex;align-items:center;gap:6px;
+    font-weight:600;color:#d48806;margin-bottom:6px;
+}
+.today-expiry-banner-title .ui-icon{width:16px;height:16px;color:#d48806}
+.today-expiry-banner-list{display:flex;flex-direction:column;gap:4px}
+.today-expiry-item{
+    display:flex;align-items:flex-start;gap:8px;
+    padding:4px 0;
+}
+.today-expiry-item-name{
+    flex:1;min-width:0;color:var(--primary);font-weight:500;
+    cursor:pointer;text-align:left;background:none;border:none;padding:0;
+    font-size:13px;line-height:1.4;font-family:inherit;
+}
+.today-expiry-item-name:active{opacity:.75}
+.today-expiry-item-tag{
+    flex-shrink:0;font-size:11px;padding:2px 8px;border-radius:999px;
+    background:rgba(250,173,20,.18);color:#d48806;white-space:nowrap;
+}
+.today-expiry-item-tag.is-today{
+    background:rgba(245,34,45,.12);color:var(--danger);
+}
+html[data-theme="dark"] .today-expiry-banner{
+    background:linear-gradient(180deg, rgba(250,173,20,.16), rgba(250,173,20,.05));
+    border-color:rgba(250,173,20,.4);
+}
+html[data-theme="dark"] .today-expiry-banner-title{color:#f5a623}
+html[data-theme="dark"] .today-expiry-item-tag{background:rgba(250,173,20,.22);color:#f5a623}
+html[data-theme="dark"] .today-expiry-item-tag.is-today{background:rgba(245,34,45,.2);color:#ff7875}
 .task-template-hint{margin-top:8px;padding:10px 12px;border-radius:10px;background:rgba(22,119,255,.08);color:var(--text-sub);font-size:12px;line-height:1.55;display:none}
 .task-template-hint.show{display:block}
 html[data-theme="dark"] .task-template-hint{background:rgba(22,119,255,.15)}
@@ -2181,6 +2221,7 @@ html.body-scroll-locked .batch-bar {
             <span class="tip-text today-glance" id="todayGlanceText">今日 <b>0</b>/<b>0</b> 已完成 · 剩余 <b id="todayCount">0</b> 项</span>
             <button type="button" class="today-detail-btn" id="todayDetailBtn" title="今日打卡明细" aria-label="今日打卡明细"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 3.4V7M16 3.4V7M3.5 10h17" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
         </div>
+        <div class="today-expiry-banner" id="todayExpiryBanner" style="display:none" aria-live="polite"></div>
         <div class="today-progress-card">
             <div class="today-progress-title">
                 <span><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 19V5M4 19h16" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 16v-5M12 16V8M16 16v-3" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 今日完成进度</span>
@@ -5163,7 +5204,13 @@ function renderTaskCard(item, isTodayPage = false) {
     const completedD = getCompletedDaysCount(item);
     const leftDays = totalD - completedD;
     if (!isPaused && status === "doing" && leftDays <= 3 && leftDays > 0) {
-        extraTagsHtml += `<span class="tag tag-warning">即将到期(${leftDays}天)</span>`;
+        if (leftDays === 1) {
+            extraTagsHtml += `<span class="tag tag-warning">今日最后一天</span>`;
+        } else if (leftDays === 2) {
+            extraTagsHtml += `<span class="tag tag-warning">明天最后一天</span>`;
+        } else {
+            extraTagsHtml += `<span class="tag tag-warning">即将到期(${leftDays}天)</span>`;
+        }
     }
 
     // 1. 打卡/补卡：仅今日页、进行中且未挂起
@@ -5561,6 +5608,78 @@ function renderCalendar() {
 
 
 
+
+function getTaskLeftDays(item) {
+    if (!item) return null;
+    const totalD = Number(item.totalDay) || 1;
+    const completedD = getCompletedDaysCount(item);
+    return totalD - completedD;
+}
+
+/** 今日页：仅汇总「今天/明天」到期的进行中任务；没有则隐藏 */
+function renderTodayExpiryBanner() {
+    const box = document.getElementById('todayExpiryBanner');
+    if (!box) return;
+    const list = (Array.isArray(taskList) ? taskList : []).filter(t => {
+        if (!t || t.isPaused) return false;
+        if (getTaskStatus(t) !== 'doing') return false;
+        const left = getTaskLeftDays(t);
+        return left === 1 || left === 2;
+    });
+    // 今天到期优先，再明天；同组按名称
+    list.sort((a, b) => {
+        const la = getTaskLeftDays(a);
+        const lb = getTaskLeftDays(b);
+        if (la !== lb) return la - lb;
+        return String(getTaskNameText(a) || '').localeCompare(String(getTaskNameText(b) || ''), 'zh-CN');
+    });
+    if (!list.length) {
+        box.style.display = 'none';
+        box.innerHTML = '';
+        return;
+    }
+    const icon = `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 8v5l3 2" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="8.2" stroke="currentColor" stroke-width="1.75"/></svg>`;
+    const itemsHtml = list.map(t => {
+        const left = getTaskLeftDays(t);
+        const isToday = left === 1;
+        const tag = isToday ? '今日最后一天' : '明天最后一天';
+        const name = escapeHTML(getTaskNameText(t) || '未命名任务');
+        const id = t.id != null ? String(t.id) : '';
+        return `<div class="today-expiry-item">
+            <button type="button" class="today-expiry-item-name" data-expiry-jump="${escapeHTML(id)}">${name}</button>
+            <span class="today-expiry-item-tag${isToday ? ' is-today' : ''}">${tag}</span>
+        </div>`;
+    }).join('');
+    box.innerHTML = `<div class="today-expiry-banner-title">${icon} 即将结束 · ${list.length} 项</div><div class="today-expiry-banner-list">${itemsHtml}</div>`;
+    box.style.display = 'block';
+    box.querySelectorAll('[data-expiry-jump]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const id = String(btn.getAttribute('data-expiry-jump') || '').trim();
+            if (!id) return;
+            const matchId = (el) => String(el.getAttribute('data-id') || '') === id;
+            let card = Array.from(document.querySelectorAll('#todayListWrap .task-card')).find(matchId)
+                || Array.from(document.querySelectorAll('.task-card')).find(matchId);
+            if (card) {
+                // 分类折叠时先展开
+                try {
+                    const details = card.closest('details');
+                    if (details) details.open = true;
+                } catch (err) {}
+                try { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (err) { card.scrollIntoView(); }
+                card.classList.add('card-just-checked');
+                setTimeout(() => { try { card.classList.remove('card-just-checked'); } catch (err) {} }, 900);
+                return;
+            }
+            if (typeof jumpToTaskFromCalendar === 'function') {
+                jumpToTaskFromCalendar(id);
+            } else {
+                showToast('未找到对应任务');
+            }
+        });
+    });
+}
 
 function jumpToTaskFromCalendar(taskId) {
     const raw = String(taskId == null ? '' : taskId).trim();
@@ -6091,6 +6210,7 @@ function renderPage() {
         el.todayEmpty.style.display = "none";
     }
     el.todayListWrap.innerHTML = todayCategoryHtml;
+    try { renderTodayExpiryBanner(); } catch (e) { console.error('到期汇总渲染失败', e); }
 
     el.todayListWrap.querySelectorAll('.category-group-card').forEach(detail => {
         detail.addEventListener('toggle', () => {
