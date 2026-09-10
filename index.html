@@ -5200,16 +5200,10 @@ function renderTaskCard(item, isTodayPage = false) {
         extraTagsHtml += `<span class="tag tag-danger">已断签</span>`;
         barColor = "var(--danger)";
     }
-    const totalD = Number(item.totalDay) || 1;
-    const completedD = getCompletedDaysCount(item);
-    const leftDays = totalD - completedD;
-    if (!isPaused && status === "doing" && leftDays <= 3 && leftDays > 0) {
-        if (leftDays === 1) {
-            extraTagsHtml += `<span class="tag tag-warning">今日最后一天</span>`;
-        } else if (leftDays === 2) {
-            extraTagsHtml += `<span class="tag tag-warning">明天最后一天</span>`;
-        } else {
-            extraTagsHtml += `<span class="tag tag-warning">即将到期(${leftDays}天)</span>`;
+    if (!isPaused && status === "doing") {
+        const expiry = getTaskExpiryInfo(item);
+        if (expiry && (expiry.kind === 'today' || expiry.kind === 'tomorrow' || expiry.kind === 'day_after' || expiry.left <= 3)) {
+            extraTagsHtml += `<span class="tag tag-warning">${escapeHTML(expiry.label)}</span>`;
         }
     }
 
@@ -5616,21 +5610,48 @@ function getTaskLeftDays(item) {
     return totalD - completedD;
 }
 
-/** 今日页：仅汇总「今天/明天」到期的进行中任务；没有则隐藏 */
+/**
+ * 结合「今天是否已打满」换算日历含义：
+ * left = 还需要几个打卡日
+ * 今天未打满：最后一个打卡日偏移 = left-1（0今天 / 1明天 / 2后天）
+ * 今天已打满：最后一个打卡日偏移 = left  （1明天 / 2后天）
+ */
+function getTaskExpiryInfo(item) {
+    if (!item) return null;
+    const left = getTaskLeftDays(item);
+    if (left == null || left <= 0) return null;
+    const tPerDay = Number(item.timesPerDay) || 1;
+    const todayDone = getTodayCheckCount(item) >= tPerDay;
+    const lastOffset = todayDone ? left : (left - 1);
+    if (lastOffset < 0) return null;
+    if (lastOffset === 0) {
+        return { left, todayDone, lastOffset, kind: 'today', label: '今日最后一天' };
+    }
+    if (lastOffset === 1) {
+        return { left, todayDone, lastOffset, kind: 'tomorrow', label: '明天最后一天' };
+    }
+    if (lastOffset === 2) {
+        return { left, todayDone, lastOffset, kind: 'day_after', label: '后天最后一天' };
+    }
+    return { left, todayDone, lastOffset, kind: 'later', label: `即将到期(${left}天)` };
+}
+
+/** 今日页：仅汇总「今天/明天」到期；没有则隐藏 */
 function renderTodayExpiryBanner() {
     const box = document.getElementById('todayExpiryBanner');
     if (!box) return;
     const list = (Array.isArray(taskList) ? taskList : []).filter(t => {
         if (!t || t.isPaused) return false;
         if (getTaskStatus(t) !== 'doing') return false;
-        const left = getTaskLeftDays(t);
-        return left === 1 || left === 2;
+        const info = getTaskExpiryInfo(t);
+        return info && (info.kind === 'today' || info.kind === 'tomorrow');
     });
-    // 今天到期优先，再明天；同组按名称
     list.sort((a, b) => {
-        const la = getTaskLeftDays(a);
-        const lb = getTaskLeftDays(b);
-        if (la !== lb) return la - lb;
+        const ia = getTaskExpiryInfo(a);
+        const ib = getTaskExpiryInfo(b);
+        const oa = ia ? ia.lastOffset : 99;
+        const ob = ib ? ib.lastOffset : 99;
+        if (oa !== ob) return oa - ob;
         return String(getTaskNameText(a) || '').localeCompare(String(getTaskNameText(b) || ''), 'zh-CN');
     });
     if (!list.length) {
@@ -5640,14 +5661,14 @@ function renderTodayExpiryBanner() {
     }
     const icon = `<svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 8v5l3 2" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="8.2" stroke="currentColor" stroke-width="1.75"/></svg>`;
     const itemsHtml = list.map(t => {
-        const left = getTaskLeftDays(t);
-        const isToday = left === 1;
-        const tag = isToday ? '今日最后一天' : '明天最后一天';
+        const info = getTaskExpiryInfo(t);
+        const isToday = info && info.kind === 'today';
+        const tag = (info && info.label) || '';
         const name = escapeHTML(getTaskNameText(t) || '未命名任务');
         const id = t.id != null ? String(t.id) : '';
         return `<div class="today-expiry-item">
             <button type="button" class="today-expiry-item-name" data-expiry-jump="${escapeHTML(id)}">${name}</button>
-            <span class="today-expiry-item-tag${isToday ? ' is-today' : ''}">${tag}</span>
+            <span class="today-expiry-item-tag${isToday ? ' is-today' : ''}">${escapeHTML(tag)}</span>
         </div>`;
     }).join('');
     box.innerHTML = `<div class="today-expiry-banner-title">${icon} 即将结束 · ${list.length} 项</div><div class="today-expiry-banner-list">${itemsHtml}</div>`;
