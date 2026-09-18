@@ -147,7 +147,7 @@ html[data-theme="dark"] .contact-btn:hover{ color:var(--text-main); background:r
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 8px;
 }
 .announcement-prefix {
     white-space: nowrap;
@@ -156,36 +156,10 @@ html[data-theme="dark"] .contact-btn:hover{ color:var(--text-main); background:r
     font-size: 13px;
     letter-spacing: .2px;
 }
-.announcement-text {
-    width: 100%;
-    line-height: 1.55;
-    outline: none;
-    padding: 10px 12px;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-    color: var(--text-main);
-    min-height: 44px;
-    max-height: 42vh;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    background: var(--bg-color);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    box-sizing: border-box;
-}
-.announcement-text[contenteditable="true"] {
-    background: var(--card-bg);
-    border: 1px dashed var(--primary);
-    box-shadow: inset 0 0 0 1px rgba(25,137,250,.12);
-}
-.announcement-text img,
-.announcement-text table {
-    max-width: 100% !important;
-}
 .edit-btn {
     background: none;
     border: 1px solid var(--border-color);
-    padding: 4px 12px;
+    padding: 3px 10px;
     font-size: 12px;
     cursor: pointer;
     border-radius: 999px;
@@ -195,20 +169,22 @@ html[data-theme="dark"] .contact-btn:hover{ color:var(--text-main); background:r
 }
 .edit-btn:hover { background: var(--border-color); }
 
+/* 链接单独一行，不再和标题/编辑挤在同一行 */
 .announce-quick-links{
     display:none;
-    flex:1;
+    width:100%;
     flex-wrap:wrap;
     gap:6px;
     align-items:center;
-    justify-content:flex-end;
+    justify-content:flex-start;
     min-width:0;
+    box-sizing:border-box;
 }
 .announce-quick-link{
     display:inline-flex;
     align-items:center;
-    max-width:38vw;
-    padding:3px 10px;
+    max-width:100%;
+    padding:4px 10px;
     border-radius:999px;
     border:1px solid var(--border-color);
     background:var(--bg-color);
@@ -736,12 +712,6 @@ button:active, .tool-btn:active, .sync-btn-left:active, .tab-item:active, .filte
 }
 .announcement-prefix {
     color: var(--primary);
-}
-.announcement-text {
-    background: linear-gradient(180deg, rgba(25,137,250,.03), transparent 70%), var(--bg-color);
-}
-html[data-theme="dark"] .announcement-text {
-    background: rgba(255,255,255,.03);
 }
 .search-wrap {
     padding: 10px 12px 0;
@@ -2309,19 +2279,23 @@ html.body-scroll-locked .batch-bar {
     </div>
     <div class="announcement-bar" id="announcementBar">
         <div class="announcement-head">
-            <span class="announcement-prefix"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 10.5v3a2 2 0 0 0 2 2H8l5 3.5V5L8 8.5H6.5a2 2 0 0 0-2 2Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M16.5 9.2a3.2 3.2 0 0 1 0 5.6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 公告</span>
-            <div class="announce-quick-links" id="announceQuickLinks" aria-label="快捷入口"></div>
+            <span class="announcement-prefix"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l1.41-1.41a5 5 0 0 0-7.07-7.07L10 5.93" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 11a5 5 0 0 0-7.07 0L5.52 12.4a5 5 0 0 0 7.07 7.07L14 18.07" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 快捷入口</span>
             <button type="button" id="editAnnounceBtn" class="edit-btn" onclick="toggleAnnouncementEdit()"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.2 6.3 17.7 10.8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 16.8 4.2 20.2 7.6 19.4 18.8 8.2a2.4 2.4 0 0 0-3.4-3.4Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 编辑</button>
         </div>
-        <div id="announcementContent" class="announcement-text" contenteditable="false"></div>
-
+        <div class="announce-quick-links" id="announceQuickLinks" aria-label="快捷入口"></div>
         <div class="announce-shortcuts-edit" id="announceShortcutsEdit">
-            <div class="ase-title">快捷入口（最多 4 个，只填链接才显示；随公告一起同步）</div>
+            <div class="ase-title">快捷入口（最多 10 个，只填链接才显示；多端同步）</div>
             <div class="announce-shortcut-row"><input id="asTitle0" maxlength="12" placeholder="名称" autocomplete="off"><input id="asUrl0" placeholder="https:// 链接" autocomplete="off"></div>
             <div class="announce-shortcut-row"><input id="asTitle1" maxlength="12" placeholder="名称" autocomplete="off"><input id="asUrl1" placeholder="https:// 链接" autocomplete="off"></div>
             <div class="announce-shortcut-row"><input id="asTitle2" maxlength="12" placeholder="名称" autocomplete="off"><input id="asUrl2" placeholder="https:// 链接" autocomplete="off"></div>
             <div class="announce-shortcut-row"><input id="asTitle3" maxlength="12" placeholder="名称" autocomplete="off"><input id="asUrl3" placeholder="https:// 链接" autocomplete="off"></div>
-            <div class="ase-tip">例如名称「奖品面板」，链接填 Worker 的 /panel 地址。留空不显示。</div>
+            <div class="announce-shortcut-row"><input id="asTitle4" maxlength="12" placeholder="名称" autocomplete="off"><input id="asUrl4" placeholder="https:// 链接" autocomplete="off"></div>
+            <div class="announce-shortcut-row"><input id="asTitle5" maxlength="12" placeholder="名称" autocomplete="off"><input id="asUrl5" placeholder="https:// 链接" autocomplete="off"></div>
+            <div class="announce-shortcut-row"><input id="asTitle6" maxlength="12" placeholder="名称" autocomplete="off"><input id="asUrl6" placeholder="https:// 链接" autocomplete="off"></div>
+            <div class="announce-shortcut-row"><input id="asTitle7" maxlength="12" placeholder="名称" autocomplete="off"><input id="asUrl7" placeholder="https:// 链接" autocomplete="off"></div>
+            <div class="announce-shortcut-row"><input id="asTitle8" maxlength="12" placeholder="名称" autocomplete="off"><input id="asUrl8" placeholder="https:// 链接" autocomplete="off"></div>
+            <div class="announce-shortcut-row"><input id="asTitle9" maxlength="12" placeholder="名称" autocomplete="off"><input id="asUrl9" placeholder="https:// 链接" autocomplete="off"></div>
+            <div class="ase-tip">名称可空（空则显示「链接」）；链接支持 http/https。例如「奖品面板」填 Worker 的 /panel 地址。留空不显示。</div>
         </div>
     </div>
     <!-- 1. 今日打卡视图 -->
@@ -2745,10 +2719,6 @@ function taskMatchesQuery(item, query) {
         || safeLowerText(getTaskCategoryText(item)).includes(query);
 }
 
-function normalizeAnnouncementHTML(value) {
-    return typeof value === 'string' ? value : '';
-}
-
 function normalizeWebLink(raw) {
     let s = safeText(raw).trim();
     if (!s) return '';
@@ -3090,21 +3060,18 @@ function saveAnnouncementMeta(ts = announcementUpdatedAt) {
     } catch (e) {}
 }
 
-function setLocalAnnouncement(html, updatedAt, { persist = true, shortcuts } = {}) {
-    const announcement = normalizeAnnouncementHTML(html);
-    const contentDiv = document.getElementById('announcementContent');
-    if (contentDiv) contentDiv.innerHTML = announcement;
+function setLocalAnnouncement(_html, updatedAt, { persist = true, shortcuts } = {}) {
+    // 已取消公告正文: 只同步/保存快捷入口; _html 仅兼容旧云端字段
     if (shortcuts !== undefined) {
         announcementShortcuts = normalizeAnnouncementShortcuts(shortcuts);
     } else {
         ensureAnnouncementShortcuts();
     }
     if (persist) {
-        try { localStorage.setItem('persistent_announcement_v3', announcement); } catch (e) {}
         saveAnnouncementMeta(updatedAt != null ? updatedAt : Date.now());
     }
     try { renderAnnouncementShortcuts(); } catch (e) {}
-    return announcement;
+    return '';
 }
 
 const KEY = "daka_offline_data";
@@ -3134,8 +3101,9 @@ const KEY_TASK_DELETIONS = 'daka_task_deletions';
 const KEY_HISTORY_DELETIONS = 'daka_history_deletions';
 const KEY_DEVICE_DELETIONS = 'daka_device_deletions';
 const KEY_ANNOUNCEMENT_META = 'persistent_announcement_meta_v3';
-const ANNOUNCE_SHORTCUT_SLOTS = 4;
+const ANNOUNCE_SHORTCUT_SLOTS = 10;
 let announcementShortcuts = null;
+let isEditingShortcuts = false;
 
 const HISTORY_DELETION_KEEP_MS = 90 * 24 * 60 * 60 * 1000;
 const SYNC_REQUEST_TIMEOUT_MS = 12000;
@@ -3306,13 +3274,13 @@ function updateSyncStatus(status, text) {
 }
 
 function buildRemotePayload() {
-    const announcement = normalizeAnnouncementHTML(document.getElementById('announcementContent').innerHTML);
+    // announcement 正文已停用, 固定空串, 保持字段兼容
     const syncLogForUpload = syncLog.filter(item => !item.localOnly);
     touchCurrentDeviceRegistry();
     pruneStaleDevices(Date.now(), { keepCurrent: true, persist: false });
     return {
         tasks: taskList,
-        announcement,
+        announcement: '',
         announcementMeta: {
             updatedAt: announcementUpdatedAt || 0,
             deviceId: deviceId || '',
@@ -3731,21 +3699,9 @@ function toggleTheme() {
     }
 }
 
-function initAnnouncement(defaultText) {
-    const contentDiv = document.getElementById('announcementContent');
-    const safeDefaultText = normalizeAnnouncementHTML(defaultText);
-    if (safeDefaultText && safeDefaultText.trim() !== '') {
-        contentDiv.innerHTML = safeDefaultText;
-    } else {
-        const savedAnnounce = normalizeAnnouncementHTML(localStorage.getItem('persistent_announcement_v3'));
-        if (savedAnnounce !== '' && savedAnnounce.trim() !== '') {
-            contentDiv.innerHTML = savedAnnounce;
-        } else {
-            contentDiv.innerHTML = '';
-        }
-    }
-
+function initAnnouncement() {
     try {
+        loadAnnouncementMeta();
         ensureAnnouncementShortcuts();
         renderAnnouncementShortcuts();
         fillAnnouncementShortcutInputs();
@@ -3753,14 +3709,11 @@ function initAnnouncement(defaultText) {
 }
 
 function toggleAnnouncementEdit() {
-    const contentDiv = document.getElementById('announcementContent');
     const btn = document.getElementById('editAnnounceBtn');
     const scEdit = document.getElementById('announceShortcutsEdit');
-    if (!contentDiv || !btn) return;
-    const isEditing = contentDiv.getAttribute('contenteditable') === 'true';
-    if (!isEditing) {
-        contentDiv.setAttribute('contenteditable', 'true');
-        contentDiv.focus();
+    if (!btn) return;
+    if (!isEditingShortcuts) {
+        isEditingShortcuts = true;
         btn.innerHTML = '保存';
         btn.style.background = 'var(--primary)';
         btn.style.color = '#fff';
@@ -3768,21 +3721,17 @@ function toggleAnnouncementEdit() {
         fillAnnouncementShortcutInputs();
         if (scEdit) scEdit.classList.add('show');
     } else {
-        contentDiv.setAttribute('contenteditable', 'false');
+        isEditingShortcuts = false;
         btn.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.2 6.3 17.7 10.8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 16.8 4.2 20.2 7.6 19.4 18.8 8.2a2.4 2.4 0 0 0-3.4-3.4Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 编辑';
         btn.style.background = '';
         btn.style.color = '';
         btn.style.borderColor = '';
         if (scEdit) scEdit.classList.remove('show');
 
-        if (contentDiv.innerText.includes('<') && contentDiv.innerText.includes('>')) {
-            contentDiv.innerHTML = contentDiv.innerText;
-        }
-
         announcementShortcuts = readAnnouncementShortcutInputs();
-        setLocalAnnouncement(contentDiv.innerHTML, Date.now(), { shortcuts: announcementShortcuts });
+        setLocalAnnouncement('', Date.now(), { shortcuts: announcementShortcuts });
         saveStorage();
-        showToast('公告与快捷入口已保存');
+        showToast('快捷入口已保存');
     }
 }
 
@@ -4881,8 +4830,7 @@ async function loadStorage() {
     try {
     loadLocalStorage();
     loadSyncRecoveryPoint();
-    const localAnnounce = localStorage.getItem('persistent_announcement_v3');
-    initAnnouncement(localAnnounce);
+    initAnnouncement();
     syncCurrentDeviceForm();
     renderDeviceList();
 
@@ -6213,21 +6161,23 @@ function renderPage() {
     if (!Array.isArray(taskList)) taskList = [];
     el.pageToday.style.display = currentPage === "today" ? "block" : "none";
     el.pageAll.style.display = currentPage === "all" ? "block" : "none";
-    // 公告+快捷入口仅今日页展示（数据仍多端同步，全部页不重复占位）
+    // 快捷入口仅今日页展示（数据仍多端同步，全部页不重复占位）
     const announcementBar = document.getElementById('announcementBar');
     if (announcementBar) {
         announcementBar.style.display = currentPage === 'today' ? '' : 'none';
     }
-    // 切到全部页时若正在编辑公告，退出编辑，避免隐藏后仍 contenteditable
-    if (currentPage !== 'today') {
-        const contentDiv = document.getElementById('announcementContent');
+    // 切到全部页时若正在编辑快捷入口，退出编辑
+    if (currentPage !== 'today' && isEditingShortcuts) {
         const editBtn = document.getElementById('editAnnounceBtn');
         const shortcutsEdit = document.getElementById('announceShortcutsEdit');
-        if (contentDiv && contentDiv.getAttribute('contenteditable') === 'true') {
-            contentDiv.setAttribute('contenteditable', 'false');
-            if (editBtn) editBtn.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.2 6.3 17.7 10.8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 16.8 4.2 20.2 7.6 19.4 18.8 8.2a2.4 2.4 0 0 0-3.4-3.4Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 编辑';
-            if (shortcutsEdit) shortcutsEdit.classList.remove('show');
+        isEditingShortcuts = false;
+        if (editBtn) {
+            editBtn.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.2 6.3 17.7 10.8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 16.8 4.2 20.2 7.6 19.4 18.8 8.2a2.4 2.4 0 0 0-3.4-3.4Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 编辑';
+            editBtn.style.background = '';
+            editBtn.style.color = '';
+            editBtn.style.borderColor = '';
         }
+        if (shortcutsEdit) shortcutsEdit.classList.remove('show');
     }
     try { updateBackToTopBtn(); } catch (e) {}
     
@@ -7381,7 +7331,6 @@ function bindOverlayTouchGuard() {
         '.calendar-detail-list',
         '.confirm-inner',
         '.backup-manage-scroll',
-        '.announcement-text',
         '#syncRiskDetailWrap',
         '.sync-log-detail'
     ].join(', ');
