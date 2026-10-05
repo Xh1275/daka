@@ -147,7 +147,7 @@ html[data-theme="dark"] .contact-btn:hover{ color:var(--text-main); background:r
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 10px;
 }
 .announcement-prefix {
     white-space: nowrap;
@@ -156,10 +156,36 @@ html[data-theme="dark"] .contact-btn:hover{ color:var(--text-main); background:r
     font-size: 13px;
     letter-spacing: .2px;
 }
+.announcement-text {
+    width: 100%;
+    line-height: 1.55;
+    outline: none;
+    padding: 10px 12px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    color: var(--text-main);
+    min-height: 44px;
+    max-height: 42vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-sizing: border-box;
+}
+.announcement-text[contenteditable="true"] {
+    background: var(--card-bg);
+    border: 1px dashed var(--primary);
+    box-shadow: inset 0 0 0 1px rgba(25,137,250,.12);
+}
+.announcement-text img,
+.announcement-text table {
+    max-width: 100% !important;
+}
 .edit-btn {
     background: none;
     border: 1px solid var(--border-color);
-    padding: 3px 10px;
+    padding: 4px 12px;
     font-size: 12px;
     cursor: pointer;
     border-radius: 999px;
@@ -169,22 +195,20 @@ html[data-theme="dark"] .contact-btn:hover{ color:var(--text-main); background:r
 }
 .edit-btn:hover { background: var(--border-color); }
 
-/* 链接单独一行，不再和标题/编辑挤在同一行 */
 .announce-quick-links{
     display:none;
-    width:100%;
+    flex:1;
     flex-wrap:wrap;
     gap:6px;
     align-items:center;
-    justify-content:flex-start;
+    justify-content:flex-end;
     min-width:0;
-    box-sizing:border-box;
 }
 .announce-quick-link{
     display:inline-flex;
     align-items:center;
-    max-width:100%;
-    padding:4px 10px;
+    max-width:38vw;
+    padding:3px 10px;
     border-radius:999px;
     border:1px solid var(--border-color);
     background:var(--bg-color);
@@ -712,6 +736,12 @@ button:active, .tool-btn:active, .sync-btn-left:active, .tab-item:active, .filte
 }
 .announcement-prefix {
     color: var(--primary);
+}
+.announcement-text {
+    background: linear-gradient(180deg, rgba(25,137,250,.03), transparent 70%), var(--bg-color);
+}
+html[data-theme="dark"] .announcement-text {
+    background: rgba(255,255,255,.03);
 }
 .search-wrap {
     padding: 10px 12px 0;
@@ -2098,84 +2128,6 @@ html[data-theme="dark"] .back-to-top-btn{
 }
 </style>
 
-<style id="ad-splash-style">
-.ad-splash{
-    position:fixed;inset:0;z-index:99999;
-    display:flex;align-items:center;justify-content:center;
-    padding:20px 16px;
-    /* 与编辑任务 .mask 一致：半透明黑 + 轻毛玻璃 */
-    background:rgba(0,0,0,0.5);
-    backdrop-filter:blur(5px);
-    -webkit-backdrop-filter:blur(5px);
-    color:#fff;
-    box-sizing:border-box;
-}
-.ad-splash.is-hidden{display:none !important;pointer-events:none}
-.ad-splash-panel{
-    width:min(400px,100%);
-    border-radius:18px;
-    background:rgba(20,24,32,.82);
-    border:1px solid rgba(255,255,255,.16);
-    box-shadow:0 16px 40px rgba(0,0,0,.4);
-    backdrop-filter:blur(12px);
-    -webkit-backdrop-filter:blur(12px);
-    padding:14px 12px 12px;
-    text-align:center;
-    user-select:none;
-    -webkit-user-select:none;
-    max-height:min(92vh,720px);
-    overflow:auto;
-    -webkit-overflow-scrolling:touch;
-}
-.ad-splash-badge{
-    display:inline-block;
-    font-size:11px;
-    padding:2px 8px;
-    border-radius:999px;
-    background:rgba(250,173,20,.2);
-    color:#ffd666;
-    margin-bottom:6px;
-}
-.ad-splash-title{
-    font-size:16px;font-weight:700;line-height:1.3;margin:0 0 4px;
-}
-.ad-splash-desc{
-    font-size:11px;line-height:1.45;color:rgba(255,255,255,.68);margin:0 0 10px;
-}
-.ad-splash-list{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
-.ad-splash-item{
-    display:flex;align-items:center;gap:10px;
-    text-decoration:none;color:inherit;
-    border-radius:12px;overflow:hidden;
-    background:rgba(0,0,0,.22);
-    border:1px solid rgba(255,255,255,.12);
-    text-align:left;
-    padding:6px;
-}
-.ad-splash-item:active{opacity:.92}
-.ad-splash-item img{
-    display:block;flex:0 0 auto;
-    width:96px;height:54px;
-    border-radius:8px;
-    object-fit:cover;background:#222;
-}
-.ad-splash-item-meta{
-    flex:1;min-width:0;padding:2px 4px 2px 0;
-}
-.ad-splash-item-name{
-    font-size:13px;font-weight:600;line-height:1.3;margin:0 0 2px;color:#fff;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.ad-splash-item-sub{
-    font-size:11px;color:rgba(255,255,255,.58);margin:0;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.ad-splash-tip{
-    font-size:11px;color:rgba(255,255,255,.55);min-height:16px;
-}
-html[data-theme="dark"] .ad-splash{background:rgba(0,0,0,0.5)}
-</style>
-
 
 <style id="overlay-scroll-lock">
 /* 弹层打开时锁住底层滚动；弹层内部仍可滚 */
@@ -2221,52 +2173,11 @@ html.body-scroll-locked .batch-bar {
 
 </head>
 <body>
-<div id="adSplash" class="ad-splash is-hidden" aria-modal="true" role="dialog" aria-label="推广页">
-    <div class="ad-splash-panel" id="adSplashPanel">
-        <div class="ad-splash-badge">推广 · 今日一次</div>
-        <div class="ad-splash-title">今日福利推荐</div>
-        <p class="ad-splash-desc">点击下方卡片可打开活动页，5 秒后自动进入打卡主站</p>
-        <div class="ad-splash-list">
-            <a class="ad-splash-item" href="https://m.tb.cn/h.8F2u9zG" target="_blank" rel="noopener noreferrer">
-                <img src="https://gw.alicdn.com/imgextra/i3/O1CN01QSc4Ws27AJ2W0IvbV_!!6000000007756-0-tps-800-450.jpg" alt="超级金币" loading="eager" referrerpolicy="no-referrer">
-                <div class="ad-splash-item-meta">
-                    <p class="ad-splash-item-name">超级金币</p>
-                    <p class="ad-splash-item-sub">点击查看活动 · 超级金币</p>
-                </div>
-            </a>
-            <a class="ad-splash-item" href="https://m.tb.cn/h.8rYOVSZ" target="_blank" rel="noopener noreferrer">
-                <img src="https://img.alicdn.com/imgextra/i4/O1CN011Bj9Tj1zN6orO3xqx_!!6000000006701-2-tps-800-450.png" alt="淘宝福利购" loading="eager" referrerpolicy="no-referrer">
-                <div class="ad-splash-item-meta">
-                    <p class="ad-splash-item-name">淘宝福利购</p>
-                    <p class="ad-splash-item-sub">点击查看活动 · 福利购</p>
-                </div>
-            </a>
-            <a class="ad-splash-item" href="https://m.tb.cn/h.8IV0AA2" target="_blank" rel="noopener noreferrer">
-                <img src="https://gw.alicdn.com/imgextra/i3/O1CN01eWvgzu1CdgHFYG8rS_!!6000000000104-0-tps-800-450.jpg" alt="淘宝秒杀福利" loading="eager" referrerpolicy="no-referrer">
-                <div class="ad-splash-item-meta">
-                    <p class="ad-splash-item-name">淘宝秒杀福利攻略</p>
-                    <p class="ad-splash-item-sub">点击查看活动 · 淘宝秒杀</p>
-                </div>
-            </a>
-            <a class="ad-splash-item" href="https://m.tb.cn/h.8qBVVfI" target="_blank" rel="noopener noreferrer">
-                <img src="https://gw.alicdn.com/imgextra/i2/O1CN01k14PTa1oxKRwd6Po2_!!6000000005291-0-tps-750-430.jpg" alt="淘宝签到领福利" loading="eager" referrerpolicy="no-referrer">
-                <div class="ad-splash-item-meta">
-                    <p class="ad-splash-item-name">淘宝签到领福利</p>
-                    <p class="ad-splash-item-sub">点击查看活动 · 签到福利</p>
-                </div>
-            </a>
-        </div>
-        <div class="ad-splash-tip" id="adSplashTip">5 秒后进入主站…</div>
-    </div>
-</div>
 <div id="app">
     <div class="nav-bar">
         <div class="sync-btn-left" id="syncBtn" data-status="local"><svg class="ui-icon sync-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="sync-text">仅本地</span></div>
         <div class="nav-title"></div>
         <div class="top-tool">
-            <button type="button" class="tool-btn" id="adSplashOpenBtn" title="今日福利" aria-label="今日福利">
-                <svg class="ui-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true"><path d="M12 3v3M7.5 6.5 5.5 4.5M16.5 6.5 18.5 4.5M6 12h12M8.2 12c0 4.2 1.7 7.5 3.8 7.5s3.8-3.3 3.8-7.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 9.2c.8-.9 1.8-1.4 3-1.4s2.2.5 3 1.4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
             <a class="tool-btn github-btn" id="githubBtn" href="https://github.com/Xh1275/daka" target="_blank" rel="noopener noreferrer" title="GitHub 开源地址" aria-label="GitHub 开源地址">
                 <svg class="github-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
             </a>
@@ -2286,23 +2197,19 @@ html.body-scroll-locked .batch-bar {
     </div>
     <div class="announcement-bar" id="announcementBar">
         <div class="announcement-head">
-            <span class="announcement-prefix"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l1.41-1.41a5 5 0 0 0-7.07-7.07L10 5.93" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 11a5 5 0 0 0-7.07 0L5.52 12.4a5 5 0 0 0 7.07 7.07L14 18.07" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 快捷入口</span>
+            <span class="announcement-prefix"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4.5 10.5v3a2 2 0 0 0 2 2H8l5 3.5V5L8 8.5H6.5a2 2 0 0 0-2 2Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M16.5 9.2a3.2 3.2 0 0 1 0 5.6" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 公告</span>
+            <div class="announce-quick-links" id="announceQuickLinks" aria-label="快捷入口"></div>
             <button type="button" id="editAnnounceBtn" class="edit-btn" onclick="toggleAnnouncementEdit()"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.2 6.3 17.7 10.8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 16.8 4.2 20.2 7.6 19.4 18.8 8.2a2.4 2.4 0 0 0-3.4-3.4Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 编辑</button>
         </div>
-        <div class="announce-quick-links" id="announceQuickLinks" aria-label="快捷入口"></div>
+        <div id="announcementContent" class="announcement-text" contenteditable="false"></div>
+
         <div class="announce-shortcuts-edit" id="announceShortcutsEdit">
-            <div class="ase-title">快捷入口（最多 10 个，只填链接才显示；多端同步）</div>
+            <div class="ase-title">快捷入口（最多 4 个，只填链接才显示；随公告一起同步）</div>
             <div class="announce-shortcut-row"><input id="asTitle0" maxlength="12" placeholder="名称" autocomplete="off"><input id="asUrl0" placeholder="https:// 链接" autocomplete="off"></div>
             <div class="announce-shortcut-row"><input id="asTitle1" maxlength="12" placeholder="名称" autocomplete="off"><input id="asUrl1" placeholder="https:// 链接" autocomplete="off"></div>
             <div class="announce-shortcut-row"><input id="asTitle2" maxlength="12" placeholder="名称" autocomplete="off"><input id="asUrl2" placeholder="https:// 链接" autocomplete="off"></div>
             <div class="announce-shortcut-row"><input id="asTitle3" maxlength="12" placeholder="名称" autocomplete="off"><input id="asUrl3" placeholder="https:// 链接" autocomplete="off"></div>
-            <div class="announce-shortcut-row"><input id="asTitle4" maxlength="12" placeholder="名称" autocomplete="off"><input id="asUrl4" placeholder="https:// 链接" autocomplete="off"></div>
-            <div class="announce-shortcut-row"><input id="asTitle5" maxlength="12" placeholder="名称" autocomplete="off"><input id="asUrl5" placeholder="https:// 链接" autocomplete="off"></div>
-            <div class="announce-shortcut-row"><input id="asTitle6" maxlength="12" placeholder="名称" autocomplete="off"><input id="asUrl6" placeholder="https:// 链接" autocomplete="off"></div>
-            <div class="announce-shortcut-row"><input id="asTitle7" maxlength="12" placeholder="名称" autocomplete="off"><input id="asUrl7" placeholder="https:// 链接" autocomplete="off"></div>
-            <div class="announce-shortcut-row"><input id="asTitle8" maxlength="12" placeholder="名称" autocomplete="off"><input id="asUrl8" placeholder="https:// 链接" autocomplete="off"></div>
-            <div class="announce-shortcut-row"><input id="asTitle9" maxlength="12" placeholder="名称" autocomplete="off"><input id="asUrl9" placeholder="https:// 链接" autocomplete="off"></div>
-            <div class="ase-tip">名称可空（空则显示「链接」）；链接支持 http/https。例如「奖品面板」填 Worker 的 /panel 地址。留空不显示。</div>
+            <div class="ase-tip">例如名称「奖品面板」，链接填 Worker 的 /panel 地址。留空不显示。</div>
         </div>
     </div>
     <!-- 1. 今日打卡视图 -->
@@ -2726,6 +2633,10 @@ function taskMatchesQuery(item, query) {
         || safeLowerText(getTaskCategoryText(item)).includes(query);
 }
 
+function normalizeAnnouncementHTML(value) {
+    return typeof value === 'string' ? value : '';
+}
+
 function normalizeWebLink(raw) {
     let s = safeText(raw).trim();
     if (!s) return '';
@@ -3067,18 +2978,21 @@ function saveAnnouncementMeta(ts = announcementUpdatedAt) {
     } catch (e) {}
 }
 
-function setLocalAnnouncement(_html, updatedAt, { persist = true, shortcuts } = {}) {
-    // 已取消公告正文: 只同步/保存快捷入口; _html 仅兼容旧云端字段
+function setLocalAnnouncement(html, updatedAt, { persist = true, shortcuts } = {}) {
+    const announcement = normalizeAnnouncementHTML(html);
+    const contentDiv = document.getElementById('announcementContent');
+    if (contentDiv) contentDiv.innerHTML = announcement;
     if (shortcuts !== undefined) {
         announcementShortcuts = normalizeAnnouncementShortcuts(shortcuts);
     } else {
         ensureAnnouncementShortcuts();
     }
     if (persist) {
+        try { localStorage.setItem('persistent_announcement_v3', announcement); } catch (e) {}
         saveAnnouncementMeta(updatedAt != null ? updatedAt : Date.now());
     }
     try { renderAnnouncementShortcuts(); } catch (e) {}
-    return '';
+    return announcement;
 }
 
 const KEY = "daka_offline_data";
@@ -3108,9 +3022,8 @@ const KEY_TASK_DELETIONS = 'daka_task_deletions';
 const KEY_HISTORY_DELETIONS = 'daka_history_deletions';
 const KEY_DEVICE_DELETIONS = 'daka_device_deletions';
 const KEY_ANNOUNCEMENT_META = 'persistent_announcement_meta_v3';
-const ANNOUNCE_SHORTCUT_SLOTS = 10;
+const ANNOUNCE_SHORTCUT_SLOTS = 4;
 let announcementShortcuts = null;
-let isEditingShortcuts = false;
 
 const HISTORY_DELETION_KEEP_MS = 90 * 24 * 60 * 60 * 1000;
 const SYNC_REQUEST_TIMEOUT_MS = 12000;
@@ -3281,13 +3194,13 @@ function updateSyncStatus(status, text) {
 }
 
 function buildRemotePayload() {
-    // announcement 正文已停用, 固定空串, 保持字段兼容
+    const announcement = normalizeAnnouncementHTML(document.getElementById('announcementContent').innerHTML);
     const syncLogForUpload = syncLog.filter(item => !item.localOnly);
     touchCurrentDeviceRegistry();
     pruneStaleDevices(Date.now(), { keepCurrent: true, persist: false });
     return {
         tasks: taskList,
-        announcement: '',
+        announcement,
         announcementMeta: {
             updatedAt: announcementUpdatedAt || 0,
             deviceId: deviceId || '',
@@ -3706,9 +3619,21 @@ function toggleTheme() {
     }
 }
 
-function initAnnouncement() {
+function initAnnouncement(defaultText) {
+    const contentDiv = document.getElementById('announcementContent');
+    const safeDefaultText = normalizeAnnouncementHTML(defaultText);
+    if (safeDefaultText && safeDefaultText.trim() !== '') {
+        contentDiv.innerHTML = safeDefaultText;
+    } else {
+        const savedAnnounce = normalizeAnnouncementHTML(localStorage.getItem('persistent_announcement_v3'));
+        if (savedAnnounce !== '' && savedAnnounce.trim() !== '') {
+            contentDiv.innerHTML = savedAnnounce;
+        } else {
+            contentDiv.innerHTML = '';
+        }
+    }
+
     try {
-        loadAnnouncementMeta();
         ensureAnnouncementShortcuts();
         renderAnnouncementShortcuts();
         fillAnnouncementShortcutInputs();
@@ -3716,11 +3641,14 @@ function initAnnouncement() {
 }
 
 function toggleAnnouncementEdit() {
+    const contentDiv = document.getElementById('announcementContent');
     const btn = document.getElementById('editAnnounceBtn');
     const scEdit = document.getElementById('announceShortcutsEdit');
-    if (!btn) return;
-    if (!isEditingShortcuts) {
-        isEditingShortcuts = true;
+    if (!contentDiv || !btn) return;
+    const isEditing = contentDiv.getAttribute('contenteditable') === 'true';
+    if (!isEditing) {
+        contentDiv.setAttribute('contenteditable', 'true');
+        contentDiv.focus();
         btn.innerHTML = '保存';
         btn.style.background = 'var(--primary)';
         btn.style.color = '#fff';
@@ -3728,17 +3656,21 @@ function toggleAnnouncementEdit() {
         fillAnnouncementShortcutInputs();
         if (scEdit) scEdit.classList.add('show');
     } else {
-        isEditingShortcuts = false;
+        contentDiv.setAttribute('contenteditable', 'false');
         btn.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.2 6.3 17.7 10.8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 16.8 4.2 20.2 7.6 19.4 18.8 8.2a2.4 2.4 0 0 0-3.4-3.4Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 编辑';
         btn.style.background = '';
         btn.style.color = '';
         btn.style.borderColor = '';
         if (scEdit) scEdit.classList.remove('show');
 
+        if (contentDiv.innerText.includes('<') && contentDiv.innerText.includes('>')) {
+            contentDiv.innerHTML = contentDiv.innerText;
+        }
+
         announcementShortcuts = readAnnouncementShortcutInputs();
-        setLocalAnnouncement('', Date.now(), { shortcuts: announcementShortcuts });
+        setLocalAnnouncement(contentDiv.innerHTML, Date.now(), { shortcuts: announcementShortcuts });
         saveStorage();
-        showToast('快捷入口已保存');
+        showToast('公告与快捷入口已保存');
     }
 }
 
@@ -4837,7 +4769,8 @@ async function loadStorage() {
     try {
     loadLocalStorage();
     loadSyncRecoveryPoint();
-    initAnnouncement();
+    const localAnnounce = localStorage.getItem('persistent_announcement_v3');
+    initAnnouncement(localAnnounce);
     syncCurrentDeviceForm();
     renderDeviceList();
 
@@ -6168,23 +6101,21 @@ function renderPage() {
     if (!Array.isArray(taskList)) taskList = [];
     el.pageToday.style.display = currentPage === "today" ? "block" : "none";
     el.pageAll.style.display = currentPage === "all" ? "block" : "none";
-    // 快捷入口仅今日页展示（数据仍多端同步，全部页不重复占位）
+    // 公告+快捷入口仅今日页展示（数据仍多端同步，全部页不重复占位）
     const announcementBar = document.getElementById('announcementBar');
     if (announcementBar) {
         announcementBar.style.display = currentPage === 'today' ? '' : 'none';
     }
-    // 切到全部页时若正在编辑快捷入口，退出编辑
-    if (currentPage !== 'today' && isEditingShortcuts) {
+    // 切到全部页时若正在编辑公告，退出编辑，避免隐藏后仍 contenteditable
+    if (currentPage !== 'today') {
+        const contentDiv = document.getElementById('announcementContent');
         const editBtn = document.getElementById('editAnnounceBtn');
         const shortcutsEdit = document.getElementById('announceShortcutsEdit');
-        isEditingShortcuts = false;
-        if (editBtn) {
-            editBtn.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.2 6.3 17.7 10.8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 16.8 4.2 20.2 7.6 19.4 18.8 8.2a2.4 2.4 0 0 0-3.4-3.4Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 编辑';
-            editBtn.style.background = '';
-            editBtn.style.color = '';
-            editBtn.style.borderColor = '';
+        if (contentDiv && contentDiv.getAttribute('contenteditable') === 'true') {
+            contentDiv.setAttribute('contenteditable', 'false');
+            if (editBtn) editBtn.innerHTML = '<svg class="ui-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13.2 6.3 17.7 10.8" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 16.8 4.2 20.2 7.6 19.4 18.8 8.2a2.4 2.4 0 0 0-3.4-3.4Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg> 编辑';
+            if (shortcutsEdit) shortcutsEdit.classList.remove('show');
         }
-        if (shortcutsEdit) shortcutsEdit.classList.remove('show');
     }
     try { updateBackToTopBtn(); } catch (e) {}
     
@@ -7338,6 +7269,7 @@ function bindOverlayTouchGuard() {
         '.calendar-detail-list',
         '.confirm-inner',
         '.backup-manage-scroll',
+        '.announcement-text',
         '#syncRiskDetailWrap',
         '.sync-log-detail'
     ].join(', ');
@@ -7700,167 +7632,28 @@ function bindGlobalEvent() {
     });
 }
 
-const AD_SPLASH_SECONDS = 5;
-const AD_SPLASH_LAST_DATE_KEY = 'ad_splash_last_date';
-
-function getAdSplashTodayStr() {
+window.onload = async function() {
+    initThemeUI();
+    initWidgetStates();
+    bindTaskTemplateUI();
+    await loadSyncPasswordInputConfig();
+    bindGlobalEvent();
     try {
-        if (typeof getTodayStr === 'function') return getTodayStr();
-    } catch (e) {}
-    const d = new Date();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${d.getFullYear()}-${m}-${day}`;
-}
-
-function hasLocalSyncPassword() {
-    try {
-        const pwd = (localStorage.getItem(SYNC_PASSWORD_KEY) || '').trim();
-        return !!pwd;
+        await loadStorage();
     } catch (e) {
-        return false;
+        console.error('启动同步失败', e);
+        updateSyncStatus('error');
+        showToast(`${e && e.message ? e.message : '启动同步失败'}`, 'error');
     }
-}
-
-function hasShownAdSplashToday() {
+    // 已取消按月自动归档，onload 不再调用 archiveOldHistory
+    renderPage();
     try {
-        return localStorage.getItem(AD_SPLASH_LAST_DATE_KEY) === getAdSplashTodayStr();
-    } catch (e) {
-        return false;
-    }
-}
-
-function markAdSplashShownToday() {
-    try {
-        localStorage.setItem(AD_SPLASH_LAST_DATE_KEY, getAdSplashTodayStr());
-    } catch (e) {}
-}
-
-let __adSplashScrollLocked = false;
-let __adSplashTimer = null;
-
-function closeAdSplash() {
-    const splash = document.getElementById('adSplash');
-    if (__adSplashTimer) {
-        clearInterval(__adSplashTimer);
-        __adSplashTimer = null;
-    }
-    if (!splash) return;
-    splash.classList.add('is-hidden');
-    // 与任务弹窗/日历同一套滚动锁，避免直接改 class 导致计数错乱
-    if (__adSplashScrollLocked) {
-        __adSplashScrollLocked = false;
-        try {
-            if (typeof unlockBodyScroll === 'function') unlockBodyScroll();
-            else document.documentElement.classList.remove('body-scroll-locked');
-        } catch (e) {}
-    }
-}
-
-function shouldShowAdSplash() {
-    // 已配置同步密码：自用设备，不出广告
-    if (hasLocalSyncPassword()) return false;
-    // 一天只出一次
-    if (hasShownAdSplashToday()) return false;
-    return true;
-}
-
-/** @param {{force?: boolean, markToday?: boolean}} options force=手动打开（忽略密码与一天一次） */
-function openAdSplash(options) {
-    const opts = options || {};
-    const force = !!opts.force;
-    const markToday = opts.markToday !== false; // 自动开屏默认记一天一次；手动可传 markToday:false
-    const splash = document.getElementById('adSplash');
-    const tip = document.getElementById('adSplashTip');
-    if (!splash) return;
-
-    if (!force && !shouldShowAdSplash()) {
-        closeAdSplash();
-        return;
-    }
-
-    // 若已在展示，先清掉旧倒计时再重新开
-    if (__adSplashTimer) {
-        clearInterval(__adSplashTimer);
-        __adSplashTimer = null;
-    }
-
-    splash.classList.remove('is-hidden');
-    if (!__adSplashScrollLocked) {
-        __adSplashScrollLocked = true;
-        try {
-            if (typeof lockBodyScroll === 'function') lockBodyScroll();
-            else document.documentElement.classList.add('body-scroll-locked');
-        } catch (e) {}
-    }
-    if (markToday && !force) markAdSplashShownToday();
-    // 手动打开不占用「一天一次」名额；自动打开才标记
-
-    let left = AD_SPLASH_SECONDS;
-    const renderWait = () => {
-        if (tip) tip.textContent = left > 0 ? `${left} 秒后自动进入主站…` : '正在进入主站…';
-    };
-    renderWait();
-
-    __adSplashTimer = setInterval(() => {
-        left -= 1;
-        if (left <= 0) {
-            left = 0;
-            clearInterval(__adSplashTimer);
-            __adSplashTimer = null;
-            renderWait();
-            closeAdSplash();
-            return;
+        if (sessionStorage.getItem(KEY_RESTORE_TOAST_FLAG) === '1') {
+            sessionStorage.removeItem(KEY_RESTORE_TOAST_FLAG);
+            showToast('已恢复到同步前状态', 'success');
         }
-        renderWait();
-    }, 1000);
-}
-
-function initAdSplash() {
-    // 启动时仅自动策略；手动入口见 adSplashOpenBtn
-    openAdSplash({ force: false, markToday: true });
-    const btn = document.getElementById('adSplashOpenBtn');
-    if (btn && !btn.dataset.bound) {
-        btn.dataset.bound = '1';
-        btn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            openAdSplash({ force: true, markToday: false });
-        });
-    }
-}
-
-// 脚本在 </body> 前：DOM 已就绪。
-// 开屏与主站都立即启动，不依赖 window.onload（避免外链广告图拖慢主站初始化）
-try { initAdSplash(); } catch (e) { console.error('开屏初始化失败', e); }
-
-(async function initApp() {
-    try {
-        initThemeUI();
-        initWidgetStates();
-        bindTaskTemplateUI();
-        await loadSyncPasswordInputConfig();
-        bindGlobalEvent();
-        try {
-            await loadStorage();
-        } catch (e) {
-            console.error('启动同步失败', e);
-            updateSyncStatus('error');
-            showToast(`${e && e.message ? e.message : '启动同步失败'}`, 'error');
-        }
-        // 已取消按月自动归档，启动时不再调用 archiveOldHistory
-        renderPage();
-        try {
-            if (sessionStorage.getItem(KEY_RESTORE_TOAST_FLAG) === '1') {
-                sessionStorage.removeItem(KEY_RESTORE_TOAST_FLAG);
-                showToast('已恢复到同步前状态', 'success');
-            }
-        } catch (e) {}
-    } catch (e) {
-        console.error('主站初始化失败', e);
-        try { showToast('页面初始化失败，请刷新重试', 'error'); } catch (err) {}
-    }
-})();
+    } catch (e) {}
+};
 </script>
 </body>
 </html>
