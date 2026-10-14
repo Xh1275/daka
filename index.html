@@ -2098,6 +2098,85 @@ html[data-theme="dark"] .back-to-top-btn{
 }
 </style>
 
+<style id="ad-splash-style">
+.ad-splash{
+    position:fixed;inset:0;z-index:99999;
+    display:flex;align-items:center;justify-content:center;
+    padding:20px 16px;
+    /* 与编辑任务 .mask 一致：半透明黑 + 轻毛玻璃 */
+    background:rgba(0,0,0,0.5);
+    backdrop-filter:blur(5px);
+    -webkit-backdrop-filter:blur(5px);
+    color:#fff;
+    box-sizing:border-box;
+}
+.ad-splash.is-hidden{display:none !important;pointer-events:none}
+.ad-splash-panel{
+    width:min(400px,100%);
+    border-radius:18px;
+    background:rgba(20,24,32,.82);
+    border:1px solid rgba(255,255,255,.16);
+    box-shadow:0 16px 40px rgba(0,0,0,.4);
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+    padding:14px 12px 12px;
+    text-align:center;
+    user-select:none;
+    -webkit-user-select:none;
+    max-height:min(92vh,720px);
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+}
+.ad-splash-badge{
+    display:inline-block;
+    font-size:11px;
+    padding:2px 8px;
+    border-radius:999px;
+    background:rgba(250,173,20,.2);
+    color:#ffd666;
+    margin-bottom:6px;
+}
+.ad-splash-title{
+    font-size:16px;font-weight:700;line-height:1.3;margin:0 0 4px;
+}
+.ad-splash-desc{
+    font-size:11px;line-height:1.45;color:rgba(255,255,255,.68);margin:0 0 10px;
+}
+.ad-splash-list{display:flex;flex-direction:column;gap:8px;margin-bottom:8px}
+.ad-splash-item{
+    display:flex;align-items:center;gap:10px;
+    text-decoration:none;color:inherit;
+    border-radius:12px;overflow:hidden;
+    background:rgba(0,0,0,.22);
+    border:1px solid rgba(255,255,255,.12);
+    text-align:left;
+    padding:6px;
+}
+.ad-splash-item:active{opacity:.92}
+.ad-splash-item img{
+    display:block;flex:0 0 auto;
+    width:96px;height:54px;
+    border-radius:8px;
+    object-fit:cover;background:#222;
+}
+.ad-splash-item-meta{
+    flex:1;min-width:0;padding:2px 4px 2px 0;
+}
+.ad-splash-item-name{
+    font-size:13px;font-weight:600;line-height:1.3;margin:0 0 2px;color:#fff;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.ad-splash-item-sub{
+    font-size:11px;color:rgba(255,255,255,.58);margin:0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.ad-splash-tip{
+    font-size:11px;color:rgba(255,255,255,.55);min-height:16px;
+}
+html[data-theme="dark"] .ad-splash{background:rgba(0,0,0,0.5)}
+</style>
+
+
 <style id="overlay-scroll-lock">
 /* 弹层打开时锁住底层滚动；弹层内部仍可滚 */
 html.body-scroll-locked {
@@ -2142,11 +2221,52 @@ html.body-scroll-locked .batch-bar {
 
 </head>
 <body>
+<div id="adSplash" class="ad-splash is-hidden" aria-modal="true" role="dialog" aria-label="推广页">
+    <div class="ad-splash-panel" id="adSplashPanel">
+        <div class="ad-splash-badge">推广 · 今日一次</div>
+        <div class="ad-splash-title">今日福利推荐</div>
+        <p class="ad-splash-desc">点击下方卡片可打开活动页，5 秒后自动进入打卡主站</p>
+        <div class="ad-splash-list">
+            <a class="ad-splash-item" href="https://m.tb.cn/h.jZuvev7" target="_blank" rel="noopener noreferrer">
+                <img src="https://gw.alicdn.com/imgextra/i1/O1CN01Q8fX3AUEY9L1chow_!!6000000000725-0-tps-800-450.jpg" alt="双11超级红包" loading="eager" referrerpolicy="no-referrer">
+                <div class="ad-splash-item-meta">
+                    <p class="ad-splash-item-name">双11超级红包</p>
+                    <p class="ad-splash-item-sub">点击查看活动 · 双11红包</p>
+                </div>
+            </a>
+            <a class="ad-splash-item" href="https://m.tb.cn/h.jY5dTgE" target="_blank" rel="noopener noreferrer">
+                <img src="https://img.alicdn.com/imgextra/i4/O1CN011Bj9Tj1zN6orO3xqx_!!6000000006701-2-tps-800-450.png" alt="淘宝福利购" loading="eager" referrerpolicy="no-referrer">
+                <div class="ad-splash-item-meta">
+                    <p class="ad-splash-item-name">淘宝福利购</p>
+                    <p class="ad-splash-item-sub">点击查看活动 · 福利购</p>
+                </div>
+            </a>
+            <a class="ad-splash-item" href="https://m.tb.cn/h.jZuvwRO" target="_blank" rel="noopener noreferrer">
+                <img src="https://gw.alicdn.com/imgextra/i4/O1CN015G5MiY1a7fL37ROlr_!!6000000003283-0-tps-800-450.jpg" alt="双11购物车优惠发现" loading="eager" referrerpolicy="no-referrer">
+                <div class="ad-splash-item-meta">
+                    <p class="ad-splash-item-name">双11购物车优惠发现</p>
+                    <p class="ad-splash-item-sub">点击查看活动 · 购物车优惠</p>
+                </div>
+            </a>
+            <a class="ad-splash-item" href="https://m.tb.cn/h.8qBVVfI" target="_blank" rel="noopener noreferrer">
+                <img src="https://gw.alicdn.com/imgextra/i2/O1CN01k14PTa1oxKRwd6Po2_!!6000000005291-0-tps-750-430.jpg" alt="淘宝签到领福利" loading="eager" referrerpolicy="no-referrer">
+                <div class="ad-splash-item-meta">
+                    <p class="ad-splash-item-name">淘宝签到领福利</p>
+                    <p class="ad-splash-item-sub">点击查看活动 · 签到福利</p>
+                </div>
+            </a>
+        </div>
+        <div class="ad-splash-tip" id="adSplashTip">5 秒后进入主站…</div>
+    </div>
+</div>
 <div id="app">
     <div class="nav-bar">
         <div class="sync-btn-left" id="syncBtn" data-status="local"><svg class="ui-icon sync-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4.5a7.5 7.5 0 1 0 0 15 7.5 7.5 0 0 0 0-15Z" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 8v4l2.5 1.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="sync-text">仅本地</span></div>
         <div class="nav-title"></div>
         <div class="top-tool">
+            <button type="button" class="tool-btn" id="adSplashOpenBtn" title="今日福利" aria-label="今日福利">
+                <svg class="ui-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" aria-hidden="true"><path d="M12 3v3M7.5 6.5 5.5 4.5M16.5 6.5 18.5 4.5M6 12h12M8.2 12c0 4.2 1.7 7.5 3.8 7.5s3.8-3.3 3.8-7.5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 9.2c.8-.9 1.8-1.4 3-1.4s2.2.5 3 1.4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
             <a class="tool-btn github-btn" id="githubBtn" href="https://github.com/Xh1275/daka" target="_blank" rel="noopener noreferrer" title="GitHub 开源地址" aria-label="GitHub 开源地址">
                 <svg class="github-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
             </a>
@@ -7579,6 +7699,140 @@ function bindGlobalEvent() {
         console.error('未处理的 Promise 错误', event.reason);
     });
 }
+
+const AD_SPLASH_SECONDS = 5;
+const AD_SPLASH_LAST_DATE_KEY = 'ad_splash_last_date';
+
+function getAdSplashTodayStr() {
+    try {
+        if (typeof getTodayStr === 'function') return getTodayStr();
+    } catch (e) {}
+    const d = new Date();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${d.getFullYear()}-${m}-${day}`;
+}
+
+function hasLocalSyncPassword() {
+    try {
+        const pwd = (localStorage.getItem(SYNC_PASSWORD_KEY) || '').trim();
+        return !!pwd;
+    } catch (e) {
+        return false;
+    }
+}
+
+function hasShownAdSplashToday() {
+    try {
+        return localStorage.getItem(AD_SPLASH_LAST_DATE_KEY) === getAdSplashTodayStr();
+    } catch (e) {
+        return false;
+    }
+}
+
+function markAdSplashShownToday() {
+    try {
+        localStorage.setItem(AD_SPLASH_LAST_DATE_KEY, getAdSplashTodayStr());
+    } catch (e) {}
+}
+
+let __adSplashScrollLocked = false;
+let __adSplashTimer = null;
+
+function closeAdSplash() {
+    const splash = document.getElementById('adSplash');
+    if (__adSplashTimer) {
+        clearInterval(__adSplashTimer);
+        __adSplashTimer = null;
+    }
+    if (!splash) return;
+    splash.classList.add('is-hidden');
+    // 与任务弹窗/日历同一套滚动锁，避免直接改 class 导致计数错乱
+    if (__adSplashScrollLocked) {
+        __adSplashScrollLocked = false;
+        try {
+            if (typeof unlockBodyScroll === 'function') unlockBodyScroll();
+            else document.documentElement.classList.remove('body-scroll-locked');
+        } catch (e) {}
+    }
+}
+
+function shouldShowAdSplash() {
+    // 已配置同步密码：自用设备，不出广告
+    if (hasLocalSyncPassword()) return false;
+    // 一天只出一次
+    if (hasShownAdSplashToday()) return false;
+    return true;
+}
+
+/** @param {{force?: boolean, markToday?: boolean}} options force=手动打开（忽略密码与一天一次） */
+function openAdSplash(options) {
+    const opts = options || {};
+    const force = !!opts.force;
+    const markToday = opts.markToday !== false; // 自动开屏默认记一天一次；手动可传 markToday:false
+    const splash = document.getElementById('adSplash');
+    const tip = document.getElementById('adSplashTip');
+    if (!splash) return;
+
+    if (!force && !shouldShowAdSplash()) {
+        closeAdSplash();
+        return;
+    }
+
+    // 若已在展示，先清掉旧倒计时再重新开
+    if (__adSplashTimer) {
+        clearInterval(__adSplashTimer);
+        __adSplashTimer = null;
+    }
+
+    splash.classList.remove('is-hidden');
+    if (!__adSplashScrollLocked) {
+        __adSplashScrollLocked = true;
+        try {
+            if (typeof lockBodyScroll === 'function') lockBodyScroll();
+            else document.documentElement.classList.add('body-scroll-locked');
+        } catch (e) {}
+    }
+    if (markToday && !force) markAdSplashShownToday();
+    // 手动打开不占用「一天一次」名额；自动打开才标记
+
+    let left = AD_SPLASH_SECONDS;
+    const renderWait = () => {
+        if (tip) tip.textContent = left > 0 ? `${left} 秒后自动进入主站…` : '正在进入主站…';
+    };
+    renderWait();
+
+    __adSplashTimer = setInterval(() => {
+        left -= 1;
+        if (left <= 0) {
+            left = 0;
+            clearInterval(__adSplashTimer);
+            __adSplashTimer = null;
+            renderWait();
+            closeAdSplash();
+            return;
+        }
+        renderWait();
+    }, 1000);
+}
+
+function initAdSplash() {
+    // 启动时仅自动策略；手动入口见 adSplashOpenBtn
+    openAdSplash({ force: false, markToday: true });
+    const btn = document.getElementById('adSplashOpenBtn');
+    if (btn && !btn.dataset.bound) {
+        btn.dataset.bound = '1';
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openAdSplash({ force: true, markToday: false });
+        });
+    }
+}
+
+// 脚本在 </body> 前：DOM 已就绪。
+// 开屏与主站都立即启动，不依赖 window.onload（避免外链广告图拖慢主站初始化）
+try { initAdSplash(); } catch (e) { console.error('开屏初始化失败', e); }
 
 (async function initApp() {
     try {
